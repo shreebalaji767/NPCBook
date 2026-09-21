@@ -115,6 +115,20 @@ img{
     font-weight:900;
     font-size:20px;
     white-space:nowrap;
+
+    /* Make logo behave like a clickable button */
+    border:0;
+    padding:0;
+    margin:0;
+    background:transparent;
+    color:inherit;
+    font:inherit;
+    cursor:pointer;
+    text-decoration:none;
+
+    /* Touchscreen support */
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
 }
 
 .logo-icon{
@@ -125,10 +139,77 @@ img{
     place-items:center;
     background:linear-gradient(135deg,#7c5cff,#4da3ff);
     box-shadow:0 7px 25px rgba(124,92,255,.28);
+
+    flex-shrink:0;
+}
+
+.logo-text{
+    display:flex;
+    align-items:center;
+    line-height:1;
 }
 
 .logo-text span{
     color:var(--accent2);
+}
+
+/* Desktop hover */
+.logo:hover{
+    opacity:.88;
+}
+
+/* Mouse / touchscreen press */
+.logo:active{
+    transform:scale(.97);
+}
+
+/* Keyboard accessibility */
+.logo:focus-visible{
+    outline:2px solid var(--accent2);
+    outline-offset:4px;
+    border-radius:8px;
+}
+
+/* Smaller screens */
+@media (max-width:700px){
+
+    .logo{
+        font-size:18px;
+        gap:7px;
+    }
+
+    .logo-icon{
+        width:36px;
+        height:36px;
+        border-radius:11px;
+    }
+
+}
+
+/* Very small phones */
+@media (max-width:380px){
+
+    .logo{
+        font-size:16px;
+        gap:6px;
+    }
+
+    .logo-icon{
+        width:34px;
+        height:34px;
+        border-radius:10px;
+    }
+
+}
+
+/* Touchscreen */
+@media (pointer:coarse){
+
+    .logo{
+        min-height:44px;
+        min-width:44px;
+    }
+
 }
 
 .top-search{
