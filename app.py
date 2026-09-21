@@ -1,6 +1,6 @@
 from pathlib import Path
 
-HTML = r"""
+HTML = r'''
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -4148,7 +4148,7 @@ generateWorld();
 </script>
 </body>
 </html>
-"""
+'''
 
 Path("index.html").write_text(HTML, encoding="utf-8")
 print("NPCBook generated successfully: index.html")
