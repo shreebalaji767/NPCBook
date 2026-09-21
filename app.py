@@ -1298,7 +1298,7 @@ img{
 <header class="topbar">
     <div class="topbar-inner">
 
-        <button class="logo" onclick="goHome()" aria-label="NPCBook Home">
+        <button class="logo" onclick="window.location.reload()" aria-label="NPCBook Home">
             <span class="logo-icon">📱</span>
             <span class="logo-text">NPC<span>Book</span></span>
         </button>
