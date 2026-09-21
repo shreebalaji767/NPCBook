@@ -3268,6 +3268,7 @@ renderHome();
 </script>
 </body>
 </html>
+'''
 
 Path("index.html").write_text(HTML, encoding="utf-8")
 
