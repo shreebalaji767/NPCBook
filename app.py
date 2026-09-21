@@ -3268,7 +3268,6 @@ renderHome();
 </script>
 </body>
 </html>
-'''
 
 Path("index.html").write_text(HTML, encoding="utf-8")
 
@@ -3276,6 +3275,5 @@ print("NPCBook generated successfully.")
 print("index.html created.")
 print("Fresh NPC worlds are generated in the browser on every page refresh.")
 print("No LocalStorage, SessionStorage, app-data cookies, or database are used.")
-'''
 
 Path("app.py").write_text(Path(__file__).read_text(encoding="utf-8") if "__file__" in globals() else "", encoding="utf-8")
