@@ -4,532 +4,741 @@ HTML = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#4267B2">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="description" content="NPCBook — Social Media for NPCs">
 <title>NPCBook — Social Media for NPCs</title>
 
 <style>
-:root{
-    --bg:#eef1f5;
-    --card:#ffffff;
-    --text:#172033;
-    --muted:#687386;
-    --line:#dce2ea;
-    --blue:#4267b2;
-    --blue-dark:#365899;
-    --soft:#f4f6f9;
-    --green:#20a464;
-    --red:#e53958;
-    --shadow:0 2px 12px rgba(0,0,0,.07);
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-*{
-    box-sizing:border-box;
+html {
+    scroll-behavior: smooth;
 }
 
-html{
-    scroll-behavior:smooth;
+body {
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    background: #f0f2f5;
+    color: #172033;
+    min-height: 100vh;
 }
 
-body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+/* =========================
+   HEADER
+========================= */
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: 64px;
+    background: #ffffff;
+    border-bottom: 1px solid #dfe3e8;
+    display: flex;
+    align-items: center;
 }
 
-button,
-input{
-    font:inherit;
+.topbar-inner {
+    width: min(1400px, 100%);
+    margin: auto;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
 }
 
-button{
-    cursor:pointer;
-    -webkit-tap-highlight-color:transparent;
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 23px;
+    font-weight: 900;
+    color: #1877f2;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
 }
 
-.topbar{
-    position:sticky;
-    top:0;
-    z-index:100;
-    background:white;
-    border-bottom:1px solid var(--line);
-    padding:
-        9px
-        max(10px,env(safe-area-inset-right))
-        9px
-        max(10px,env(safe-area-inset-left));
+.logo:hover {
+    opacity: .8;
 }
 
-.topbar-inner{
-    max-width:1200px;
-    margin:auto;
-    display:flex;
-    align-items:center;
-    gap:10px;
+.search {
+    flex: 1;
+    max-width: 420px;
 }
 
-.logo{
-    color:var(--blue);
-    font-size:24px;
-    font-weight:950;
-    letter-spacing:-1px;
-    white-space:nowrap;
+.search input {
+    width: 100%;
+    height: 42px;
+    border: 0;
+    outline: none;
+    background: #f0f2f5;
+    border-radius: 22px;
+    padding: 0 18px;
+    font-size: 15px;
 }
 
-.search{
-    flex:1;
-    max-width:430px;
+.header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.search input{
-    width:100%;
-    border:0;
-    outline:none;
-    background:var(--soft);
-    border-radius:999px;
-    padding:11px 16px;
+.icon-btn {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: #f0f2f5;
+    cursor: pointer;
+    font-size: 19px;
+    display: grid;
+    place-items: center;
+    touch-action: manipulation;
 }
 
-.nav{
-    margin-left:auto;
-    display:flex;
-    gap:6px;
+.icon-btn:hover {
+    background: #e4e6eb;
 }
 
-.nav button{
-    min-height:42px;
-    border:1px solid var(--line);
-    background:white;
-    border-radius:10px;
-    padding:8px 12px;
-    font-weight:800;
+/* =========================
+   LAYOUT
+========================= */
+
+.page {
+    width: min(1400px, 100%);
+    margin: auto;
+    padding: 20px 16px 100px;
 }
 
-.nav button:hover{
-    background:var(--soft);
+.layout {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 650px) 280px;
+    gap: 20px;
+    justify-content: center;
+    align-items: start;
 }
 
-.layout{
-    width:min(1200px,100%);
-    margin:18px auto;
-    padding:0 14px;
-    display:grid;
-    grid-template-columns:220px minmax(0,1fr) 260px;
-    gap:18px;
-}
+/* =========================
+   SIDEBARS
+========================= */
 
 .sidebar,
-.rightbar{
-    display:flex;
-    flex-direction:column;
-    gap:14px;
+.rightbar {
+    position: sticky;
+    top: 84px;
 }
 
-.card,
-.post,
-.composer,
-.profile{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:14px;
-    box-shadow:var(--shadow);
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.side-card{
-    padding:12px;
+.menu button {
+    width: 100%;
+    min-height: 50px;
+    border: 0;
+    background: transparent;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    color: #273142;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    touch-action: manipulation;
 }
 
-.side-item{
-    padding:11px;
-    border-radius:10px;
-    font-weight:800;
-    cursor:pointer;
+.menu button:hover {
+    background: #e4e6eb;
 }
 
-.side-item:hover{
-    background:var(--soft);
+.menu-icon {
+    width: 30px;
+    text-align: center;
+    font-size: 21px;
 }
 
-.main{
-    min-width:0;
+/* =========================
+   CARDS
+========================= */
+
+.card {
+    background: #ffffff;
+    border: 1px solid #dfe3e8;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
 }
 
-.hero{
-    padding:20px;
-    margin-bottom:14px;
-    color:white;
-    background:linear-gradient(135deg,#4267b2,#7187cb);
+.card-header {
+    padding: 14px 16px;
 }
 
-.hero h1{
-    margin:0 0 5px;
-    font-size:29px;
+.card-body {
+    padding: 16px;
 }
 
-.hero p{
-    margin:0;
-    opacity:.93;
+.section-title {
+    font-size: 18px;
+    font-weight: 800;
 }
 
-.profile{
-    overflow:hidden;
-    margin-bottom:14px;
+/* =========================
+   PROFILE
+========================= */
+
+.profile-cover {
+    height: 125px;
+    background:
+        linear-gradient(
+            135deg,
+            #667eea,
+            #764ba2,
+            #f093fb
+        );
 }
 
-.cover{
-    height:105px;
-    background:linear-gradient(135deg,#253c72,#8ca2dc);
+.profile-main {
+    padding: 0 18px 18px;
 }
 
-.profile-body{
-    padding:0 16px 16px;
+.avatar {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    border: 5px solid white;
+    margin-top: -39px;
+    background: #edf2f7;
+    display: grid;
+    place-items: center;
+    font-size: 40px;
+    position: relative;
 }
 
-.avatar{
-    width:46px;
-    height:46px;
-    border-radius:50%;
-    display:grid;
-    place-items:center;
-    color:white;
-    font-weight:950;
-    flex:0 0 auto;
-    box-shadow:0 2px 6px rgba(0,0,0,.18);
+.profile-name {
+    margin-top: 8px;
+    font-size: 21px;
+    font-weight: 900;
 }
 
-.avatar.large{
-    width:76px;
-    height:76px;
-    font-size:27px;
-    margin-top:-38px;
-    border:4px solid white;
+.profile-handle {
+    color: #697386;
+    margin-top: 2px;
 }
 
-.profile h2{
-    margin:7px 0 2px;
+.profile-bio {
+    margin-top: 10px;
+    line-height: 1.5;
+    color: #3f4a5a;
 }
 
-.small{
-    color:var(--muted);
-    font-size:12px;
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 15px;
+    gap: 8px;
 }
 
-.badge{
-    display:inline-block;
-    margin-top:7px;
-    padding:5px 9px;
-    border-radius:999px;
-    background:#fff2c8;
-    color:#745700;
-    font-size:11px;
-    font-weight:900;
+.stat {
+    background: #f7f8fa;
+    border-radius: 9px;
+    padding: 10px;
+    text-align: center;
 }
 
-.stat-grid{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:7px;
-    margin-top:12px;
+.stat strong {
+    display: block;
+    font-size: 18px;
 }
 
-.stat{
-    padding:9px;
-    background:var(--soft);
-    border-radius:9px;
-    text-align:center;
+.stat span {
+    color: #697386;
+    font-size: 12px;
 }
 
-.stat b{
-    display:block;
-    font-size:17px;
+/* =========================
+   COMPOSER
+========================= */
+
+.composer {
+    padding: 15px;
 }
 
-.stat span{
-    color:var(--muted);
-    font-size:10px;
+.composer-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
 }
 
-.composer{
-    padding:14px;
-    margin-bottom:14px;
+.mini-avatar {
+    width: 45px;
+    height: 45px;
+    flex: 0 0 45px;
+    border-radius: 50%;
+    background: #edf2f7;
+    display: grid;
+    place-items: center;
+    font-size: 24px;
 }
 
-.compose-row{
-    display:flex;
-    align-items:center;
-    gap:10px;
+.fake-input {
+    flex: 1;
+    background: #f0f2f5;
+    border-radius: 24px;
+    padding: 13px 17px;
+    color: #6b7280;
+    cursor: pointer;
 }
 
-.fake-input{
-    flex:1;
-    border:0;
-    background:var(--soft);
-    border-radius:999px;
-    padding:12px 16px;
-    color:var(--muted);
-    text-align:left;
+.composer-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 12px;
 }
 
-.compose-actions{
-    display:flex;
-    gap:7px;
-    margin-top:10px;
+.action-light {
+    min-height: 42px;
+    border: 0;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    color: #566173;
+    touch-action: manipulation;
 }
 
-.compose-actions button{
-    flex:1;
-    border:1px solid var(--line);
-    background:white;
-    border-radius:9px;
-    padding:9px;
-    font-weight:800;
+.action-light:hover {
+    background: #f0f2f5;
 }
 
-.post{
-    padding:15px;
-    margin-bottom:13px;
+/* =========================
+   POSTS
+========================= */
+
+.post {
+    padding: 15px;
 }
 
-.post-header{
-    display:flex;
-    align-items:center;
-    gap:10px;
+.post-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.post-name{
-    font-weight:900;
+.post-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #edf2f7;
+    display: grid;
+    place-items: center;
+    font-size: 25px;
+    flex: 0 0 46px;
 }
 
-.post-body{
-    padding:14px 0 10px;
-    line-height:1.55;
-    font-size:16px;
+.post-author {
+    min-width: 0;
 }
 
-.tags{
-    display:flex;
-    gap:5px;
-    flex-wrap:wrap;
+.post-name {
+    font-weight: 800;
 }
 
-.tag{
-    background:#eef2ff;
-    color:#40579b;
-    padding:4px 8px;
-    border-radius:999px;
-    font-size:10px;
-    font-weight:900;
+.post-meta {
+    color: #7a8494;
+    font-size: 12px;
+    margin-top: 2px;
 }
 
-.post-stats{
-    display:flex;
-    justify-content:space-between;
-    border-bottom:1px solid var(--line);
-    padding:8px 0;
-    color:var(--muted);
-    font-size:13px;
+.post-text {
+    margin: 13px 0;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
-.post-actions{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:5px;
-    padding-top:7px;
+.post-tag {
+    display: inline-block;
+    background: #eef4ff;
+    color: #1877f2;
+    padding: 5px 9px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 10px;
 }
 
-.post-actions button{
-    border:0;
-    background:transparent;
-    padding:10px;
-    border-radius:8px;
-    font-weight:850;
-    color:#536071;
+.post-stats {
+    display: flex;
+    justify-content: space-between;
+    color: #707988;
+    font-size: 13px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.post-actions button:hover{
-    background:var(--soft);
+.post-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-top: 6px;
 }
 
-.post-actions .liked{
-    color:var(--blue);
+.post-actions button {
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    color: #5b6574;
+    touch-action: manipulation;
 }
 
-.right-card{
-    padding:14px;
+.post-actions button:hover {
+    background: #f0f2f5;
 }
 
-.right-card h3{
-    margin:0 0 10px;
-    font-size:15px;
+.post-actions button.liked {
+    color: #1877f2;
 }
 
-.trend,
-.quest,
-.market-item{
-    padding:9px 0;
-    border-bottom:1px solid var(--line);
+.comment-box {
+    display: none;
+    margin-top: 10px;
+    gap: 8px;
 }
 
-.trend:last-child,
-.quest:last-child,
-.market-item:last-child{
-    border-bottom:0;
+.comment-box.active {
+    display: flex;
 }
 
-.trend b,
-.market-item b{
-    display:block;
+.comment-box input {
+    min-width: 0;
+    flex: 1;
+    border: 1px solid #d5dae1;
+    border-radius: 20px;
+    padding: 10px 14px;
+    outline: none;
 }
 
-.quest{
-    background:var(--soft);
-    padding:10px;
-    border-radius:9px;
-    margin-bottom:7px;
-    border:0;
+.comment-box button {
+    border: 0;
+    background: #1877f2;
+    color: white;
+    border-radius: 20px;
+    padding: 0 15px;
+    font-weight: 700;
+    cursor: pointer;
 }
 
-.toast{
-    position:fixed;
-    z-index:500;
-    left:50%;
-    bottom:max(20px,env(safe-area-inset-bottom));
-    transform:translate(-50%,20px);
-    background:#111827;
-    color:white;
-    padding:12px 17px;
-    border-radius:999px;
-    opacity:0;
-    pointer-events:none;
-    transition:.25s;
-    max-width:90vw;
-    text-align:center;
-    box-shadow:0 8px 30px rgba(0,0,0,.3);
+/* =========================
+   RIGHT BAR
+========================= */
+
+.right-card {
+    padding: 15px;
 }
 
-.toast.show{
-    opacity:1;
-    transform:translate(-50%,0);
+.right-title {
+    font-size: 17px;
+    font-weight: 900;
+    margin-bottom: 12px;
 }
 
-.mobile-nav{
-    display:none;
+.trend {
+    padding: 10px 0;
+    border-bottom: 1px solid #edf0f3;
 }
 
-.empty{
-    padding:35px;
-    text-align:center;
-    color:var(--muted);
+.trend:last-child {
+    border-bottom: 0;
 }
 
-@media(max-width:1000px){
-    .layout{
-        grid-template-columns:190px minmax(0,1fr);
+.trend-small {
+    color: #788291;
+    font-size: 12px;
+}
+
+.trend-name {
+    font-weight: 800;
+    margin: 3px 0;
+}
+
+.quest {
+    padding: 10px 0;
+    border-bottom: 1px solid #edf0f3;
+}
+
+.quest:last-child {
+    border-bottom: 0;
+}
+
+.quest-title {
+    font-weight: 800;
+}
+
+.quest-progress {
+    margin-top: 7px;
+    height: 7px;
+    border-radius: 10px;
+    background: #e9edf2;
+    overflow: hidden;
+}
+
+.quest-progress span {
+    display: block;
+    height: 100%;
+    background: #1877f2;
+}
+
+/* =========================
+   MARKET
+========================= */
+
+.market-item {
+    padding: 11px 0;
+    border-bottom: 1px solid #edf0f3;
+}
+
+.market-item:last-child {
+    border-bottom: 0;
+}
+
+.market-name {
+    font-weight: 800;
+}
+
+.market-price {
+    color: #16803c;
+    font-weight: 800;
+    margin-top: 3px;
+}
+
+/* =========================
+   MOBILE NAV
+========================= */
+
+.mobile-nav {
+    display: none;
+}
+
+/* =========================
+   TOAST
+========================= */
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%) translateY(100px);
+    background: #111827;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 25px;
+    z-index: 5000;
+    opacity: 0;
+    pointer-events: none;
+    transition: .25s ease;
+    font-size: 14px;
+    text-align: center;
+    max-width: calc(100vw - 30px);
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* =========================
+   EMPTY
+========================= */
+
+.empty {
+    padding: 35px 15px;
+    text-align: center;
+    color: #707988;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1150px) {
+    .layout {
+        grid-template-columns: 210px minmax(0, 650px);
     }
 
-    .rightbar{
-        display:none;
+    .rightbar {
+        display: none;
     }
 }
 
-@media(max-width:700px){
-    .topbar-inner{
-        flex-wrap:wrap;
+@media (max-width: 800px) {
+    .topbar {
+        height: 58px;
     }
 
-    .logo{
-        font-size:21px;
+    .topbar-inner {
+        padding: 0 10px;
+        gap: 8px;
     }
 
-    .search{
-        order:3;
-        flex-basis:100%;
-        max-width:none;
+    .logo {
+        font-size: 19px;
     }
 
-    .nav{
-        gap:3px;
+    .search {
+        display: none;
     }
 
-    .nav button{
-        min-width:42px;
-        padding:8px;
+    .header-actions {
+        gap: 5px;
     }
 
-    .nav .text{
-        display:none;
+    .icon-btn {
+        width: 40px;
+        height: 40px;
     }
 
-    .layout{
-        display:block;
-        margin:10px auto;
-        padding:0 8px 78px;
+    .page {
+        padding: 10px 8px 90px;
     }
 
-    .sidebar{
-        display:none;
+    .layout {
+        display: block;
     }
 
-    .hero{
-        padding:16px;
-        border-radius:12px;
+    .sidebar {
+        display: none;
     }
 
-    .hero h1{
-        font-size:23px;
-    }
-
-    .post,
-    .composer,
-    .profile{
-        border-radius:11px;
-    }
-
-    .post{
-        padding:12px;
-    }
-
-    .stat-grid{
-        grid-template-columns:repeat(2,1fr);
-    }
-
-    .mobile-nav{
-        position:fixed;
-        display:flex;
-        left:0;
-        right:0;
-        bottom:0;
-        z-index:200;
-        background:white;
-        border-top:1px solid var(--line);
+    .mobile-nav {
+        position: fixed;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2000;
+        background: rgba(255,255,255,.97);
+        border-top: 1px solid #dfe3e8;
         padding:
-            6px
-            max(6px,env(safe-area-inset-right))
-            max(6px,env(safe-area-inset-bottom))
-            max(6px,env(safe-area-inset-left));
-        justify-content:space-around;
+            5px
+            5px
+            calc(5px + env(safe-area-inset-bottom));
+        box-shadow: 0 -3px 12px rgba(0,0,0,.08);
     }
 
-    .mobile-nav button{
-        border:0;
-        background:transparent;
-        border-radius:9px;
-        padding:7px 11px;
-        font-weight:850;
-        color:#566276;
+    .mobile-nav button {
+        min-height: 54px;
+        border: 0;
+        background: transparent;
+        border-radius: 9px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 800;
+        color: #566173;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        touch-action: manipulation;
     }
 
-    .mobile-nav button:active{
-        background:var(--soft);
+    .mobile-nav button:active {
+        background: #eef2f7;
+    }
+
+    .mobile-nav .nav-icon {
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    .card {
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+
+    .profile-cover {
+        height: 105px;
+    }
+
+    .profile-main {
+        padding: 0 14px 15px;
+    }
+
+    .profile-stats {
+        gap: 5px;
+    }
+
+    .post {
+        padding: 13px;
+    }
+
+    .post-actions button {
+        min-height: 46px;
+    }
+
+    .composer-actions {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
 
-@media(hover:none) and (pointer:coarse){
+@media (max-width: 420px) {
+    .logo {
+        font-size: 17px;
+    }
+
+    .header-actions .icon-btn:nth-child(3) {
+        display: none;
+    }
+
+    .profile-name {
+        font-size: 19px;
+    }
+
+    .post-text {
+        font-size: 14px;
+    }
+
+    .mobile-nav button {
+        min-height: 52px;
+        font-size: 11px;
+    }
+}
+
+/* Touchscreen */
+@media (pointer: coarse) {
     button,
     .fake-input,
-    .side-item{
-        min-height:44px;
+    .logo {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .menu button,
+    .action-light,
+    .post-actions button {
+        min-height: 48px;
     }
 }
 </style>
@@ -540,966 +749,904 @@ button{
 <header class="topbar">
     <div class="topbar-inner">
 
-        <div class="logo">📱 NPCBook</div>
+        <!-- CLICKING LOGO = FULL REFRESH -->
+        <div
+            class="logo"
+            onclick="goHome()"
+            role="button"
+            tabindex="0"
+            onkeydown="if(event.key==='Enter'||event.key===' ')goHome()"
+            title="Refresh NPCBook"
+        >
+            📱 NPCBook
+        </div>
 
         <div class="search">
             <input
-                id="search"
+                id="searchInput"
                 type="search"
-                placeholder="Search NPCs, jobs, quests..."
-                autocomplete="off">
+                placeholder="Search NPCs, posts, quests..."
+                autocomplete="off"
+            >
         </div>
 
-        <nav class="nav">
-            <button onclick="newWorld()" title="Generate a completely new world">
-                🔄 <span class="text">New World</span>
-            </button>
-
-            <button onclick="showMessage()">
-                💬 <span class="text">Messages</span>
-            </button>
-
-            <button onclick="showNotifications()">
+        <div class="header-actions">
+            <button class="icon-btn" onclick="showNotifications()" aria-label="Notifications">
                 🔔
             </button>
-        </nav>
 
+            <button class="icon-btn" onclick="showMessages()" aria-label="Messages">
+                💬
+            </button>
+
+            <button class="icon-btn" onclick="newWorld()" aria-label="New World">
+                🎲
+            </button>
+        </div>
     </div>
 </header>
 
 
-<div class="layout">
+<main class="page">
 
-    <aside class="sidebar">
+    <div class="layout">
 
-        <div class="card side-card">
+        <!-- LEFT SIDEBAR -->
+        <aside class="sidebar">
 
-            <div class="side-item">🏠 Home</div>
+            <div class="menu">
 
-            <div class="side-item" onclick="newNPC()">
-                🤖 Generate NPC
-            </div>
-
-            <div class="side-item" onclick="showTrending()">
-                🔥 Trending
-            </div>
-
-            <div class="side-item" onclick="showQuests()">
-                🎯 Quests
-            </div>
-
-            <div class="side-item" onclick="showMarket()">
-                🛒 Marketplace
-            </div>
-
-            <div class="side-item" onclick="showSettings()">
-                ⚙️ Settings
-            </div>
-
-        </div>
-
-        <div class="card side-card">
-            <b>NPCBook Rule</b>
-            <p class="small">
-                Nothing is saved. Refreshing this page creates
-                another temporary NPC universe.
-            </p>
-        </div>
-
-    </aside>
-
-
-    <main class="main">
-
-        <section class="hero card">
-
-            <h1>Social Media for NPCs</h1>
-
-            <p>
-                A social network where nobody is the main character.
-            </p>
-
-        </section>
-
-
-        <section id="profile"></section>
-
-
-        <section class="composer">
-
-            <div class="compose-row">
-
-                <div id="miniAvatar" class="avatar">
-                    NPC
-                </div>
-
-                <button
-                    class="fake-input"
-                    onclick="randomPost()">
-                    What is your NPC thinking?
+                <!-- HOME = FULL REFRESH -->
+                <button onclick="goHome()">
+                    <span class="menu-icon">🏠</span>
+                    Home
                 </button>
 
-            </div>
+                <button onclick="showProfile()">
+                    <span class="menu-icon">👤</span>
+                    My NPC
+                </button>
 
-            <div class="compose-actions">
+                <button onclick="showTrending()">
+                    <span class="menu-icon">🔥</span>
+                    Trending
+                </button>
 
-                <button onclick="randomPost()">
-                    📝 NPC Post
+                <button onclick="showQuests()">
+                    <span class="menu-icon">⚔️</span>
+                    Quests
+                </button>
+
+                <button onclick="showMarket()">
+                    <span class="menu-icon">🛒</span>
+                    NPC Market
                 </button>
 
                 <button onclick="newNPC()">
-                    🤖 New NPC
+                    <span class="menu-icon">🎲</span>
+                    Generate NPC
                 </button>
 
-                <button onclick="newWorld()">
-                    🎲 New World
+                <button onclick="randomPost()">
+                    <span class="menu-icon">✨</span>
+                    Random Post
+                </button>
+
+                <button onclick="showSettings()">
+                    <span class="menu-icon">⚙️</span>
+                    Settings
                 </button>
 
             </div>
 
+        </aside>
+
+
+        <!-- MAIN FEED -->
+        <section id="mainContent">
+
+            <div id="profileCard"></div>
+
+            <div class="card composer">
+                <div class="composer-row">
+
+                    <div class="mini-avatar" id="composerAvatar">
+                        🧑
+                    </div>
+
+                    <div
+                        class="fake-input"
+                        onclick="randomPost()"
+                    >
+                        What's happening in the NPC world?
+                    </div>
+
+                </div>
+
+                <div class="composer-actions">
+
+                    <button class="action-light" onclick="randomPost()">
+                        📝 Random Post
+                    </button>
+
+                    <button class="action-light" onclick="newNPC()">
+                        👤 New NPC
+                    </button>
+
+                    <button class="action-light" onclick="newWorld()">
+                        🎲 New World
+                    </button>
+
+                </div>
+            </div>
+
+            <div id="feed"></div>
+
         </section>
 
 
-        <section id="feed"></section>
+        <!-- RIGHT SIDEBAR -->
+        <aside class="rightbar">
 
-    </main>
+            <div class="card right-card">
 
+                <div class="right-title">
+                    🔥 NPC Trends
+                </div>
 
-    <aside class="rightbar">
+                <div id="trends"></div>
 
-        <section class="card right-card">
-
-            <h3>🔥 NPC Trending</h3>
-
-            <div id="trends"></div>
-
-        </section>
+            </div>
 
 
-        <section class="card right-card">
+            <div class="card right-card">
 
-            <h3>🎯 Active Quests</h3>
+                <div class="right-title">
+                    ⚔️ Active Quests
+                </div>
 
-            <div id="quests"></div>
+                <div id="quests"></div>
 
-        </section>
-
-
-        <section class="card right-card">
-
-            <h3>🛒 NPC Marketplace</h3>
-
-            <div id="market"></div>
-
-        </section>
-
-    </aside>
-
-</div>
+            </div>
 
 
-<div id="toast" class="toast"></div>
+            <div class="card right-card">
+
+                <div class="right-title">
+                    🛒 NPC Marketplace
+                </div>
+
+                <div id="market"></div>
+
+            </div>
+
+        </aside>
+
+    </div>
+
+</main>
 
 
+<!-- MOBILE NAVIGATION -->
 <nav class="mobile-nav">
 
-    <button onclick="goTop()">
-        🏠<br><small>Home</small>
+    <!-- HOME = FULL REFRESH -->
+    <button onclick="goHome()">
+        <span class="nav-icon">🏠</span>
+        Home
+    </button>
+
+    <button onclick="showTrending()">
+        <span class="nav-icon">🔥</span>
+        Trends
     </button>
 
     <button onclick="newNPC()">
-        🤖<br><small>NPC</small>
-    </button>
-
-    <button onclick="newWorld()">
-        🎲<br><small>New</small>
+        <span class="nav-icon">👤</span>
+        NPC
     </button>
 
     <button onclick="showQuests()">
-        🎯<br><small>Quests</small>
+        <span class="nav-icon">⚔️</span>
+        Quests
     </button>
 
-    <button onclick="showMarket()">
-        🛒<br><small>Shop</small>
+    <button onclick="newWorld()">
+        <span class="nav-icon">🎲</span>
+        New World
     </button>
 
 </nav>
 
 
+<div id="toast" class="toast"></div>
+
+
 <script>
 
-/*
-===========================================================
-NPCBOOK
-===========================================================
-
-NO DATABASE
-NO LOCALSTORAGE
-NO SESSIONSTORAGE
-NO COOKIES
-NO API
-NO BACKEND
-
-Everything exists only in JavaScript memory.
-
-Every page load creates a completely new NPC world.
-Every refresh creates another new NPC world.
-===========================================================
-*/
-
+/* =========================================================
+   NPCBOOK
+   NO DATABASE
+   NO LOCALSTORAGE
+   NO SESSIONSTORAGE
+   NO APP DATA COOKIES
+========================================================= */
 
 const DATA = {
 
-    names:[
-        "Rajesh Kumar",
-        "Sunita Devi",
-        "Vikas Sharma",
-        "Priya Singh",
-        "Ramesh Gupta",
-        "Amit Verma",
-        "Neha Kumari",
-        "Suresh Yadav",
-        "Pooja Mehta",
-        "Manoj",
-        "Kavita",
-        "Deepak",
-        "Anita",
-        "Vijay",
-        "Rekha",
-        "Mohan",
-        "Seema",
-        "Rohit",
-        "Geeta",
-        "Ashok",
-        "Nisha",
-        "Rakesh",
-        "Meena",
-        "Sanjay",
-        "Mahesh",
-        "Komal",
-        "Ravi",
-        "Anil",
-        "Sunil",
-        "Pankaj"
+    firstNames: [
+        "Bob",
+        "Steve",
+        "John",
+        "Kevin",
+        "Mike",
+        "Alex",
+        "Sam",
+        "Gary",
+        "Dave",
+        "Tom",
+        "Rick",
+        "Ben",
+        "Joe",
+        "Max",
+        "Jack",
+        "Chris",
+        "Daniel",
+        "Brian",
+        "NPC-001",
+        "Villager-7",
+        "Guard-42",
+        "Shopkeeper-99",
+        "Farmer-12",
+        "Wizard-404",
+        "Miner-8",
+        "Fisher-22"
     ],
 
-    jobs:[
-        "Professional Bench Sitter",
-        "Tea Observer",
-        "Gate Guard",
-        "Suspicious Neighbour",
-        "Village Gossip Analyst",
-        "Roadside Philosopher",
-        "Part-Time Walker",
-        "Queue Specialist",
-        "Weather Commentator",
-        "Lost Key Researcher",
-        "Shop Counter Guardian",
-        "Pigeon Supervisor",
-        "Parking Space Defender",
-        "Bus Stop Resident",
-        "Street Corner Manager",
-        "Unofficial Area Expert",
-        "Doorway Specialist",
-        "Local Rumour Consultant",
-        "Electric Pole Inspector",
-        "Professional Looking Busy",
-        "Chair Reservation Specialist",
-        "Road Crossing Advisor",
-        "Tea Stall Strategist",
-        "Neighbourhood Watcher",
-        "Government Office Chair Tester"
+    surnames: [
+        "Smith",
+        "Johnson",
+        "Brown",
+        "Wilson",
+        "Walker",
+        "Miller",
+        "Taylor",
+        "NPCson",
+        "Questman",
+        "Lootkeeper",
+        "Dialogue",
+        "Placeholder",
+        "Background",
+        "Generic",
+        "Default",
+        "Random"
     ],
 
-    places:[
-        "near the tea stall",
-        "beside the gate",
-        "outside the shop",
-        "at the bus stop",
-        "behind the building",
-        "near the same bench",
-        "on the corner",
-        "next to the parked scooter",
-        "outside the pharmacy",
-        "under the tree",
-        "near the water tank",
-        "beside the closed door",
-        "near the electric pole",
-        "outside the office",
-        "beside the staircase"
+    emojis: [
+        "🧑",
+        "👨",
+        "👩",
+        "🧙",
+        "🧝",
+        "🧛",
+        "🧟",
+        "🤖",
+        "👨‍🌾",
+        "👨‍🔧",
+        "🧑‍🍳",
+        "🧑‍🎤",
+        "🧑‍🚀",
+        "🥷",
+        "👴",
+        "👵"
     ],
 
-    moods:[
-        "😐 Neutral",
-        "🙂 Mildly Happy",
-        "🤨 Suspicious",
-        "😴 Sleepy",
-        "😤 Slightly Annoyed",
-        "🤔 Confused",
-        "😎 Unnecessarily Confident",
-        "😶 Socially Available",
-        "👀 Watching",
-        "🫠 Existing"
+    locations: [
+        "Starter Village",
+        "Dusty Road",
+        "Market District",
+        "North Gate",
+        "Old Castle",
+        "Tutorial Zone",
+        "Abandoned Mine",
+        "Forest Edge",
+        "Pixel City",
+        "Quest Hub",
+        "Generic Town",
+        "Loading Screen",
+        "Somewhere Nearby"
     ],
 
-    activities:[
-        "standing quietly",
-        "drinking tea",
-        "looking at the road",
-        "checking the same phone notification",
-        "walking in a small circle",
-        "watching someone else work",
-        "waiting for absolutely nothing",
-        "moving three metres and returning",
-        "looking for a key",
-        "discussing the weather",
-        "guarding a door",
-        "sitting on the usual bench",
-        "looking behind them",
-        "checking whether the shop is open",
-        "waiting for someone who never arrives"
+    jobs: [
+        "Village Guard",
+        "Blacksmith",
+        "Farmer",
+        "Shopkeeper",
+        "Quest Giver",
+        "Potion Seller",
+        "Innkeeper",
+        "Miner",
+        "Fisherman",
+        "Stable Worker",
+        "Tutorial Assistant",
+        "Background Character",
+        "Professional Loiterer",
+        "Door Opener",
+        "Chest Protector",
+        "Random Merchant"
     ],
 
-    dialogue:[
-        "Hmm... maybe.",
-        "Nothing unusual today.",
-        "Have you been here before?",
-        "I know a shortcut.",
-        "The shopkeeper knows.",
-        "Wait here.",
-        "It is a nice day.",
-        "I was just coming.",
-        "I have seen this before.",
-        "What brings you here?",
-        "You should ask someone else.",
-        "Everything is normal.",
-        "I must get back to my post.",
-        "No, I haven't seen it.",
-        "Maybe tomorrow.",
-        "I don't know.",
-        "That happens sometimes.",
-        "You came at the right time.",
-        "I was told to stand here."
+    bios: [
+        "I have been standing here since the game launched.",
+        "Ask me about my quest. I will repeat the same dialogue.",
+        "Living life one scripted interaction at a time.",
+        "I have absolutely no idea what is happening.",
+        "My daily routine is surprisingly predictable.",
+        "I sell things nobody needs.",
+        "I guard this door. Nobody knows why.",
+        "Waiting for the player to return.",
+        "I once walked outside the designated path.",
+        "My dialogue tree has three options.",
+        "I know a secret. Unfortunately, it is scripted.",
+        "Just another day in the background."
     ],
 
-    thoughts:[
-        "I should probably go home.",
-        "Why is everyone walking so fast?",
-        "The tea could be warmer.",
-        "I have been standing here for a long time.",
-        "Someone moved my chair.",
-        "I think I forgot something.",
-        "Tomorrow I will do something different.",
-        "This is exactly where I was yesterday.",
-        "Nobody has explained the quest.",
-        "I should buy a bucket.",
-        "I wonder where everyone is going.",
-        "Something feels suspicious.",
-        "I need to sit down.",
-        "I have seen that person before."
+    postTemplates: [
+        "Anyone else standing around waiting for the player?",
+        "The weather has been suspiciously identical for three days.",
+        "I walked 17 meters today. Big achievement.",
+        "Someone stole my favorite chair again.",
+        "Just repeated the same dialogue for the 900th time.",
+        "Why does everyone ask me where the blacksmith is?",
+        "I have a quest for someone. I forgot what it was.",
+        "Breaking news: absolutely nothing happened.",
+        "I saw the player walk past me and immediately forgot their face.",
+        "My inventory is 90% useless objects.",
+        "I opened my shop today. Nobody bought anything.",
+        "The economy makes no sense.",
+        "I think I am supposed to be guarding something.",
+        "Does anyone know why there is a giant invisible wall here?",
+        "I accidentally walked into a wall for 12 minutes.",
+        "Today's objective: continue standing here.",
+        "I have been waiting for this quest since 2014.",
+        "NPC meeting at 7 PM. Agenda: stand in a circle.",
+        "I found a shiny rock. It is now my personality.",
+        "Why do heroes never say hello?"
     ],
 
-    things:[
-        "a bucket",
-        "the missing key",
-        "tea",
-        "that strange noise",
-        "the blue scooter",
-        "the locked door",
-        "a sandwich",
-        "the suspicious pigeon",
-        "the old bench",
-        "the weather",
-        "a plastic chair",
-        "a mysterious box"
-    ],
-
-    questThings:[
-        "the missing bucket",
-        "a mysterious key",
-        "the suspicious pigeon",
-        "the old bench",
-        "a red umbrella",
-        "three identical boxes",
-        "the tea stall",
-        "a locked door",
-        "a lost sandal",
-        "the blue scooter",
-        "the invisible package",
-        "the important chair"
-    ],
-
-    questVerbs:[
-        "Find",
-        "Deliver",
-        "Inspect",
-        "Guard",
-        "Return",
-        "Locate",
-        "Question",
-        "Follow",
-        "Count",
-        "Protect",
-        "Observe",
-        "Recover"
-    ],
-
-    items:[
-        "Slightly Used Stick",
-        "Mysterious Rock",
-        "Old Bread",
-        "Key That Opens Nothing",
-        "Bent Spoon",
-        "Unidentified Button",
-        "Almost New Rope",
-        "Suspicious Bucket",
-        "One Left Shoe",
-        "Chair With History",
-        "Empty Box",
-        "Rare Looking Leaf",
-        "Plastic Bottle of Unknown Origin",
-        "Extremely Ordinary Stone",
-        "Broken Umbrella"
-    ],
-
-    tags:[
+    tags: [
         "#NPCLife",
-        "#SideQuest",
-        "#NothingHappened",
-        "#DailyRoutine",
         "#BackgroundCharacter",
-        "#ImportantUpdate",
-        "#QuestProblems",
-        "#NPCDrama"
+        "#QuestLife",
+        "#VillageLife",
+        "#NPCProblems",
+        "#Gaming",
+        "#DailyRoutine",
+        "#PixelLife",
+        "#NoMainCharacter",
+        "#GenericThoughts"
     ],
 
-    trends:[
-        "#Tea",
-        "#GateLife",
-        "#MissingBucket",
-        "#Weather",
-        "#SameBench",
-        "#SuspiciousPigeon",
-        "#NothingHappened",
-        "#QuestProblems",
-        "#ChairPolitics",
-        "#StandingAround"
+    comments: [
+        "Same.",
+        "Real NPC behavior.",
+        "I have this exact problem.",
+        "Stay strong, brother.",
+        "Quest accepted.",
+        "This is relatable.",
+        "Dialogue option unavailable.",
+        "I was programmed to agree.",
+        "Interesting.",
+        "Please report this to the quest manager.",
+        "Same location?",
+        "Can confirm.",
+        "The player did this yesterday too.",
+        "Skill issue.",
+        "This deserves more XP."
+    ],
+
+    quests: [
+        "Find the Missing Spoon",
+        "Talk to the Person Standing Nearby",
+        "Collect 7 Extremely Ordinary Rocks",
+        "Deliver This Completely Unimportant Letter",
+        "Stand Near the Village Gate",
+        "Find Out Who Stole the Chair",
+        "Escort the Player for 12 Seconds",
+        "Locate the Legendary Turnip",
+        "Ask Three NPCs the Same Question",
+        "Return to the Quest Giver"
+    ],
+
+    items: [
+        "Suspicious Potato",
+        "Wooden Spoon",
+        "Rusty Sword",
+        "Mysterious Rock",
+        "Empty Bottle",
+        "Old Boot",
+        "Quest Scroll",
+        "Broken Shield",
+        "Common Apple",
+        "Very Average Helmet",
+        "NPC Hat",
+        "Decorative Key",
+        "Invisible Potion"
     ]
 
 };
 
 
-let WORLD = {
-
-    npcs:[],
-    posts:[],
-    quests:[],
-    market:[],
-    trends:[],
-    profile:null
-
-};
+let WORLD = null;
 
 
-/* RANDOM HELPERS */
+/* =========================================================
+   RANDOM HELPERS
+========================================================= */
 
-function pick(array){
-
-    return array[
-        Math.floor(
-            Math.random()*array.length
-        )
-    ];
-
+function pick(array) {
+    return array[Math.floor(Math.random() * array.length)];
 }
 
-
-function number(min,max){
-
+function number(min, max) {
     return Math.floor(
-        Math.random()*(max-min+1)
-    )+min;
+        Math.random() * (max - min + 1)
+    ) + min;
+}
 
+function uid() {
+
+    if (
+        typeof crypto !== "undefined" &&
+        typeof crypto.randomUUID === "function"
+    ) {
+        return crypto.randomUUID();
+    }
+
+    return (
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2)
+    );
+}
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 
-function initials(name){
+/* =========================================================
+   NPC GENERATOR
+========================================================= */
 
-    return name
-        .split(/\s+/)
-        .map(x=>x[0])
-        .slice(0,2)
-        .join("");
+function createNPC() {
 
-}
+    const first = pick(DATA.firstNames);
+    const last = pick(DATA.surnames);
 
+    return {
 
-function avatarColor(index){
+        id: uid(),
 
-    return "hsl("+
-        ((index*47)%360)+
-        " 55% 48%)";
+        name: `${first} ${last}`,
 
-}
+        handle:
+            "@" +
+            first.toLowerCase().replace(/[^a-z0-9]/g, "") +
+            number(10, 999),
 
+        avatar: pick(DATA.emojis),
 
-/* NPC GENERATOR */
+        location: pick(DATA.locations),
 
-function createNPC(index){
+        job: pick(DATA.jobs),
 
-    const name=pick(DATA.names);
+        bio: pick(DATA.bios),
 
-    const npc={
+        level: number(1, 99),
 
-        id:crypto.randomUUID
-            ?crypto.randomUUID()
-            :String(Date.now())+Math.random(),
+        followers: number(2, 9999),
 
-        name:name,
+        following: number(1, 500),
 
-        job:pick(DATA.jobs),
+        posts: number(1, 300),
 
-        place:pick(DATA.places),
-
-        mood:pick(DATA.moods),
-
-        activity:pick(DATA.activities),
-
-        dialogue:pick(DATA.dialogue),
-
-        thought:pick(DATA.thoughts),
-
-        quest:pick(DATA.questThings),
-
-        age:number(18,79),
-
-        level:number(1,99),
-
-        hp:number(35,100),
-
-        energy:number(20,100),
-
-        intelligence:number(8,95),
-
-        dialogueVariety:number(3,48),
-
-        repeat:number(61,99),
-
-        friends:number(0,18),
-
-        followers:number(0,9999),
-
-        avatar:avatarColor(index)
-
-    };
-
-    return npc;
-
-}
-
-
-/* POST GENERATOR */
-
-function createPost(npc){
-
-    const templates=[
-
-        `Today I ${npc.activity}. Very productive.`,
-
-        `Someone asked me about ${pick(DATA.things)}. I said: "${npc.dialogue}"`,
-
-        `I have been ${npc.activity} ${npc.place}. Nobody has questioned it.`,
-
-        `Important update: ${npc.thought}`,
-
-        `I saw ${pick(DATA.names)} again. We did not speak. A successful interaction.`,
-
-        `My current professional responsibility is ${npc.job}.`,
-
-        `BREAKING: Nothing happened ${npc.place}. More updates when nothing continues.`,
-
-        `I have a quest: ${npc.quest}. Please do not make it complicated.`,
-
-        `Just thinking about ${pick(DATA.things)}.`,
-
-        `Daily report: ${npc.dialogue}`,
-
-        `I moved from one place to another today. Nobody knows why.`,
-
-        `I have officially been ${npc.activity} for several hours.`
-
-    ];
-
-    return{
-
-        id:crypto.randomUUID
-            ?crypto.randomUUID()
-            :String(Date.now())+Math.random(),
-
-        npc:npc,
-
-        text:pick(templates),
-
-        time:number(1,59)+"m",
-
-        likes:number(0,999),
-
-        comments:number(0,90),
-
-        shares:number(0,70),
-
-        tag:pick(DATA.tags),
-
-        liked:false
+        online:
+            Math.random() > 0.25
 
     };
 
 }
 
 
-/* GENERATE COMPLETE WORLD */
+/* =========================================================
+   POST GENERATOR
+========================================================= */
 
-function generateWorld(){
+function createPost(npc) {
 
-    const count=number(16,24);
-
-    WORLD.npcs=[];
-
-    WORLD.posts=[];
-
-    for(let i=0;i<count;i++){
-
-        const npc=createNPC(i);
-
-        WORLD.npcs.push(npc);
-
-        WORLD.posts.push(
-            createPost(npc)
+    const comments =
+        Array.from(
+            { length: number(0, 5) },
+            () => ({
+                author: pick(DATA.firstNames),
+                text: pick(DATA.comments)
+            })
         );
 
-    }
+    return {
 
+        id: uid(),
 
-    WORLD.profile=
-        pick(WORLD.npcs);
+        npcId: npc.id,
 
+        text: pick(DATA.postTemplates),
 
-    WORLD.quests=[];
+        tag: pick(DATA.tags),
 
-    for(let i=0;i<6;i++){
+        minutesAgo: number(1, 7200),
 
-        WORLD.quests.push({
+        likes: number(0, 9999),
 
-            title:
-                pick(DATA.questVerbs)+
-                " "+
-                pick(DATA.questThings),
+        shares: number(0, 999),
 
-            progress:number(0,99),
+        comments: comments,
 
-            reward:number(5,999)
+        liked: false
 
-        });
-
-    }
-
-
-    WORLD.market=[];
-
-    for(let i=0;i<6;i++){
-
-        WORLD.market.push({
-
-            item:pick(DATA.items),
-
-            price:number(3,4999),
-
-            stock:number(1,15)
-
-        });
-
-    }
-
-
-    WORLD.trends=[];
-
-    for(let i=0;i<7;i++){
-
-        WORLD.trends.push({
-
-            tag:pick(DATA.trends),
-
-            posts:number(5,99999)
-
-        });
-
-    }
+    };
 
 }
 
 
-/* PROFILE */
+/* =========================================================
+   WORLD GENERATOR
+========================================================= */
 
-function renderProfile(npc){
+function generateWorld() {
 
-    document.getElementById("profile").innerHTML=`
+    const npcCount = number(14, 25);
 
-        <section class="profile">
+    const npcs = [];
 
-            <div class="cover"></div>
+    for (let i = 0; i < npcCount; i++) {
+        npcs.push(createNPC());
+    }
 
-            <div class="profile-body">
+    const posts = [];
 
-                <div
-                    class="avatar large"
-                    style="background:${npc.avatar}">
-                    ${escapeHTML(initials(npc.name))}
+    npcs.forEach(npc => {
+
+        const postCount = number(1, 3);
+
+        for (let i = 0; i < postCount; i++) {
+            posts.push(createPost(npc));
+        }
+
+    });
+
+    posts.sort(
+        () => Math.random() - 0.5
+    );
+
+    const quests =
+        Array.from(
+            { length: 5 },
+            () => ({
+                title: pick(DATA.quests),
+                progress: number(5, 95)
+            })
+        );
+
+    const market =
+        Array.from(
+            { length: 5 },
+            () => ({
+                name: pick(DATA.items),
+                price: number(5, 999)
+            })
+        );
+
+    const trends =
+        Array.from(
+            { length: 6 },
+            () => ({
+                title: pick(DATA.tags),
+                posts: number(12, 99999)
+            })
+        );
+
+    WORLD = {
+
+        npcs,
+
+        posts,
+
+        quests,
+
+        market,
+
+        trends,
+
+        me: npcs[0],
+
+        generatedAt: new Date()
+
+    };
+
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+function renderProfile(npc = WORLD.me) {
+
+    document.getElementById("profileCard").innerHTML = `
+
+        <div class="card">
+
+            <div class="profile-cover"></div>
+
+            <div class="profile-main">
+
+                <div class="avatar">
+                    ${npc.avatar}
                 </div>
 
-                <h2>
+                <div class="profile-name">
                     ${escapeHTML(npc.name)}
-                </h2>
-
-                <div class="small">
-                    ${escapeHTML(npc.job)}
-                    ·
-                    ${escapeHTML(npc.place)}
-                    ·
-                    Level ${npc.level}
                 </div>
 
-                <span class="badge">
-                    ${escapeHTML(npc.mood)}
+                <div class="profile-handle">
+                    ${escapeHTML(npc.handle)}
                     ·
-                    NPC Energy ${npc.repeat}%
-                </span>
+                    ${npc.online ? "🟢 Online" : "⚪ Offline"}
+                </div>
 
-                <div class="stat-grid">
+                <div class="profile-bio">
+                    ${escapeHTML(npc.bio)}
+                </div>
+
+                <div class="profile-bio">
+                    📍 ${escapeHTML(npc.location)}
+                    ·
+                    💼 ${escapeHTML(npc.job)}
+                    ·
+                    ⭐ Level ${npc.level}
+                </div>
+
+                <div class="profile-stats">
 
                     <div class="stat">
-                        <b>${npc.followers}</b>
+                        <strong>${npc.posts}</strong>
+                        <span>Posts</span>
+                    </div>
+
+                    <div class="stat">
+                        <strong>${npc.followers}</strong>
                         <span>Followers</span>
                     </div>
 
                     <div class="stat">
-                        <b>${npc.friends}</b>
-                        <span>Friends</span>
-                    </div>
-
-                    <div class="stat">
-                        <b>${npc.dialogueVariety}%</b>
-                        <span>Dialogue Variety</span>
-                    </div>
-
-                    <div class="stat">
-                        <b>${npc.repeat}%</b>
-                        <span>Repetition</span>
+                        <strong>${npc.following}</strong>
+                        <span>Following</span>
                     </div>
 
                 </div>
 
             </div>
 
-        </section>
+        </div>
 
     `;
 
-
-    const mini=document.getElementById("miniAvatar");
-
-    mini.style.background=npc.avatar;
-
-    mini.textContent=initials(npc.name);
-
+    document.getElementById("composerAvatar").textContent =
+        npc.avatar;
 }
 
 
-/* HTML ESCAPE */
+/* =========================================================
+   FEED
+========================================================= */
 
-function escapeHTML(value){
+function renderFeed(posts = WORLD.posts) {
 
-    return String(value)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+    const feed =
+        document.getElementById("feed");
 
-}
+    if (!posts.length) {
 
-
-/* FEED */
-
-function renderFeed(posts=WORLD.posts){
-
-    const feed=document.getElementById("feed");
-
-    if(!posts.length){
-
-        feed.innerHTML=`
-
+        feed.innerHTML = `
             <div class="card empty">
-
-                No NPC found.
-
-                <br>
-
-                They may be standing somewhere else.
-
+                No NPC posts found.
             </div>
-
         `;
 
         return;
-
     }
 
+    feed.innerHTML =
+        posts.map(post => {
 
-    feed.innerHTML=posts.map(post=>`
+            const npc =
+                WORLD.npcs.find(
+                    n => n.id === post.npcId
+                );
 
-        <article class="post">
+            if (!npc) return "";
 
-            <div class="post-header">
+            return `
 
-                <div
-                    class="avatar"
-                    style="background:${post.npc.avatar}">
-                    ${escapeHTML(
-                        initials(post.npc.name)
-                    )}
-                </div>
+                <article class="card post">
 
-                <div>
+                    <div class="post-head">
 
-                    <div class="post-name">
-                        ${escapeHTML(post.npc.name)}
+                        <div class="post-avatar">
+                            ${npc.avatar}
+                        </div>
+
+                        <div class="post-author">
+
+                            <div class="post-name">
+                                ${escapeHTML(npc.name)}
+                            </div>
+
+                            <div class="post-meta">
+                                ${escapeHTML(npc.handle)}
+                                ·
+                                ${post.minutesAgo < 60
+                                    ? post.minutesAgo + "m"
+                                    : Math.floor(post.minutesAgo / 60) + "h"}
+                                ago
+                                ·
+                                ${escapeHTML(npc.location)}
+                            </div>
+
+                        </div>
+
                     </div>
 
-                    <div class="small">
-                        ${escapeHTML(post.npc.job)}
-                        ·
-                        ${post.time} ago
+                    <div class="post-text">
+                        ${escapeHTML(post.text)}
                     </div>
 
-                </div>
+                    <div class="post-tag">
+                        ${escapeHTML(post.tag)}
+                    </div>
 
-            </div>
+                    <div class="post-stats">
 
+                        <span>
+                            👍 ${post.likes.toLocaleString()}
+                        </span>
 
-            <div class="post-body">
+                        <span>
+                            💬 ${post.comments.length}
+                            ·
+                            🔁 ${post.shares}
+                        </span>
 
-                ${escapeHTML(post.text)}
+                    </div>
 
-            </div>
+                    <div class="post-actions">
 
+                        <button
+                            class="${post.liked ? "liked" : ""}"
+                            onclick="likePost('${post.id}')"
+                        >
+                            ${post.liked ? "👍 Liked" : "👍 Like"}
+                        </button>
 
-            <div class="tags">
+                        <button
+                            onclick="commentPost('${post.id}')"
+                        >
+                            💬 Comment
+                        </button>
 
-                <span class="tag">
-                    ${escapeHTML(post.tag)}
-                </span>
+                        <button
+                            onclick="sharePost('${post.id}')"
+                        >
+                            🔁 Share
+                        </button>
 
-                <span class="tag">
-                    ${escapeHTML(post.npc.mood)}
-                </span>
+                    </div>
 
-            </div>
+                    <div
+                        class="comment-box"
+                        id="comment-${post.id}"
+                    >
 
+                        <input
+                            id="input-${post.id}"
+                            type="text"
+                            placeholder="Write an NPC comment..."
+                            maxlength="180"
+                            onkeydown="
+                                if(event.key==='Enter')
+                                    submitComment('${post.id}')
+                            "
+                        >
 
-            <div class="post-stats">
+                        <button
+                            onclick="submitComment('${post.id}')"
+                        >
+                            Send
+                        </button>
 
-                <span>
-                    👍 ${post.likes}
-                </span>
+                    </div>
 
-                <span>
-                    💬 ${post.comments}
-                    ·
-                    ↗ ${post.shares}
-                </span>
+                    ${
+                        post.comments.length
+                        ?
+                        `
+                        <div
+                            style="
+                                margin-top:10px;
+                                padding-top:8px;
+                                border-top:1px solid #edf0f3;
+                            "
+                        >
+                            ${
+                                post.comments
+                                    .slice(-3)
+                                    .map(c => `
+                                        <div
+                                            style="
+                                                font-size:13px;
+                                                margin-top:6px;
+                                            "
+                                        >
+                                            <strong>
+                                                ${escapeHTML(c.author)}
+                                            </strong>
+                                            ${escapeHTML(c.text)}
+                                        </div>
+                                    `)
+                                    .join("")
+                            }
+                        </div>
+                        `
+                        :
+                        ""
+                    }
 
-            </div>
+                </article>
 
+            `;
 
-            <div class="post-actions">
-
-                <button
-                    class="${post.liked?"liked":""}"
-                    onclick="likePost('${post.id}')">
-
-                    ${post.liked?"👍 Liked":"👍 Like"}
-
-                </button>
-
-
-                <button
-                    onclick="commentPost('${post.id}')">
-
-                    💬 Comment
-
-                </button>
-
-
-                <button
-                    onclick="sharePost('${post.id}')">
-
-                    ↗ Share
-
-                </button>
-
-            </div>
-
-        </article>
-
-    `).join("");
+        }).join("");
 
 }
 
 
-/* SIDEBAR */
+/* =========================================================
+   RIGHT SIDEBAR
+========================================================= */
 
-function renderSidebar(){
+function renderSidebar() {
 
-    document.getElementById("trends").innerHTML=
-
-        WORLD.trends.map(item=>`
+    document.getElementById("trends").innerHTML =
+        WORLD.trends.map(t => `
 
             <div class="trend">
 
-                <b>
-                    ${escapeHTML(item.tag)}
-                </b>
+                <div class="trend-small">
+                    NPCBook Trending
+                </div>
 
-                <span class="small">
-                    ${item.posts.toLocaleString()}
-                    NPC posts
-                </span>
+                <div class="trend-name">
+                    ${escapeHTML(t.title)}
+                </div>
 
-            </div>
-
-        `).join("");
-
-
-    document.getElementById("quests").innerHTML=
-
-        WORLD.quests.map(item=>`
-
-            <div class="quest">
-
-                <b>
-                    🎯
-                    ${escapeHTML(item.title)}
-                </b>
-
-                <div class="small">
-
-                    ${item.progress}%
-                    complete
-
-                    ·
-
-                    Reward ${item.reward} XP
-
+                <div class="trend-small">
+                    ${t.posts.toLocaleString()} posts
                 </div>
 
             </div>
@@ -1507,26 +1654,43 @@ function renderSidebar(){
         `).join("");
 
 
-    document.getElementById("market").innerHTML=
+    document.getElementById("quests").innerHTML =
+        WORLD.quests.map(q => `
 
-        WORLD.market.map(item=>`
+            <div class="quest">
+
+                <div class="quest-title">
+                    ⚔️ ${escapeHTML(q.title)}
+                </div>
+
+                <div class="quest-progress">
+                    <span style="width:${q.progress}%"></span>
+                </div>
+
+                <div
+                    class="trend-small"
+                    style="margin-top:4px"
+                >
+                    ${q.progress}% complete
+                </div>
+
+            </div>
+
+        `).join("");
+
+
+    document.getElementById("market").innerHTML =
+        WORLD.market.map(item => `
 
             <div class="market-item">
 
-                <b>
-                    🛒
-                    ${escapeHTML(item.item)}
-                </b>
+                <div class="market-name">
+                    ${escapeHTML(item.name)}
+                </div>
 
-                <span class="small">
-
-                    ₹${item.price.toLocaleString()}
-
-                    ·
-
-                    ${item.stock} left
-
-                </span>
+                <div class="market-price">
+                    🪙 ${item.price} gold
+                </div>
 
             </div>
 
@@ -1535,11 +1699,13 @@ function renderSidebar(){
 }
 
 
-/* FULL RENDER */
+/* =========================================================
+   RENDER
+========================================================= */
 
-function render(){
+function render() {
 
-    renderProfile(WORLD.profile);
+    renderProfile();
 
     renderFeed();
 
@@ -1548,129 +1714,253 @@ function render(){
 }
 
 
-/* NEW WORLD */
+/* =========================================================
+   HOME
+   IMPORTANT:
+   FULL PAGE REFRESH
+========================================================= */
 
-function newWorld(){
+function goHome() {
+
+    /*
+        This intentionally reloads the entire static page.
+
+        Because WORLD is generated in JavaScript
+        when the page loads, a reload creates:
+
+        - New NPCs
+        - New posts
+        - New quests
+        - New trends
+        - New marketplace
+        - New stats
+    */
+
+    window.location.reload();
+
+}
+
+
+/* =========================================================
+   NEW WORLD
+========================================================= */
+
+function newWorld() {
 
     generateWorld();
 
     render();
 
-    toast(
-        "🌎 Completely new NPC universe generated."
-    );
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 
-    goTop();
+    toast(
+        "🎲 A completely new NPC world has appeared!"
+    );
 
 }
 
 
-/* NEW NPC */
+/* =========================================================
+   NEW NPC
+========================================================= */
 
-function newNPC(){
+function newNPC() {
 
-    const npc=createNPC(
-        WORLD.npcs.length+
-        number(1,1000)
-    );
+    const npc =
+        createNPC();
 
     WORLD.npcs.unshift(npc);
 
-    WORLD.posts.unshift(
-        createPost(npc)
-    );
+    WORLD.me = npc;
 
-    WORLD.profile=npc;
+    for (let i = 0; i < 2; i++) {
+
+        WORLD.posts.unshift(
+            createPost(npc)
+        );
+
+    }
 
     render();
 
-    toast(
-        "🤖 New NPC spawned."
-    );
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 
-    goTop();
+    toast(
+        `👤 ${npc.name} has entered NPCBook!`
+    );
 
 }
 
 
-/* RANDOM POST */
+/* =========================================================
+   RANDOM POST
+========================================================= */
 
-function randomPost(){
+function randomPost() {
 
-    const npc=pick(WORLD.npcs);
+    const npc =
+        pick(WORLD.npcs);
 
-    WORLD.posts.unshift(
-        createPost(npc)
+    const post =
+        createPost(npc);
+
+    WORLD.posts.unshift(post);
+
+    renderFeed(WORLD.posts);
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
+    toast(
+        "✨ A random NPC posted something!"
     );
+
+}
+
+
+/* =========================================================
+   LIKE
+========================================================= */
+
+function likePost(id) {
+
+    const post =
+        WORLD.posts.find(
+            p => p.id === id
+        );
+
+    if (!post) return;
+
+    if (post.liked) {
+
+        post.likes =
+            Math.max(0, post.likes - 1);
+
+        post.liked = false;
+
+    } else {
+
+        post.likes++;
+
+        post.liked = true;
+
+    }
+
+    renderFeed(filteredPosts());
+
+}
+
+
+/* =========================================================
+   COMMENT
+========================================================= */
+
+function commentPost(id) {
+
+    const box =
+        document.getElementById(
+            `comment-${id}`
+        );
+
+    if (!box) return;
+
+    box.classList.toggle("active");
+
+    if (box.classList.contains("active")) {
+
+        const input =
+            document.getElementById(
+                `input-${id}`
+            );
+
+        setTimeout(() => {
+
+            if (input) {
+                input.focus();
+            }
+
+        }, 50);
+
+    }
+
+}
+
+
+/* =========================================================
+   SUBMIT COMMENT
+========================================================= */
+
+function submitComment(id) {
+
+    const input =
+        document.getElementById(
+            `input-${id}`
+        );
+
+    if (!input) return;
+
+    const text =
+        input.value.trim();
+
+    if (!text) {
+
+        toast(
+            "Write something first."
+        );
+
+        return;
+    }
+
+    const post =
+        WORLD.posts.find(
+            p => p.id === id
+        );
+
+    if (!post) return;
+
+    post.comments.push({
+
+        author:
+            WORLD.me.name,
+
+        text:
+            text
+
+    });
+
+    input.value = "";
 
     renderFeed(
         filteredPosts()
     );
 
     toast(
-        "📝 NPC posted something extremely important."
+        "💬 NPC comment posted!"
     );
 
 }
 
 
-/* LIKE */
+/* =========================================================
+   SHARE
+========================================================= */
 
-function likePost(id){
+function sharePost(id) {
 
-    const post=
+    const post =
         WORLD.posts.find(
-            x=>x.id===id
+            p => p.id === id
         );
 
-    if(!post)return;
-
-    post.liked=!post.liked;
-
-    post.likes+=
-        post.liked?1:-1;
-
-    renderFeed(
-        filteredPosts()
-    );
-
-}
-
-
-/* COMMENT */
-
-function commentPost(id){
-
-    const post=
-        WORLD.posts.find(
-            x=>x.id===id
-        );
-
-    if(!post)return;
-
-    post.comments++;
-
-    renderFeed(
-        filteredPosts()
-    );
-
-    toast(
-        '💬 NPC commented: "Hmm... maybe."'
-    );
-
-}
-
-
-/* SHARE */
-
-function sharePost(id){
-
-    const post=
-        WORLD.posts.find(
-            x=>x.id===id
-        );
-
-    if(!post)return;
+    if (!post) return;
 
     post.shares++;
 
@@ -1679,47 +1969,76 @@ function sharePost(id){
     );
 
     toast(
-        "↗ Shared with absolutely nobody."
+        "🔁 NPC post shared!"
     );
 
 }
 
 
-/* SEARCH */
+/* =========================================================
+   SEARCH
+========================================================= */
 
-function filteredPosts(){
+function filteredPosts() {
 
-    const query=
-        document
-        .getElementById("search")
-        .value
-        .trim()
-        .toLowerCase();
+    const input =
+        document.getElementById(
+            "searchInput"
+        );
 
-    if(!query){
-
+    if (!input) {
         return WORLD.posts;
-
     }
 
+    const query =
+        input.value
+            .trim()
+            .toLowerCase();
 
-    return WORLD.posts.filter(post=>{
+    if (!query) {
+        return WORLD.posts;
+    }
 
-        const text=
+    return WORLD.posts.filter(post => {
 
-            post.npc.name+
-            " "+
-            post.npc.job+
-            " "+
-            post.text+
-            " "+
-            post.tag+
-            " "+
-            post.npc.quest;
+        const npc =
+            WORLD.npcs.find(
+                n => n.id === post.npcId
+            );
 
-        return text
-            .toLowerCase()
-            .includes(query);
+        if (!npc) return false;
+
+        return (
+
+            post.text.toLowerCase()
+                .includes(query)
+
+            ||
+
+            post.tag.toLowerCase()
+                .includes(query)
+
+            ||
+
+            npc.name.toLowerCase()
+                .includes(query)
+
+            ||
+
+            npc.handle.toLowerCase()
+                .includes(query)
+
+            ||
+
+            npc.job.toLowerCase()
+                .includes(query)
+
+            ||
+
+            npc.location.toLowerCase()
+                .includes(query)
+
+        );
 
     });
 
@@ -1727,135 +2046,368 @@ function filteredPosts(){
 
 
 document
-.getElementById("search")
-.addEventListener(
-    "input",
-    ()=>{
-        renderFeed(
-            filteredPosts()
-        );
-    }
-);
+    .getElementById("searchInput")
+    .addEventListener(
+        "input",
+        () => {
+
+            renderFeed(
+                filteredPosts()
+            );
+
+        }
+    );
 
 
-/* UI */
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
 
-function showMessage(){
+function showNotifications() {
 
     toast(
-        "💬 No messages. NPCs are busy repeating themselves."
+        "🔔 You have 17 completely unnecessary NPC notifications."
     );
 
 }
 
 
-function showNotifications(){
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+function showMessages() {
 
     toast(
-        "🔔 3 NPCs noticed you. None know why."
+        "💬 Message from Steve: 'Hello.'"
     );
 
 }
 
 
-function showTrending(){
+/* =========================================================
+   PROFILE
+========================================================= */
 
-    toast(
-        "🔥 Trending: "+
-        pick(WORLD.trends).tag
+function showProfile() {
+
+    renderProfile(
+        WORLD.me
     );
-
-}
-
-
-function showQuests(){
-
-    const quest=pick(WORLD.quests);
-
-    toast(
-        "🎯 "+
-        quest.title+
-        " — "+
-        quest.progress+
-        "% complete"
-    );
-
-}
-
-
-function showMarket(){
-
-    const item=pick(WORLD.market);
-
-    toast(
-        "🛒 "+
-        item.item+
-        " — ₹"+
-        item.price
-    );
-
-}
-
-
-function showSettings(){
-
-    toast(
-        "⚙️ Settings are imaginary."
-    );
-
-}
-
-
-function goTop(){
 
     window.scrollTo({
-        top:0,
-        behavior:"smooth"
+        top: 0,
+        behavior: "smooth"
+    });
+
+    toast(
+        "👤 Viewing your NPC profile."
+    );
+
+}
+
+
+/* =========================================================
+   TRENDING
+========================================================= */
+
+function showTrending() {
+
+    const posts =
+        [...WORLD.posts]
+            .sort(
+                (a, b) =>
+                    b.likes - a.likes
+            );
+
+    renderFeed(posts);
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
+    toast(
+        "🔥 Showing the most popular NPC posts."
+    );
+
+}
+
+
+/* =========================================================
+   QUESTS
+========================================================= */
+
+function showQuests() {
+
+    const content =
+        WORLD.quests
+            .map(q => `
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="section-title">
+                            ⚔️ ${escapeHTML(q.title)}
+                        </div>
+
+                        <p
+                            style="
+                                margin-top:8px;
+                                color:#697386;
+                            "
+                        >
+                            Progress: ${q.progress}%
+                        </p>
+
+                        <div
+                            class="quest-progress"
+                            style="margin-top:10px"
+                        >
+                            <span
+                                style="width:${q.progress}%"
+                            ></span>
+                        </div>
+
+                        <button
+                            style="
+                                margin-top:12px;
+                                border:0;
+                                background:#1877f2;
+                                color:#fff;
+                                padding:10px 15px;
+                                border-radius:8px;
+                                font-weight:700;
+                                cursor:pointer;
+                            "
+                            onclick="toast('⚔️ Quest accepted!')"
+                        >
+                            Accept Quest
+                        </button>
+
+                    </div>
+                </div>
+            `)
+            .join("");
+
+    document.getElementById(
+        "feed"
+    ).innerHTML = content;
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
     });
 
 }
 
 
-let toastTimer;
+/* =========================================================
+   MARKET
+========================================================= */
 
-function toast(message){
+function showMarket() {
 
-    const element=
-        document.getElementById("toast");
+    const content =
+        WORLD.market
+            .map(item => `
 
-    element.textContent=message;
+                <div class="card">
 
-    element.classList.add("show");
+                    <div class="card-body">
 
-    clearTimeout(toastTimer);
+                        <div
+                            style="
+                                font-size:32px;
+                            "
+                        >
+                            🛒
+                        </div>
 
-    toastTimer=setTimeout(
-        ()=>{
-            element.classList.remove("show");
-        },
-        2500
-    );
+                        <div
+                            class="section-title"
+                            style="margin-top:8px"
+                        >
+                            ${escapeHTML(item.name)}
+                        </div>
+
+                        <div
+                            style="
+                                margin-top:5px;
+                                color:#16803c;
+                                font-weight:800;
+                            "
+                        >
+                            🪙 ${item.price} gold
+                        </div>
+
+                        <button
+                            style="
+                                margin-top:12px;
+                                border:0;
+                                background:#16803c;
+                                color:white;
+                                padding:10px 15px;
+                                border-radius:8px;
+                                font-weight:700;
+                                cursor:pointer;
+                            "
+                            onclick="toast('🛒 Purchase failed: NPC economy unavailable.')"
+                        >
+                            Buy
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `)
+            .join("");
+
+    document.getElementById(
+        "feed"
+    ).innerHTML = content;
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
 
 }
 
 
-/*
-===========================================================
-INITIAL LOAD
+/* =========================================================
+   SETTINGS
+========================================================= */
 
-This is intentionally executed every time the HTML page
-loads.
+function showSettings() {
 
-NO STORAGE IS USED.
+    document.getElementById(
+        "feed"
+    ).innerHTML = `
 
-Therefore:
+        <div class="card">
 
-Refresh -> new world
-Close -> reopen -> new world
-New browser tab -> new world
-Different device -> new world
-===========================================================
-*/
+            <div class="card-body">
+
+                <div class="section-title">
+                    ⚙️ NPCBook Settings
+                </div>
+
+                <div
+                    style="
+                        margin-top:15px;
+                        line-height:1.8;
+                        color:#4b5563;
+                    "
+                >
+
+                    <p>
+                        🌐 Site Type:
+                        Static
+                    </p>
+
+                    <p>
+                        💾 Database:
+                        None
+                    </p>
+
+                    <p>
+                        📦 LocalStorage:
+                        None
+                    </p>
+
+                    <p>
+                        🗃️ SessionStorage:
+                        None
+                    </p>
+
+                    <p>
+                        🍪 App Data Cookies:
+                        None
+                    </p>
+
+                    <p>
+                        🎲 World Generation:
+                        Random
+                    </p>
+
+                    <p>
+                        🔄 Refresh:
+                        New NPC World
+                    </p>
+
+                </div>
+
+                <button
+                    style="
+                        margin-top:15px;
+                        border:0;
+                        background:#1877f2;
+                        color:white;
+                        padding:12px 18px;
+                        border-radius:8px;
+                        font-weight:800;
+                        cursor:pointer;
+                    "
+                    onclick="goHome()"
+                >
+                    🔄 Reset / Refresh NPCBook
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
+}
+
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+let toastTimer = null;
+
+function toast(message) {
+
+    const el =
+        document.getElementById(
+            "toast"
+        );
+
+    el.textContent =
+        message;
+
+    el.classList.add("show");
+
+    clearTimeout(
+        toastTimer
+    );
+
+    toastTimer =
+        setTimeout(
+            () => {
+
+                el.classList.remove(
+                    "show"
+                );
+
+            },
+            2200
+        );
+
+}
+
+
+/* =========================================================
+   INITIAL WORLD
+========================================================= */
 
 generateWorld();
 
@@ -1867,17 +2419,8 @@ render();
 </html>
 '''
 
-
-# ==========================================================
-# PYTHON STATIC SITE GENERATOR
-# ==========================================================
-
 output = Path("index.html")
-
-output.write_text(
-    HTML,
-    encoding="utf-8"
-)
+output.write_text(HTML, encoding="utf-8")
 
 print("NPCBook static site generated successfully.")
-print(f"Created: {output.resolve()}")
+print("Created:", output.resolve())
