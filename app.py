@@ -1,4154 +1,3336 @@
-from pathlib import Path
+from flask import Flask, render_template_string, jsonify, request
+import random
+import html
 
-HTML = r'''
+app = Flask(__name__)
+
+# ============================================================
+# NPC OMNIVERSE
+# Single-file Flask application
+# No database
+# No localStorage
+# Temporary in-memory data
+# ============================================================
+
+NPCS = [
+    {
+        "id": 1,
+        "name": "Kael Veyron",
+        "role": "Void Cartographer",
+        "world": "Eclipse Realm",
+        "level": 42,
+        "online": True,
+        "avatar": "https://i.pravatar.cc/150?img=12",
+        "bio": "Maps places that should not exist."
+    },
+    {
+        "id": 2,
+        "name": "Mira Solen",
+        "role": "Sky Mechanic",
+        "world": "Aetheria",
+        "level": 28,
+        "online": True,
+        "avatar": "https://i.pravatar.cc/150?img=47",
+        "bio": "Repairs airships above the endless clouds."
+    },
+    {
+        "id": 3,
+        "name": "Rook",
+        "role": "Wandering Mercenary",
+        "world": "Iron Frontier",
+        "level": 35,
+        "online": False,
+        "avatar": "https://i.pravatar.cc/150?img=68",
+        "bio": "Never asks who started the war."
+    },
+    {
+        "id": 4,
+        "name": "Nyx Arclight",
+        "role": "Dream Hacker",
+        "world": "Neon Metropolis",
+        "level": 51,
+        "online": True,
+        "avatar": "https://i.pravatar.cc/150?img=32",
+        "bio": "Breaks into dreams instead of computers."
+    },
+    {
+        "id": 5,
+        "name": "Elder Varo",
+        "role": "Time Keeper",
+        "world": "Chronos",
+        "level": 77,
+        "online": False,
+        "avatar": "https://i.pravatar.cc/150?img=53",
+        "bio": "Claims he remembers tomorrow."
+    },
+]
+
+WORLDS = [
+    {
+        "id": 1,
+        "name": "Eclipse Realm",
+        "type": "Dark Fantasy",
+        "population": "8.4M NPCs",
+        "color": "purple",
+        "description": "A world where ancient kingdoms fight creatures from beyond reality."
+    },
+    {
+        "id": 2,
+        "name": "Aetheria",
+        "type": "Sky Civilization",
+        "population": "3.1M NPCs",
+        "color": "blue",
+        "description": "Floating cities, sky pirates and enormous mechanical airships."
+    },
+    {
+        "id": 3,
+        "name": "Iron Frontier",
+        "type": "Post-Apocalyptic",
+        "population": "1.8M NPCs",
+        "color": "orange",
+        "description": "Human settlements survive between ruined megacities."
+    },
+    {
+        "id": 4,
+        "name": "Neon Metropolis",
+        "type": "Cyberpunk",
+        "population": "12.7M NPCs",
+        "color": "pink",
+        "description": "A gigantic city controlled by corporations and artificial intelligence."
+    },
+    {
+        "id": 5,
+        "name": "Chronos",
+        "type": "Time Fantasy",
+        "population": "???",
+        "color": "green",
+        "description": "Past, present and future exist simultaneously."
+    },
+]
+
+POSTS = [
+    {
+        "id": 1,
+        "npc": "Kael Veyron",
+        "role": "Void Cartographer",
+        "avatar": "https://i.pravatar.cc/150?img=12",
+        "world": "Eclipse Realm",
+        "time": "12 min ago",
+        "text": "I found a road beneath the old cathedral. It wasn't there yesterday.",
+        "likes": 284,
+        "comments": 41,
+        "reposts": 18,
+        "tag": "DISCOVERY"
+    },
+    {
+        "id": 2,
+        "npc": "Mira Solen",
+        "role": "Sky Mechanic",
+        "avatar": "https://i.pravatar.cc/150?img=47",
+        "world": "Aetheria",
+        "time": "28 min ago",
+        "text": "The western engines are finally working again. If anyone asks, that explosion was completely intentional.",
+        "likes": 721,
+        "comments": 83,
+        "reposts": 96,
+        "tag": "AETHERIA"
+    },
+    {
+        "id": 3,
+        "npc": "Nyx Arclight",
+        "role": "Dream Hacker",
+        "avatar": "https://i.pravatar.cc/150?img=32",
+        "world": "Neon Metropolis",
+        "time": "1 hr ago",
+        "text": "Someone uploaded a memory from a person who hasn't been born yet.",
+        "likes": 1342,
+        "comments": 219,
+        "reposts": 307,
+        "tag": "ANOMALY"
+    },
+    {
+        "id": 4,
+        "npc": "Rook",
+        "role": "Wandering Mercenary",
+        "avatar": "https://i.pravatar.cc/150?img=68",
+        "world": "Iron Frontier",
+        "time": "2 hrs ago",
+        "text": "Three settlements. Two armies. One water source. This is going to be a long week.",
+        "likes": 497,
+        "comments": 66,
+        "reposts": 31,
+        "tag": "FRONTIER"
+    },
+]
+
+QUESTS = [
+    {
+        "name": "The Missing Cartographer",
+        "world": "Eclipse Realm",
+        "difficulty": "Hard",
+        "reward": "4,500 XP"
+    },
+    {
+        "name": "Repair the Sky Engine",
+        "world": "Aetheria",
+        "difficulty": "Medium",
+        "reward": "2,800 XP"
+    },
+    {
+        "name": "The Neon Memory",
+        "world": "Neon Metropolis",
+        "difficulty": "Extreme",
+        "reward": "8,000 XP"
+    },
+    {
+        "name": "Water War",
+        "world": "Iron Frontier",
+        "difficulty": "Hard",
+        "reward": "5,200 XP"
+    },
+]
+
+MARKET = [
+    ("Void Compass", "Eclipse Realm", "2,400"),
+    ("Aether Engine Core", "Aetheria", "8,900"),
+    ("Rustbreaker Rifle", "Iron Frontier", "4,100"),
+    ("Dream Shard", "Neon Metropolis", "6,700"),
+    ("Chrono Crystal", "Chronos", "12,500"),
+]
+
+
+def safe(value):
+    return html.escape(str(value))
+
+
+@app.route("/")
+def index():
+    return render_template_string(PAGE)
+
+
+@app.route("/api/npcs")
+def api_npcs():
+    return jsonify(NPCS)
+
+
+@app.route("/api/worlds")
+def api_worlds():
+    return jsonify(WORLDS)
+
+
+@app.route("/api/posts")
+def api_posts():
+    return jsonify(POSTS)
+
+
+@app.route("/api/quests")
+def api_quests():
+    return jsonify(QUESTS)
+
+
+@app.route("/api/generate/npc", methods=["POST"])
+def generate_npc():
+    names = [
+        "Aeris Vonn",
+        "Drax",
+        "Selene Korr",
+        "Vex",
+        "Orin Vale",
+        "Luna Ash",
+        "Tarin",
+        "Zera Quinn",
+    ]
+
+    roles = [
+        "Rogue Engineer",
+        "Forbidden Mage",
+        "Starship Captain",
+        "Dream Merchant",
+        "Ancient Guardian",
+        "Cyber Detective",
+        "Time Traveler",
+        "Shadow Assassin",
+    ]
+
+    worlds = [w["name"] for w in WORLDS]
+
+    npc = {
+        "id": len(NPCS) + 1,
+        "name": random.choice(names),
+        "role": random.choice(roles),
+        "world": random.choice(worlds),
+        "level": random.randint(1, 99),
+        "online": True,
+        "avatar": f"https://i.pravatar.cc/150?img={random.randint(1, 70)}",
+        "bio": "A newly generated resident of the NPC Omniverse."
+    }
+
+    NPCS.append(npc)
+
+    return jsonify(npc)
+
+
+@app.route("/api/generate/world", methods=["POST"])
+def generate_world():
+    world_types = [
+        "Dark Fantasy",
+        "Cyberpunk",
+        "Space Opera",
+        "Post-Apocalyptic",
+        "Mystical",
+        "Steampunk",
+        "Time Fantasy",
+        "Alien Civilization",
+    ]
+
+    names = [
+        "Veyra",
+        "Astralis",
+        "Nexora",
+        "Valthera",
+        "Oblivion",
+        "Solara",
+        "Eldoria",
+        "Zenith",
+    ]
+
+    world = {
+        "id": len(WORLDS) + 1,
+        "name": random.choice(names) + " " + random.choice(
+            ["Prime", "Frontier", "Realm", "Sector", "System"]
+        ),
+        "type": random.choice(world_types),
+        "population": f"{random.randint(1, 30)}.{random.randint(1,9)}M NPCs",
+        "color": random.choice(["purple", "blue", "pink", "green", "orange"]),
+        "description": "A newly generated universe waiting for its first story."
+    }
+
+    WORLDS.append(world)
+
+    return jsonify(world)
+
+
+@app.route("/api/post", methods=["POST"])
+def create_post():
+    data = request.get_json() or {}
+
+    text = data.get("text", "").strip()
+
+    if not text:
+        return jsonify({"error": "Post cannot be empty"}), 400
+
+    post = {
+        "id": len(POSTS) + 1,
+        "npc": "You",
+        "role": "Omniverse Traveler",
+        "avatar": "https://i.pravatar.cc/150?img=11",
+        "world": "Omniverse",
+        "time": "just now",
+        "text": text,
+        "likes": 0,
+        "comments": 0,
+        "reposts": 0,
+        "tag": "NEW"
+    }
+
+    POSTS.insert(0, post)
+
+    return jsonify(post)
+
+
+PAGE = r"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#101114">
-<meta name="description" content="NPCBook — Social Media for NPCs">
-<title>NPCBook — Social Media for NPCs</title>
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+>
+
+<meta
+    name="description"
+    content="NPC OMNIVERSE — A living social universe for NPCs."
+>
+
+<title>NPC OMNIVERSE</title>
 
 <style>
-:root{
-    --bg:#0b0c0f;
-    --panel:#111318;
-    --panel2:#17191f;
-    --panel3:#1d2027;
-    --border:#2a2e38;
-    --text:#f4f5f7;
-    --muted:#9ca3af;
-    --accent:#7c5cff;
-    --accent2:#a78bfa;
-    --danger:#ff5577;
-    --success:#39d98a;
-    --warning:#f6c85f;
-    --blue:#4da3ff;
-    --shadow:0 12px 35px rgba(0,0,0,.25);
-    --radius:18px;
-    --max:1440px;
+
+/* ============================================================
+   RESET
+============================================================ */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-*{
-    box-sizing:border-box;
+:root {
+    --bg: #07080d;
+    --panel: #10121a;
+    --panel2: #151824;
+    --panel3: #1b1f2b;
+    --border: rgba(255,255,255,.08);
+
+    --text: #f4f6fb;
+    --muted: #9298aa;
+
+    --accent: #8b5cf6;
+    --accent2: #06b6d4;
+    --pink: #ec4899;
+    --green: #22c55e;
+    --orange: #f59e0b;
+
+    --radius: 18px;
+    --max: 1500px;
 }
 
-html{
-    scroll-behavior:smooth;
+html {
+    scroll-behavior: smooth;
 }
 
-body{
-    margin:0;
+body {
     background:
-        radial-gradient(circle at 20% -10%,rgba(124,92,255,.13),transparent 28%),
-        radial-gradient(circle at 90% 0%,rgba(77,163,255,.08),transparent 25%),
+        radial-gradient(circle at 20% 0%, rgba(139,92,246,.12), transparent 30%),
+        radial-gradient(circle at 90% 10%, rgba(6,182,212,.08), transparent 25%),
         var(--bg);
-    color:var(--text);
+
+    color: var(--text);
     font-family:
         Inter,
-        ui-sans-serif,
         system-ui,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
-    min-height:100vh;
-    overflow-x:hidden;
+
+    min-height: 100vh;
 }
 
 button,
 input,
-textarea,
-select{
-    font:inherit;
+textarea {
+    font: inherit;
 }
 
-button{
-    cursor:pointer;
-    touch-action:manipulation;
+button {
+    cursor: pointer;
 }
 
-a{
-    color:inherit;
-    text-decoration:none;
+a {
+    color: inherit;
+    text-decoration: none;
 }
 
-img{
-    max-width:100%;
+/* ============================================================
+   APP
+============================================================ */
+
+.app {
+    width: min(100%, var(--max));
+    margin: auto;
+    min-height: 100vh;
 }
 
-.hidden{
-    display:none !important;
+/* ============================================================
+   TOPBAR
+============================================================ */
+
+.topbar {
+    height: 70px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+    display: flex;
+    align-items: center;
+    gap: 18px;
+
+    padding: 0 20px;
+
+    background: rgba(7,8,13,.82);
+    backdrop-filter: blur(20px);
+
+    border-bottom: 1px solid var(--border);
 }
 
-.app-shell{
-    min-height:100vh;
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    min-width: 245px;
 }
 
-/* TOP BAR */
+.logo-icon {
+    width: 40px;
+    height: 40px;
 
-.topbar{
-    position:sticky;
-    top:0;
-    z-index:1000;
-    height:66px;
-    border-bottom:1px solid var(--border);
-    background:rgba(11,12,15,.92);
-    backdrop-filter:blur(18px);
+    display: grid;
+    place-items: center;
+
+    border-radius: 12px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--accent),
+            var(--accent2)
+        );
+
+    box-shadow:
+        0 0 25px rgba(139,92,246,.35);
+
+    font-size: 21px;
 }
 
-.topbar-inner{
-    width:min(100%,var(--max));
-    height:100%;
-    margin:auto;
-    padding:0 18px;
-    display:flex;
-    align-items:center;
-    gap:14px;
+.logo strong {
+    font-size: 17px;
+    letter-spacing: .5px;
 }
 
-.logo{
-    display:flex;
-    align-items:center;
-    gap:9px;
-    font-weight:900;
-    font-size:20px;
-    white-space:nowrap;
-
-    /* Make logo behave like a clickable button */
-    border:0;
-    padding:0;
-    margin:0;
-    background:transparent;
-    color:inherit;
-    font:inherit;
-    cursor:pointer;
-    text-decoration:none;
-
-    /* Touchscreen support */
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
+.logo span {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 2px;
 }
 
-.logo-icon{
-    width:38px;
-    height:38px;
-    border-radius:12px;
-    display:grid;
-    place-items:center;
-    background:linear-gradient(135deg,#7c5cff,#4da3ff);
-    box-shadow:0 7px 25px rgba(124,92,255,.28);
-
-    flex-shrink:0;
+.search {
+    flex: 1;
+    max-width: 650px;
+    position: relative;
 }
 
-.logo-text{
-    display:flex;
-    align-items:center;
-    line-height:1;
+.search input {
+    width: 100%;
+    height: 42px;
+
+    border: 1px solid var(--border);
+    border-radius: 14px;
+
+    background: var(--panel);
+
+    color: var(--text);
+
+    padding: 0 15px 0 42px;
+
+    outline: none;
 }
 
-.logo-text span{
-    color:var(--accent2);
+.search input:focus {
+    border-color: rgba(139,92,246,.6);
 }
 
-/* Desktop hover */
-.logo:hover{
-    opacity:.88;
+.search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: var(--muted);
 }
 
-/* Mouse / touchscreen press */
-.logo:active{
-    transform:scale(.97);
+.top-actions {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-/* Keyboard accessibility */
-.logo:focus-visible{
-    outline:2px solid var(--accent2);
-    outline-offset:4px;
-    border-radius:8px;
+.icon-btn {
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    background: var(--panel);
+    color: var(--text);
 }
 
-/* Smaller screens */
-@media (max-width:700px){
-
-    .logo{
-        font-size:18px;
-        gap:7px;
-    }
-
-    .logo-icon{
-        width:36px;
-        height:36px;
-        border-radius:11px;
-    }
-
+.icon-btn:hover {
+    border-color: var(--accent);
 }
 
-/* Very small phones */
-@media (max-width:380px){
+/* ============================================================
+   LAYOUT
+============================================================ */
 
-    .logo{
-        font-size:16px;
-        gap:6px;
-    }
+.layout {
+    display: grid;
 
-    .logo-icon{
-        width:34px;
-        height:34px;
-        border-radius:10px;
-    }
+    grid-template-columns:
+        230px
+        minmax(0, 1fr)
+        300px;
 
+    gap: 18px;
+
+    padding: 18px;
 }
 
-/* Touchscreen */
-@media (pointer:coarse){
+/* ============================================================
+   SIDEBAR
+============================================================ */
 
-    .logo{
-        min-height:44px;
-        min-width:44px;
-    }
+.sidebar {
+    position: sticky;
+    top: 88px;
+    height: calc(100vh - 105px);
 
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.top-search{
-    flex:1;
-    max-width:520px;
-    margin-left:10px;
-    position:relative;
+.nav-card,
+.widget,
+.card {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255,255,255,.025),
+            rgba(255,255,255,.012)
+        ),
+        var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
 }
 
-.top-search input{
-    width:100%;
-    height:42px;
-    border:1px solid var(--border);
-    border-radius:13px;
-    background:#17191f;
-    color:var(--text);
-    padding:0 16px 0 42px;
-    outline:none;
+.nav-card {
+    padding: 10px;
 }
 
-.top-search input:focus{
-    border-color:var(--accent);
-    box-shadow:0 0 0 3px rgba(124,92,255,.13);
-}
+.nav-item {
+    width: 100%;
 
-.search-icon{
-    position:absolute;
-    left:14px;
-    top:50%;
-    transform:translateY(-50%);
-    color:var(--muted);
-}
+    display: flex;
+    align-items: center;
+    gap: 12px;
 
-.top-actions{
-    margin-left:auto;
-    display:flex;
-    align-items:center;
-    gap:7px;
-}
+    padding: 12px;
 
-.icon-btn{
-    width:42px;
-    height:42px;
-    border:1px solid transparent;
-    background:transparent;
-    color:var(--muted);
-    border-radius:12px;
-    display:grid;
-    place-items:center;
-    font-size:19px;
-}
+    border: 0;
+    border-radius: 12px;
 
-.icon-btn:hover{
-    background:var(--panel2);
-    color:var(--text);
-    border-color:var(--border);
-}
+    background: transparent;
+    color: var(--muted);
 
-.profile-mini{
-    width:40px;
-    height:40px;
-    border-radius:50%;
-    overflow:hidden;
-    border:2px solid var(--border);
-}
-
-.profile-mini img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-}
-
-/* LAYOUT */
-
-.layout{
-    width:min(100%,var(--max));
-    margin:auto;
-    padding:20px 18px 90px;
-    display:grid;
-    grid-template-columns:230px minmax(0,680px) 300px;
-    gap:20px;
-    align-items:start;
-}
-
-.sidebar{
-    position:sticky;
-    top:86px;
-}
-
-.nav-card{
-    background:rgba(17,19,24,.88);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:10px;
-    box-shadow:var(--shadow);
-}
-
-.nav-item{
-    width:100%;
-    border:0;
-    background:transparent;
-    color:var(--muted);
-    padding:12px 13px;
-    border-radius:12px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    text-align:left;
-    min-height:46px;
-    font-weight:650;
+    text-align: left;
 }
 
 .nav-item:hover,
-.nav-item.active{
-    background:var(--panel3);
-    color:var(--text);
+.nav-item.active {
+    background: rgba(139,92,246,.13);
+    color: var(--text);
 }
 
-.nav-item.active{
-    color:#c8bbff;
+.nav-item .nav-icon {
+    width: 22px;
+    text-align: center;
 }
 
-.nav-icon{
-    width:24px;
-    text-align:center;
-    font-size:18px;
+.side-generate {
+    padding: 16px;
 }
 
-.sidebar-divider{
-    height:1px;
-    background:var(--border);
-    margin:9px 6px;
+.side-generate h3 {
+    font-size: 14px;
+    margin-bottom: 7px;
 }
 
-.side-user{
-    margin-top:14px;
-    padding:14px;
-    border:1px solid var(--border);
-    background:rgba(17,19,24,.8);
-    border-radius:var(--radius);
+.side-generate p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 14px;
 }
 
-.side-user-row{
-    display:flex;
-    align-items:center;
-    gap:10px;
+/* ============================================================
+   BUTTONS
+============================================================ */
+
+.btn {
+    border: 0;
+
+    border-radius: 12px;
+
+    padding: 10px 14px;
+
+    color: white;
+
+    background: var(--panel3);
+
+    border: 1px solid var(--border);
 }
 
-.side-user img{
-    width:42px;
-    height:42px;
-    border-radius:50%;
-    object-fit:cover;
+.btn:hover {
+    border-color: rgba(255,255,255,.2);
 }
 
-.side-user-name{
-    font-weight:750;
-}
-
-.side-user-handle{
-    color:var(--muted);
-    font-size:12px;
-}
-
-/* FEED */
-
-.feed{
-    min-width:0;
-}
-
-.feed-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:14px;
-}
-
-.feed-title{
-    font-size:22px;
-    font-weight:900;
-}
-
-.feed-subtitle{
-    color:var(--muted);
-    font-size:12px;
-}
-
-.world-refresh{
-    border:1px solid var(--border);
-    background:var(--panel);
-    color:var(--text);
-    border-radius:12px;
-    min-height:42px;
-    padding:0 13px;
-    font-weight:700;
-}
-
-.world-refresh:hover{
-    border-color:var(--accent);
-}
-
-/* COMPOSER */
-
-.composer{
-    background:rgba(17,19,24,.92);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:15px;
-    margin-bottom:14px;
-    box-shadow:var(--shadow);
-}
-
-.composer-top{
-    display:flex;
-    gap:12px;
-}
-
-.composer-avatar{
-    width:44px;
-    height:44px;
-    border-radius:50%;
-    object-fit:cover;
-    flex:none;
-}
-
-.composer textarea{
-    flex:1;
-    resize:none;
-    min-height:62px;
-    max-height:180px;
-    background:transparent;
-    border:0;
-    outline:0;
-    color:var(--text);
-    padding:8px 0;
-    line-height:1.5;
-}
-
-.composer textarea::placeholder{
-    color:#737985;
-}
-
-.composer-bottom{
-    border-top:1px solid var(--border);
-    margin-top:10px;
-    padding-top:10px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-}
-
-.composer-tools{
-    display:flex;
-    gap:5px;
-}
-
-.composer-tool{
-    width:40px;
-    height:38px;
-    border:0;
-    background:transparent;
-    color:var(--muted);
-    border-radius:10px;
-}
-
-.composer-tool:hover{
-    background:var(--panel3);
-    color:var(--text);
-}
-
-.post-btn{
-    border:0;
-    background:linear-gradient(135deg,var(--accent),#5b4bd8);
-    color:#fff;
-    border-radius:11px;
-    min-height:40px;
-    padding:0 18px;
-    font-weight:800;
-    box-shadow:0 8px 20px rgba(124,92,255,.2);
-}
-
-.post-btn:hover{
-    filter:brightness(1.1);
-}
-
-/* POSTS */
-
-.post{
-    background:rgba(17,19,24,.94);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:16px;
-    margin-bottom:14px;
-    box-shadow:0 7px 28px rgba(0,0,0,.12);
-}
-
-.post:hover{
-    border-color:#343947;
-}
-
-.post-head{
-    display:flex;
-    gap:11px;
-    align-items:flex-start;
-}
-
-.avatar-btn{
-    border:0;
-    padding:0;
-    background:transparent;
-    flex:none;
-}
-
-.post-avatar{
-    width:46px;
-    height:46px;
-    border-radius:50%;
-    object-fit:cover;
-    display:block;
-}
-
-.post-author{
-    min-width:0;
-    flex:1;
-}
-
-.author-line{
-    display:flex;
-    flex-wrap:wrap;
-    align-items:center;
-    gap:5px;
-}
-
-.author-name{
-    font-weight:850;
-    cursor:pointer;
-}
-
-.author-name:hover{
-    text-decoration:underline;
-}
-
-.verified{
-    color:#55a9ff;
-    font-size:14px;
-}
-
-.author-handle,
-.post-time{
-    color:var(--muted);
-    font-size:13px;
-}
-
-.post-meta{
-    color:var(--muted);
-    font-size:12px;
-    margin-top:3px;
-    display:flex;
-    gap:7px;
-    flex-wrap:wrap;
-}
-
-.world-badge{
-    display:inline-flex;
-    align-items:center;
-    border:1px solid rgba(124,92,255,.28);
-    background:rgba(124,92,255,.1);
-    color:#c7bcff;
-    border-radius:999px;
-    padding:3px 8px;
-    font-size:11px;
-    font-weight:700;
-}
-
-.more-btn{
-    width:34px;
-    height:34px;
-    border:0;
-    background:transparent;
-    color:var(--muted);
-    border-radius:9px;
-}
-
-.more-btn:hover{
-    background:var(--panel3);
-    color:var(--text);
-}
-
-.post-text{
-    margin:13px 0 12px 57px;
-    line-height:1.58;
-    white-space:pre-wrap;
-    overflow-wrap:anywhere;
-}
-
-.post-media{
-    margin:0 0 12px 57px;
-    min-height:130px;
-    border-radius:15px;
-    border:1px solid var(--border);
-    overflow:hidden;
-    position:relative;
+.btn-primary {
     background:
-        radial-gradient(circle at 20% 30%,rgba(124,92,255,.5),transparent 30%),
-        radial-gradient(circle at 80% 70%,rgba(77,163,255,.3),transparent 32%),
-        linear-gradient(135deg,#181b27,#101216);
-    display:flex;
-    align-items:flex-end;
-    padding:16px;
+        linear-gradient(
+            135deg,
+            var(--accent),
+            #6366f1
+        );
+
+    border: 0;
 }
 
-.media-overlay{
-    width:100%;
-    padding:15px;
-    border-radius:13px;
-    background:rgba(0,0,0,.42);
-    backdrop-filter:blur(5px);
-}
-
-.media-title{
-    font-weight:900;
-    font-size:17px;
-}
-
-.media-caption{
-    color:#d4d7de;
-    margin-top:4px;
-    font-size:12px;
-}
-
-.post-actions{
-    margin-left:57px;
-    border-top:1px solid var(--border);
-    padding-top:8px;
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:3px;
-}
-
-.action-btn{
-    min-height:42px;
-    border:0;
-    border-radius:10px;
-    background:transparent;
-    color:var(--muted);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    font-size:13px;
-}
-
-.action-btn:hover{
-    background:var(--panel3);
-    color:var(--text);
-}
-
-.action-btn.liked{
-    color:#ff5d82;
-}
-
-.action-btn.saved{
-    color:#f3ca5f;
-}
-
-.action-btn.reposted{
-    color:#42dc93;
-}
-
-.action-count{
-    font-size:12px;
-}
-
-.comment-preview{
-    margin:8px 0 0 57px;
-    padding:9px 11px;
-    border-radius:12px;
-    background:#15171c;
-    color:#c8ccd4;
-    font-size:13px;
-}
-
-.comment-preview strong{
-    color:var(--text);
-}
-
-.comment-box{
-    margin:9px 0 0 57px;
-    display:flex;
-    gap:7px;
-}
-
-.comment-box input{
-    flex:1;
-    min-width:0;
-    height:40px;
-    border:1px solid var(--border);
-    border-radius:11px;
-    background:#15171c;
-    color:var(--text);
-    padding:0 12px;
-    outline:none;
-}
-
-.comment-box input:focus{
-    border-color:var(--accent);
-}
-
-.comment-send{
-    height:40px;
-    padding:0 12px;
-    border:0;
-    border-radius:10px;
-    background:var(--accent);
-    color:white;
-    font-weight:750;
-}
-
-.comments-list{
-    margin:8px 0 0 57px;
-}
-
-.comment{
-    padding:8px 0;
-    border-bottom:1px solid rgba(42,46,56,.65);
-}
-
-.comment:last-child{
-    border-bottom:0;
-}
-
-.comment-author{
-    font-weight:750;
-    font-size:13px;
-}
-
-.comment-text{
-    color:#c5c9d1;
-    font-size:13px;
-    margin-top:2px;
-}
-
-/* RIGHT SIDEBAR */
-
-.right-column{
-    position:sticky;
-    top:86px;
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-}
-
-.widget{
-    background:rgba(17,19,24,.88);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:15px;
-}
-
-.widget-title{
-    font-size:15px;
-    font-weight:850;
-    margin-bottom:12px;
-}
-
-.trend{
-    padding:9px 0;
-    border-bottom:1px solid rgba(42,46,56,.7);
-}
-
-.trend:last-child{
-    border-bottom:0;
-}
-
-.trend-label{
-    color:var(--muted);
-    font-size:11px;
-}
-
-.trend-name{
-    font-weight:750;
-    margin-top:2px;
-}
-
-.trend-count{
-    color:var(--muted);
-    font-size:11px;
-    margin-top:2px;
-}
-
-.quest{
-    border:1px solid var(--border);
-    border-radius:13px;
-    padding:11px;
-    margin-bottom:8px;
-    background:#15171c;
-}
-
-.quest:last-child{
-    margin-bottom:0;
-}
-
-.quest-title{
-    font-weight:750;
-    font-size:13px;
-}
-
-.quest-desc{
-    color:var(--muted);
-    font-size:11px;
-    margin-top:3px;
-}
-
-.progress{
-    height:5px;
-    background:#252932;
-    border-radius:99px;
-    overflow:hidden;
-    margin-top:8px;
-}
-
-.progress > div{
-    height:100%;
-    background:linear-gradient(90deg,var(--accent),#4da3ff);
-}
-
-/* PROFILE */
-
-.profile-page{
-    grid-column:2;
-}
-
-.profile-cover{
-    height:190px;
-    border-radius:20px 20px 0 0;
+.btn-cyan {
     background:
-        radial-gradient(circle at 20% 20%,rgba(124,92,255,.8),transparent 28%),
-        radial-gradient(circle at 80% 40%,rgba(77,163,255,.6),transparent 30%),
-        linear-gradient(135deg,#181b28,#111318);
-    border:1px solid var(--border);
+        linear-gradient(
+            135deg,
+            var(--accent2),
+            #0891b2
+        );
+
+    border: 0;
 }
 
-.profile-main{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-top:0;
-    border-radius:0 0 20px 20px;
-    padding:0 20px 20px;
+.btn-full {
+    width: 100%;
 }
 
-.profile-top{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:15px;
-    transform:translateY(-38px);
-    margin-bottom:-20px;
+/* ============================================================
+   MAIN
+============================================================ */
+
+.main {
+    min-width: 0;
 }
 
-.profile-avatar{
-    width:92px;
-    height:92px;
-    border-radius:50%;
-    border:5px solid var(--panel);
-    object-fit:cover;
+.page {
+    display: none;
 }
 
-.follow-btn{
-    min-height:40px;
-    padding:0 18px;
-    border-radius:11px;
-    border:1px solid var(--border);
-    background:var(--text);
-    color:#101114;
-    font-weight:800;
+.page.active {
+    display: block;
 }
 
-.follow-btn.following{
-    background:transparent;
-    color:var(--text);
+.page-header {
+    margin-bottom: 16px;
 }
 
-.profile-name{
-    font-size:23px;
-    font-weight:900;
+.page-header h1 {
+    font-size: clamp(22px, 4vw, 30px);
+    margin-bottom: 6px;
 }
 
-.profile-handle{
-    color:var(--muted);
+.page-header p {
+    color: var(--muted);
+    font-size: 14px;
 }
 
-.profile-bio{
-    margin-top:12px;
-    line-height:1.5;
+/* ============================================================
+   HERO
+============================================================ */
+
+.hero {
+    position: relative;
+    overflow: hidden;
+
+    padding: 26px;
+
+    margin-bottom: 16px;
+
+    border-radius: 22px;
+
+    background:
+        radial-gradient(
+            circle at 80% 20%,
+            rgba(6,182,212,.18),
+            transparent 25%
+        ),
+        radial-gradient(
+            circle at 10% 90%,
+            rgba(139,92,246,.2),
+            transparent 30%
+        ),
+        var(--panel);
+
+    border: 1px solid var(--border);
 }
 
-.profile-info{
-    display:flex;
-    flex-wrap:wrap;
-    gap:13px;
-    color:var(--muted);
-    font-size:13px;
-    margin-top:12px;
+.hero h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1;
+    margin-bottom: 12px;
 }
 
-.profile-stats{
-    display:flex;
-    gap:25px;
-    margin-top:15px;
+.gradient-text {
+    background:
+        linear-gradient(
+            90deg,
+            #a78bfa,
+            #22d3ee,
+            #f472b6
+        );
+
+    -webkit-background-clip: text;
+    color: transparent;
 }
 
-.stat strong{
-    color:var(--text);
+.hero p {
+    color: var(--muted);
+    max-width: 650px;
+    line-height: 1.6;
 }
 
-.stat{
-    color:var(--muted);
-    font-size:13px;
+.hero-actions {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-top: 20px;
 }
 
-.profile-tabs{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    border-top:1px solid var(--border);
-    margin-top:18px;
+/* ============================================================
+   COMPOSER
+============================================================ */
+
+.composer {
+    padding: 16px;
+    margin-bottom: 16px;
 }
 
-.profile-tab{
-    border:0;
-    background:transparent;
-    color:var(--muted);
-    min-height:48px;
-    font-weight:750;
+.composer-top {
+    display: flex;
+    gap: 12px;
 }
 
-.profile-tab.active{
-    color:var(--text);
-    border-bottom:2px solid var(--accent);
+.avatar {
+    width: 44px;
+    height: 44px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    border: 2px solid rgba(139,92,246,.4);
 }
 
-/* MODAL */
+.composer textarea {
+    flex: 1;
 
-.modal-backdrop{
-    position:fixed;
-    inset:0;
-    z-index:3000;
-    background:rgba(0,0,0,.72);
-    backdrop-filter:blur(7px);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
+    min-height: 80px;
+
+    resize: vertical;
+
+    border: 0;
+    outline: 0;
+
+    background: transparent;
+    color: var(--text);
+
+    padding: 6px;
+
+    font-size: 14px;
 }
 
-.modal{
-    width:min(100%,620px);
-    max-height:min(90vh,800px);
-    overflow:auto;
-    background:#111318;
-    border:1px solid var(--border);
-    border-radius:20px;
-    box-shadow:0 25px 80px rgba(0,0,0,.5);
+.composer-bottom {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
 }
 
-.modal-header{
-    position:sticky;
-    top:0;
-    z-index:2;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:16px 18px;
-    background:rgba(17,19,24,.96);
-    backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--border);
+/* ============================================================
+   POST
+============================================================ */
+
+.post {
+    padding: 17px;
+    margin-bottom: 14px;
 }
 
-.modal-title{
-    font-weight:900;
+.post-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
 }
 
-.modal-body{
-    padding:18px;
+.post-user {
+    flex: 1;
 }
 
-.close-btn{
-    width:38px;
-    height:38px;
-    border:0;
-    background:var(--panel3);
-    color:var(--text);
-    border-radius:10px;
+.post-user strong {
+    font-size: 14px;
 }
 
-.modal-input,
-.modal-textarea{
-    width:100%;
-    border:1px solid var(--border);
-    border-radius:12px;
-    background:#17191f;
-    color:var(--text);
-    padding:12px;
-    outline:none;
+.post-user small {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 2px;
 }
 
-.modal-textarea{
-    min-height:130px;
-    resize:vertical;
+.post-tag {
+    padding: 5px 8px;
+
+    border-radius: 8px;
+
+    background: rgba(139,92,246,.1);
+
+    color: #b9a3ff;
+
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .7px;
 }
 
-.modal-label{
-    display:block;
-    color:var(--muted);
-    font-size:12px;
-    margin:0 0 6px;
+.post-body {
+    padding: 15px 0 12px 55px;
+
+    font-size: 14px;
+    line-height: 1.65;
 }
 
-.modal-field{
-    margin-bottom:13px;
+.post-meta {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 12px;
 }
 
-.modal-submit{
-    width:100%;
-    min-height:45px;
-    border:0;
-    border-radius:12px;
-    background:var(--accent);
-    color:#fff;
-    font-weight:850;
+.post-actions {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+
+    border-top: 1px solid var(--border);
+
+    padding-top: 10px;
 }
 
-.option-grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:10px;
+.post-action {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+
+    padding: 9px;
+
+    border-radius: 10px;
 }
 
-.option-card{
-    border:1px solid var(--border);
-    background:#15171c;
-    padding:13px;
-    border-radius:13px;
+.post-action:hover {
+    background: rgba(255,255,255,.04);
+    color: var(--text);
 }
 
-.option-card strong{
-    display:block;
+/* ============================================================
+   GRID CARDS
+============================================================ */
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 14px;
 }
 
-.option-card span{
-    color:var(--muted);
-    font-size:11px;
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 14px;
 }
 
-/* MOBILE NAV */
-
-.mobile-nav{
-    display:none;
+.world-card,
+.npc-card,
+.quest-card,
+.market-card {
+    padding: 17px;
 }
 
-/* TOAST */
+.world-cover {
+    height: 105px;
 
-.toast-container{
-    position:fixed;
-    z-index:5000;
-    right:18px;
-    bottom:18px;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    pointer-events:none;
+    border-radius: 14px;
+
+    margin-bottom: 13px;
+
+    background:
+        radial-gradient(
+            circle at 20% 30%,
+            rgba(255,255,255,.25),
+            transparent 15%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(139,92,246,.75),
+            rgba(6,182,212,.4)
+        );
 }
 
-.toast{
-    background:#20232b;
-    border:1px solid var(--border);
-    color:var(--text);
-    padding:12px 15px;
-    border-radius:12px;
-    box-shadow:var(--shadow);
-    font-size:13px;
-    animation:toastIn .2s ease;
+.world-card:nth-child(2) .world-cover {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(6,182,212,.7),
+            rgba(59,130,246,.25)
+        );
 }
 
-@keyframes toastIn{
-    from{
-        opacity:0;
-        transform:translateY(10px);
-    }
-    to{
-        opacity:1;
-        transform:none;
-    }
+.world-card:nth-child(3) .world-cover {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(245,158,11,.7),
+            rgba(120,53,15,.3)
+        );
 }
 
-/* EMPTY */
-
-.empty{
-    border:1px dashed var(--border);
-    background:rgba(17,19,24,.7);
-    border-radius:18px;
-    padding:45px 20px;
-    text-align:center;
-    color:var(--muted);
+.world-card:nth-child(4) .world-cover {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(236,72,153,.7),
+            rgba(79,70,229,.3)
+        );
 }
 
-.empty-icon{
-    font-size:40px;
-    margin-bottom:10px;
+.world-card h3,
+.npc-card h3,
+.quest-card h3,
+.market-card h3 {
+    font-size: 15px;
+    margin-bottom: 5px;
 }
 
-/* RESPONSIVE */
-
-@media(max-width:1180px){
-    .layout{
-        grid-template-columns:210px minmax(0,1fr);
-    }
-
-    .right-column{
-        display:none;
-    }
+.card-muted {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
 }
 
-@media(max-width:820px){
-    .topbar{
-        height:60px;
-    }
+.card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
 
-    .topbar-inner{
-        padding:0 12px;
-    }
-
-    .logo-text{
-        display:none;
-    }
-
-    .top-search{
-        margin-left:0;
-    }
-
-    .top-actions .desktop-only{
-        display:none;
-    }
-
-    .layout{
-        display:block;
-        padding:14px 12px calc(85px + env(safe-area-inset-bottom));
-    }
-
-    .sidebar{
-        display:none;
-    }
-
-    .feed{
-        width:100%;
-    }
-
-    .mobile-nav{
-        position:fixed;
-        left:0;
-        right:0;
-        bottom:0;
-        z-index:2000;
-        display:grid;
-        grid-template-columns:repeat(5,1fr);
-        min-height:64px;
-        padding:5px 5px calc(5px + env(safe-area-inset-bottom));
-        background:rgba(12,13,17,.96);
-        border-top:1px solid var(--border);
-        backdrop-filter:blur(18px);
-    }
-
-    .mobile-nav button{
-        border:0;
-        background:transparent;
-        color:var(--muted);
-        display:flex;
-        flex-direction:column;
-        align-items:center;
-        justify-content:center;
-        gap:2px;
-        border-radius:10px;
-        min-height:50px;
-    }
-
-    .mobile-nav button.active{
-        color:#c8bbff;
-    }
-
-    .mobile-nav-icon{
-        font-size:19px;
-    }
-
-    .mobile-nav-label{
-        font-size:9px;
-    }
-
-    .post{
-        padding:13px;
-    }
-
-    .post-text,
-    .post-media,
-    .post-actions,
-    .comment-preview,
-    .comment-box,
-    .comments-list{
-        margin-left:0;
-    }
-
-    .post-actions{
-        grid-template-columns:repeat(5,1fr);
-    }
-
-    .action-btn{
-        font-size:12px;
-    }
-
-    .profile-page{
-        width:100%;
-    }
+    margin-top: 14px;
 }
 
-@media(max-width:520px){
-    .topbar-inner{
-        gap:7px;
-    }
+.pill {
+    display: inline-flex;
 
-    .top-search input{
-        height:40px;
-    }
+    padding: 5px 8px;
 
-    .icon-btn{
-        width:39px;
-        height:39px;
-    }
+    border-radius: 8px;
 
-    .profile-mini{
-        width:36px;
-        height:36px;
-    }
+    background: rgba(255,255,255,.05);
 
-    .feed-title{
-        font-size:19px;
-    }
+    color: var(--muted);
 
-    .world-refresh{
-        padding:0 10px;
-        font-size:12px;
-    }
-
-    .composer{
-        padding:12px;
-    }
-
-    .composer-avatar{
-        width:38px;
-        height:38px;
-    }
-
-    .composer-tool{
-        width:36px;
-    }
-
-    .post-avatar{
-        width:42px;
-        height:42px;
-    }
-
-    .author-handle,
-    .post-time{
-        font-size:12px;
-    }
-
-    .post-text{
-        font-size:14px;
-    }
-
-    .post-actions{
-        gap:1px;
-    }
-
-    .action-btn{
-        min-height:44px;
-        padding:0 2px;
-        gap:3px;
-    }
-
-    .action-label{
-        display:none;
-    }
-
-    .comment-box{
-        flex-direction:row;
-    }
-
-    .profile-cover{
-        height:145px;
-    }
-
-    .profile-main{
-        padding:0 14px 16px;
-    }
-
-    .profile-avatar{
-        width:76px;
-        height:76px;
-    }
-
-    .profile-name{
-        font-size:20px;
-    }
-
-    .option-grid{
-        grid-template-columns:1fr;
-    }
-
-    .modal-backdrop{
-        padding:8px;
-        align-items:flex-end;
-    }
-
-    .modal{
-        max-height:94vh;
-        border-radius:18px 18px 0 0;
-    }
+    font-size: 10px;
 }
 
-@media(pointer:coarse){
-    button,
-    .nav-item,
-    .action-btn,
-    .icon-btn{
-        min-height:44px;
-    }
+.online {
+    width: 8px;
+    height: 8px;
 
-    input,
-    textarea{
-        font-size:16px;
-    }
+    display: inline-block;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    box-shadow: 0 0 10px var(--green);
 }
 
-@media(max-width:360px){
-    .top-actions{
-        gap:2px;
-    }
+/* ============================================================
+   NPC CARD
+============================================================ */
 
-    .top-search{
-        min-width:0;
-    }
-
-    .top-search input{
-        padding-left:35px;
-    }
-
-    .logo-icon{
-        width:34px;
-        height:34px;
-    }
+.npc-card {
+    display: flex;
+    gap: 12px;
 }
+
+.npc-card .avatar {
+    width: 52px;
+    height: 52px;
+}
+
+.npc-info {
+    min-width: 0;
+}
+
+.npc-info h3 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.npc-status {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 6px;
+}
+
+/* ============================================================
+   RIGHT PANEL
+============================================================ */
+
+.rightbar {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.widget {
+    padding: 16px;
+}
+
+.widget-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 13px;
+}
+
+.widget-title strong {
+    font-size: 14px;
+}
+
+.widget-title span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.trend {
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.trend:last-child {
+    border-bottom: 0;
+}
+
+.trend small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.trend strong {
+    display: block;
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+.trend span {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+/* ============================================================
+   PROFILE
+============================================================ */
+
+.profile-cover {
+    height: 180px;
+
+    border-radius: 20px 20px 0 0;
+
+    background:
+        radial-gradient(
+            circle at 20% 30%,
+            rgba(255,255,255,.2),
+            transparent 15%
+        ),
+        linear-gradient(
+            135deg,
+            #312e81,
+            #7c3aed,
+            #0891b2
+        );
+}
+
+.profile-body {
+    padding: 0 20px 20px;
+}
+
+.profile-avatar {
+    width: 90px;
+    height: 90px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    border: 4px solid var(--panel);
+
+    margin-top: -45px;
+
+    position: relative;
+}
+
+.profile-body h1 {
+    margin-top: 10px;
+    font-size: 25px;
+}
+
+.profile-role {
+    color: var(--muted);
+    margin-top: 3px;
+}
+
+.profile-bio {
+    margin-top: 14px;
+    color: #c4c8d3;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.stats {
+    display: flex;
+    gap: 25px;
+    margin-top: 18px;
+}
+
+.stat strong {
+    display: block;
+    font-size: 18px;
+}
+
+.stat span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+/* ============================================================
+   EMPTY / LOADING
+============================================================ */
+
+.empty {
+    padding: 45px 20px;
+
+    text-align: center;
+
+    color: var(--muted);
+}
+
+.empty-icon {
+    font-size: 42px;
+    margin-bottom: 10px;
+}
+
+/* ============================================================
+   MODAL
+============================================================ */
+
+.modal {
+    position: fixed;
+    inset: 0;
+
+    z-index: 500;
+
+    display: none;
+    place-items: center;
+
+    padding: 18px;
+
+    background: rgba(0,0,0,.7);
+
+    backdrop-filter: blur(10px);
+}
+
+.modal.show {
+    display: grid;
+}
+
+.modal-box {
+    width: min(600px,100%);
+
+    max-height: 90vh;
+    overflow: auto;
+
+    padding: 20px;
+
+    border-radius: 20px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    box-shadow:
+        0 30px 100px rgba(0,0,0,.6);
+}
+
+.modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 18px;
+}
+
+.modal-head h2 {
+    font-size: 20px;
+}
+
+.close {
+    width: 35px;
+    height: 35px;
+
+    border: 0;
+    border-radius: 10px;
+
+    background: var(--panel3);
+    color: white;
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+
+.toast {
+    position: fixed;
+
+    left: 50%;
+    bottom: 30px;
+
+    transform:
+        translate(-50%, 120px);
+
+    z-index: 1000;
+
+    padding: 12px 17px;
+
+    border-radius: 12px;
+
+    background: #171923;
+
+    border: 1px solid var(--border);
+
+    box-shadow:
+        0 15px 50px rgba(0,0,0,.5);
+
+    transition: .3s;
+
+    font-size: 13px;
+}
+
+.toast.show {
+    transform: translate(-50%, 0);
+}
+
+/* ============================================================
+   MOBILE NAV
+============================================================ */
+
+.mobile-nav {
+    display: none;
+
+    position: fixed;
+
+    left: 10px;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+
+    z-index: 200;
+
+    padding: 7px;
+
+    border-radius: 18px;
+
+    background: rgba(16,18,26,.92);
+
+    backdrop-filter: blur(20px);
+
+    border: 1px solid var(--border);
+
+    grid-template-columns: repeat(5,1fr);
+
+    box-shadow:
+        0 15px 50px rgba(0,0,0,.5);
+}
+
+.mobile-nav button {
+    border: 0;
+    background: transparent;
+
+    color: var(--muted);
+
+    padding: 8px 4px;
+
+    border-radius: 12px;
+
+    font-size: 18px;
+}
+
+.mobile-nav button span {
+    display: block;
+    font-size: 9px;
+    margin-top: 3px;
+}
+
+.mobile-nav button.active {
+    color: white;
+    background: rgba(139,92,246,.15);
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1180px) {
+
+    .layout {
+        grid-template-columns:
+            210px
+            minmax(0,1fr);
+    }
+
+    .rightbar {
+        display: none;
+    }
+
+}
+
+@media (max-width: 820px) {
+
+    .topbar {
+        height: 62px;
+        padding: 0 12px;
+    }
+
+    .logo {
+        min-width: auto;
+    }
+
+    .logo strong {
+        font-size: 14px;
+    }
+
+    .logo span {
+        display: none;
+    }
+
+    .search {
+        max-width: none;
+    }
+
+    .top-actions {
+        display: none;
+    }
+
+    .layout {
+        display: block;
+        padding: 12px;
+    }
+
+    .sidebar {
+        display: none;
+    }
+
+    .mobile-nav {
+        display: grid;
+    }
+
+    body {
+        padding-bottom: 85px;
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .layout {
+        padding: 8px;
+    }
+
+    .hero {
+        padding: 20px;
+        border-radius: 18px;
+    }
+
+    .hero h1 {
+        font-size: 30px;
+    }
+
+    .card,
+    .post {
+        border-radius: 16px;
+    }
+
+    .grid,
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .post {
+        padding: 13px;
+    }
+
+    .post-body {
+        padding-left: 0;
+        padding-top: 13px;
+    }
+
+    .post-actions {
+        grid-template-columns: repeat(4,1fr);
+    }
+
+    .post-action {
+        font-size: 11px;
+        padding: 8px 2px;
+    }
+
+    .profile-cover {
+        height: 130px;
+    }
+
+    .stats {
+        gap: 17px;
+    }
+
+}
+
+@media (max-width: 400px) {
+
+    .logo-icon {
+        width: 35px;
+        height: 35px;
+    }
+
+    .logo strong {
+        font-size: 12px;
+    }
+
+    .search input {
+        height: 38px;
+        padding-left: 35px;
+    }
+
+    .hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .hero-actions .btn {
+        width: 100%;
+    }
+
+}
+
+/* ============================================================
+   ACCESSIBILITY
+============================================================ */
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid var(--accent2);
+    outline-offset: 2px;
+}
+
 </style>
 </head>
 
 <body>
-<div class="app-shell">
+
+<div class="app">
+
+<!-- ==========================================================
+     TOPBAR
+=========================================================== -->
 
 <header class="topbar">
-    <div class="topbar-inner">
 
-        <button class="logo" onclick="window.location.reload()" aria-label="NPCBook Home">
-            <span class="logo-icon">📱</span>
-            <span class="logo-text">NPC<span>Book</span></span>
-        </button>
+    <a href="#" class="logo" onclick="showPage('home')">
 
-        <div class="top-search">
-            <span class="search-icon">🔎</span>
-            <input
-                id="searchInput"
-                type="search"
-                placeholder="Search NPCs, worlds, posts..."
-                autocomplete="off"
-                oninput="handleSearch(this.value)"
-            >
+        <div class="logo-icon">
+            ✦
         </div>
 
-        <div class="top-actions">
-            <button class="icon-btn desktop-only" onclick="showNotifications()" title="Notifications">🔔</button>
-            <button class="icon-btn desktop-only" onclick="showMessages()" title="Messages">💬</button>
-            <button class="icon-btn" onclick="newWorld()" title="New Random World">🎲</button>
-            <button class="profile-mini" onclick="openProfile(currentUser.id)" title="My NPC">
-                <img id="topAvatar" src="" alt="Profile">
+        <div>
+            <strong>NPC OMNIVERSE</strong>
+            <span>THE LIVING NPC UNIVERSE</span>
+        </div>
+
+    </a>
+
+    <div class="search">
+
+        <span class="search-icon">⌕</span>
+
+        <input
+            id="searchInput"
+            type="search"
+            placeholder="Search NPCs, worlds, quests..."
+            oninput="globalSearch(this.value)"
+        >
+
+    </div>
+
+    <div class="top-actions">
+
+        <button class="icon-btn" onclick="showToast('No new notifications')">
+            🔔
+        </button>
+
+        <button class="icon-btn" onclick="showPage('messages')">
+            💬
+        </button>
+
+    </div>
+
+</header>
+
+
+<!-- ==========================================================
+     LAYOUT
+=========================================================== -->
+
+<div class="layout">
+
+<!-- ==========================================================
+     SIDEBAR
+=========================================================== -->
+
+<aside class="sidebar">
+
+    <nav class="nav-card">
+
+        <button class="nav-item active" data-page="home" onclick="showPage('home')">
+            <span class="nav-icon">⌂</span>
+            Omniverse
+        </button>
+
+        <button class="nav-item" data-page="explore" onclick="showPage('explore')">
+            <span class="nav-icon">◉</span>
+            Explore
+        </button>
+
+        <button class="nav-item" data-page="worlds" onclick="showPage('worlds')">
+            <span class="nav-icon">◈</span>
+            Worlds
+        </button>
+
+        <button class="nav-item" data-page="npcs" onclick="showPage('npcs')">
+            <span class="nav-icon">♙</span>
+            NPC Directory
+        </button>
+
+        <button class="nav-item" data-page="quests" onclick="showPage('quests')">
+            <span class="nav-icon">⚔</span>
+            Quests
+        </button>
+
+        <button class="nav-item" data-page="market" onclick="showPage('market')">
+            <span class="nav-icon">◇</span>
+            Market
+        </button>
+
+        <button class="nav-item" data-page="messages" onclick="showPage('messages')">
+            <span class="nav-icon">✉</span>
+            Messages
+        </button>
+
+        <button class="nav-item" data-page="notifications" onclick="showPage('notifications')">
+            <span class="nav-icon">♢</span>
+            Notifications
+        </button>
+
+        <button class="nav-item" data-page="settings" onclick="showPage('settings')">
+            <span class="nav-icon">⚙</span>
+            Settings
+        </button>
+
+    </nav>
+
+    <div class="nav-card side-generate">
+
+        <h3>Universe Tools</h3>
+
+        <p>
+            Create new NPCs and worlds and watch the Omniverse expand.
+        </p>
+
+        <button
+            class="btn btn-primary btn-full"
+            onclick="generateNPC()"
+        >
+            + Generate NPC
+        </button>
+
+        <br>
+
+        <button
+            class="btn btn-cyan btn-full"
+            onclick="generateWorld()"
+        >
+            + Generate World
+        </button>
+
+    </div>
+
+</aside>
+
+
+<!-- ==========================================================
+     MAIN CONTENT
+=========================================================== -->
+
+<main class="main">
+
+
+<!-- ==========================================================
+     HOME
+=========================================================== -->
+
+<section id="page-home" class="page active">
+
+    <div class="hero">
+
+        <h1>
+            Welcome to the
+            <span class="gradient-text">
+                Omniverse
+            </span>
+        </h1>
+
+        <p>
+            Every NPC has a life, every world has a history,
+            and every event can change the universe.
+            Explore stories from the perspective of the
+            characters who live inside them.
+        </p>
+
+        <div class="hero-actions">
+
+            <button
+                class="btn btn-primary"
+                onclick="showPage('explore')"
+            >
+                Explore Universe
             </button>
+
+            <button
+                class="btn"
+                onclick="generateNPC()"
+            >
+                Generate NPC
+            </button>
+
+            <button
+                class="btn"
+                onclick="generateWorld()"
+            >
+                Generate World
+            </button>
+
         </div>
 
     </div>
-</header>
 
-<main class="layout">
 
-    <aside class="sidebar">
+    <div class="card composer">
 
-        <div class="nav-card">
+        <div class="composer-top">
 
-            <button class="nav-item active" id="nav-home" onclick="goHome()">
-                <span class="nav-icon">🏠</span>
-                <span>Home</span>
-            </button>
+            <img
+                class="avatar"
+                src="https://i.pravatar.cc/150?img=11"
+            >
 
-            <button class="nav-item" id="nav-profile" onclick="openProfile(currentUser.id)">
-                <span class="nav-icon">🧑</span>
-                <span>My NPC</span>
-            </button>
+            <textarea
+                id="postText"
+                placeholder="What is happening in your world?"
+            ></textarea>
 
-            <button class="nav-item" id="nav-trending" onclick="showTrending()">
-                <span class="nav-icon">🔥</span>
-                <span>Trending</span>
-            </button>
+        </div>
 
-            <button class="nav-item" id="nav-quests" onclick="showQuests()">
-                <span class="nav-icon">🎯</span>
-                <span>Quests</span>
-            </button>
+        <div class="composer-bottom">
 
-            <button class="nav-item" id="nav-market" onclick="showMarket()">
-                <span class="nav-icon">🛒</span>
-                <span>NPC Market</span>
-            </button>
-
-            <div class="sidebar-divider"></div>
-
-            <button class="nav-item" onclick="generateNPC()">
-                <span class="nav-icon">✨</span>
-                <span>Generate NPC</span>
-            </button>
-
-            <button class="nav-item" onclick="randomPost()">
-                <span class="nav-icon">🎲</span>
-                <span>Random Post</span>
-            </button>
-
-            <button class="nav-item" onclick="showSettings()">
-                <span class="nav-icon">⚙️</span>
-                <span>Settings</span>
+            <button
+                class="btn btn-primary"
+                onclick="createPost()"
+            >
+                Publish Event
             </button>
 
         </div>
 
-        <div class="side-user">
-            <div class="side-user-row">
-                <img id="sideAvatar" src="" alt="">
-                <div>
-                    <div class="side-user-name" id="sideName"></div>
-                    <div class="side-user-handle" id="sideHandle"></div>
-                </div>
+    </div>
+
+
+    <div id="feed"></div>
+
+</section>
+
+
+<!-- ==========================================================
+     EXPLORE
+=========================================================== -->
+
+<section id="page-explore" class="page">
+
+    <div class="page-header">
+
+        <h1>Explore</h1>
+
+        <p>
+            Discover NPC activity across the Omniverse.
+        </p>
+
+    </div>
+
+    <div class="grid" id="exploreGrid"></div>
+
+</section>
+
+
+<!-- ==========================================================
+     WORLDS
+=========================================================== -->
+
+<section id="page-worlds" class="page">
+
+    <div class="page-header">
+
+        <h1>Worlds</h1>
+
+        <p>
+            Explore civilizations, dimensions and realities.
+        </p>
+
+    </div>
+
+    <div
+        class="grid"
+        id="worldGrid"
+    ></div>
+
+</section>
+
+
+<!-- ==========================================================
+     NPC DIRECTORY
+=========================================================== -->
+
+<section id="page-npcs" class="page">
+
+    <div class="page-header">
+
+        <h1>NPC Directory</h1>
+
+        <p>
+            Every character has a story.
+        </p>
+
+    </div>
+
+    <div
+        class="grid"
+        id="npcGrid"
+    ></div>
+
+</section>
+
+
+<!-- ==========================================================
+     QUESTS
+=========================================================== -->
+
+<section id="page-quests" class="page">
+
+    <div class="page-header">
+
+        <h1>Quests</h1>
+
+        <p>
+            Active missions from across the Omniverse.
+        </p>
+
+    </div>
+
+    <div
+        class="grid"
+        id="questGrid"
+    ></div>
+
+</section>
+
+
+<!-- ==========================================================
+     MARKET
+=========================================================== -->
+
+<section id="page-market" class="page">
+
+    <div class="page-header">
+
+        <h1>Omniverse Market</h1>
+
+        <p>
+            Items and artifacts discovered across worlds.
+        </p>
+
+    </div>
+
+    <div
+        class="grid"
+        id="marketGrid"
+    ></div>
+
+</section>
+
+
+<!-- ==========================================================
+     MESSAGES
+=========================================================== -->
+
+<section id="page-messages" class="page">
+
+    <div class="page-header">
+
+        <h1>Messages</h1>
+
+        <p>
+            Conversations between inhabitants.
+        </p>
+
+    </div>
+
+    <div class="card" style="padding:20px">
+
+        <div class="npc-card">
+
+            <img
+                class="avatar"
+                src="https://i.pravatar.cc/150?img=47"
+            >
+
+            <div class="npc-info">
+
+                <h3>Mira Solen</h3>
+
+                <p class="card-muted">
+                    The eastern sky-port is under construction.
+                    You should see what they're building.
+                </p>
+
             </div>
+
         </div>
 
-    </aside>
+        <br>
 
-    <section class="feed" id="mainContent">
+        <div class="npc-card">
 
-        <div class="feed-header">
-            <div>
-                <div class="feed-title" id="feedTitle">Home</div>
-                <div class="feed-subtitle" id="feedSubtitle">The internet is full of NPCs.</div>
+            <img
+                class="avatar"
+                src="https://i.pravatar.cc/150?img=32"
+            >
+
+            <div class="npc-info">
+
+                <h3>Nyx Arclight</h3>
+
+                <p class="card-muted">
+                    Don't open the memory file I sent you.
+                </p>
+
             </div>
 
-            <button class="world-refresh" onclick="newWorld()">
-                🎲 New World
-            </button>
         </div>
 
-        <div id="feedContent"></div>
+    </div>
 
-    </section>
+</section>
 
-    <aside class="right-column">
 
-        <div class="widget">
-            <div class="widget-title">🔥 Trending NPC Lore</div>
-            <div id="trendsWidget"></div>
-        </div>
+<!-- ==========================================================
+     NOTIFICATIONS
+=========================================================== -->
 
-        <div class="widget">
-            <div class="widget-title">🎯 Active Quests</div>
-            <div id="questsWidget"></div>
-        </div>
+<section id="page-notifications" class="page">
 
-        <div class="widget">
-            <div class="widget-title">👥 NPCs You May Know</div>
-            <div id="peopleWidget"></div>
-        </div>
+    <div class="page-header">
 
-    </aside>
+        <h1>Notifications</h1>
+
+        <p>
+            Activity from around the Omniverse.
+        </p>
+
+    </div>
+
+    <div class="card" style="padding:20px">
+
+        <p style="padding:12px 0;border-bottom:1px solid var(--border)">
+            ❤️ Nyx Arclight liked your discovery.
+        </p>
+
+        <p style="padding:12px 0;border-bottom:1px solid var(--border)">
+            🌎 Aetheria has a new event.
+        </p>
+
+        <p style="padding:12px 0;border-bottom:1px solid var(--border)">
+            ⚔ New quest available: The Missing Cartographer.
+        </p>
+
+        <p style="padding:12px 0">
+            ✦ The Omniverse generated a new anomaly.
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- ==========================================================
+     SETTINGS
+=========================================================== -->
+
+<section id="page-settings" class="page">
+
+    <div class="page-header">
+
+        <h1>Settings</h1>
+
+        <p>
+            Configure your Omniverse experience.
+        </p>
+
+    </div>
+
+    <div class="card" style="padding:20px">
+
+        <label style="display:block;margin-bottom:15px">
+
+            <strong>Interface</strong>
+
+        </label>
+
+        <button
+            class="btn"
+            onclick="showToast('Dark Omniverse mode is active')"
+        >
+            🌙 Dark Mode
+        </button>
+
+        <br><br>
+
+        <button
+            class="btn"
+            onclick="showToast('Notifications enabled')"
+        >
+            🔔 Notifications
+
+        </button>
+
+        <br><br>
+
+        <button
+            class="btn"
+            onclick="showToast('No account required')"
+        >
+            👤 Guest Mode
+
+        </button>
+
+    </div>
+
+</section>
 
 </main>
 
+
+<!-- ==========================================================
+     RIGHTBAR
+=========================================================== -->
+
+<aside class="rightbar">
+
+    <div class="widget">
+
+        <div class="widget-title">
+
+            <strong>Trending Worlds</strong>
+
+            <span>LIVE</span>
+
+        </div>
+
+        <div class="trend">
+
+            <small>01</small>
+
+            <strong>Eclipse Realm</strong>
+
+            <span>84K active NPCs</span>
+
+        </div>
+
+        <div class="trend">
+
+            <small>02</small>
+
+            <strong>Neon Metropolis</strong>
+
+            <span>61K active NPCs</span>
+
+        </div>
+
+        <div class="trend">
+
+            <small>03</small>
+
+            <strong>Aetheria</strong>
+
+            <span>42K active NPCs</span>
+
+        </div>
+
+    </div>
+
+
+    <div class="widget">
+
+        <div class="widget-title">
+
+            <strong>Live Events</strong>
+
+            <span>NOW</span>
+
+        </div>
+
+        <div class="trend">
+
+            <strong>⚠ Time anomaly</strong>
+
+            <span>Chronos Sector 7</span>
+
+        </div>
+
+        <div class="trend">
+
+            <strong>⚔ Settlement conflict</strong>
+
+            <span>Iron Frontier</span>
+
+        </div>
+
+        <div class="trend">
+
+            <strong>🚀 Airship launch</strong>
+
+            <span>Aetheria</span>
+
+        </div>
+
+    </div>
+
+
+    <div class="widget">
+
+        <div class="widget-title">
+
+            <strong>Omniverse Stats</strong>
+
+        </div>
+
+        <div class="trend">
+
+            <strong>26,482,194</strong>
+
+            <span>Known NPCs</span>
+
+        </div>
+
+        <div class="trend">
+
+            <strong>5,291</strong>
+
+            <span>Known Worlds</span>
+
+        </div>
+
+        <div class="trend">
+
+            <strong>18,903</strong>
+
+            <span>Active Events</span>
+
+        </div>
+
+    </div>
+
+</aside>
+
+</div>
+
+
+<!-- ==========================================================
+     MOBILE NAV
+=========================================================== -->
+
 <nav class="mobile-nav">
-    <button id="mobile-home" class="active" onclick="goHome()">
-        <span class="mobile-nav-icon">🏠</span>
-        <span class="mobile-nav-label">Home</span>
+
+    <button
+        class="active"
+        data-page="home"
+        onclick="showPage('home')"
+    >
+        ⌂
+        <span>Home</span>
     </button>
 
-    <button id="mobile-search" onclick="focusSearch()">
-        <span class="mobile-nav-icon">🔎</span>
-        <span class="mobile-nav-label">Search</span>
+    <button
+        data-page="explore"
+        onclick="showPage('explore')"
+    >
+        ◉
+        <span>Explore</span>
     </button>
 
-    <button id="mobile-create" onclick="focusComposer()">
-        <span class="mobile-nav-icon">➕</span>
-        <span class="mobile-nav-label">Post</span>
+    <button
+        data-page="worlds"
+        onclick="showPage('worlds')"
+    >
+        ◈
+        <span>Worlds</span>
     </button>
 
-    <button id="mobile-notifications" onclick="showNotifications()">
-        <span class="mobile-nav-icon">🔔</span>
-        <span class="mobile-nav-label">Alerts</span>
+    <button
+        data-page="npcs"
+        onclick="showPage('npcs')"
+    >
+        ♙
+        <span>NPCs</span>
     </button>
 
-    <button id="mobile-profile" onclick="openProfile(currentUser.id)">
-        <span class="mobile-nav-icon">👤</span>
-        <span class="mobile-nav-label">Profile</span>
+    <button
+        data-page="quests"
+        onclick="showPage('quests')"
+    >
+        ⚔
+        <span>Quests</span>
     </button>
+
 </nav>
 
-<div class="toast-container" id="toastContainer"></div>
+</div>
 
-<div class="modal-backdrop hidden" id="modalBackdrop" onclick="backdropClose(event)">
-    <div class="modal" id="modal">
-        <div class="modal-header">
-            <div class="modal-title" id="modalTitle">NPCBook</div>
-            <button class="close-btn" onclick="closeModal()">✕</button>
+
+<!-- ==========================================================
+     MODAL
+=========================================================== -->
+
+<div
+    id="modal"
+    class="modal"
+    onclick="closeModal(event)"
+>
+
+    <div
+        class="modal-box"
+        onclick="event.stopPropagation()"
+    >
+
+        <div class="modal-head">
+
+            <h2 id="modalTitle">
+                Omniverse
+            </h2>
+
+            <button
+                class="close"
+                onclick="hideModal()"
+            >
+                ×
+            </button>
+
         </div>
-        <div class="modal-body" id="modalBody"></div>
+
+        <div id="modalContent"></div>
+
     </div>
-</div>
 
 </div>
+
+
+<div
+    id="toast"
+    class="toast"
+>
+    Done
+</div>
+
 
 <script>
-"use strict";
 
-/* =========================================================
-   RANDOM HELPERS
-========================================================= */
-
-function rand(max){
-    if(max <= 0) return 0;
-
-    if(window.crypto && crypto.getRandomValues){
-        const a = new Uint32Array(1);
-        crypto.getRandomValues(a);
-        return a[0] % max;
-    }
-
-    return Math.floor(Math.random() * max);
-}
-
-function pick(arr){
-    return arr[rand(arr.length)];
-}
-
-function chance(percent){
-    return rand(100) < percent;
-}
-
-function uid(prefix="id"){
-    const a = new Uint32Array(3);
-
-    if(window.crypto && crypto.getRandomValues){
-        crypto.getRandomValues(a);
-        return prefix + "_" +
-            a[0].toString(36) +
-            a[1].toString(36) +
-            a[2].toString(36);
-    }
-
-    return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function escapeHTML(value){
-    return String(value ?? "")
-        .replace(/&/g,"&amp;")
-        .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/"/g,"&quot;")
-        .replace(/'/g,"&#039;");
-}
-
-/* =========================================================
-   COUNTRY DATA
-========================================================= */
-
-const COUNTRY_DATA = [
-    {
-        country:"India",
-        cities:["Delhi","Mumbai","Bengaluru","Hyderabad","Pune","Chennai","Jaipur","Hansi","Kolkata"],
-        first:["Aarav","Arjun","Rohan","Kabir","Aditya","Vihaan","Ishaan","Rahul","Karan","Neha","Ananya","Priya","Kavya","Meera","Riya","Aditi"],
-        last:["Sharma","Verma","Singh","Kumar","Patel","Mehta","Gupta","Malik","Joshi","Yadav","Kapoor","Chauhan"]
-    },
-    {
-        country:"Japan",
-        cities:["Tokyo","Osaka","Kyoto","Yokohama","Sapporo","Nagoya"],
-        first:["Haruto","Ren","Yuki","Sota","Kaito","Daiki","Hina","Aoi","Yuna","Mio","Sakura","Rin"],
-        last:["Sato","Suzuki","Takahashi","Tanaka","Watanabe","Ito","Yamamoto","Nakamura"]
-    },
-    {
-        country:"South Korea",
-        cities:["Seoul","Busan","Incheon","Daegu","Daejeon"],
-        first:["Minjun","Jiho","Seojun","Hyunwoo","Jisoo","Minseo","Sora","Yuna","Eunji","Hana"],
-        last:["Kim","Lee","Park","Choi","Jung","Kang","Cho","Yoon","Han"]
-    },
-    {
-        country:"Brazil",
-        cities:["São Paulo","Rio de Janeiro","Brasília","Curitiba","Salvador"],
-        first:["Lucas","Gabriel","Mateus","Rafael","Bruno","Thiago","Marina","Beatriz","Camila","Larissa","Julia"],
-        last:["Silva","Santos","Oliveira","Souza","Costa","Pereira","Almeida","Ribeiro"]
-    },
-    {
-        country:"France",
-        cities:["Paris","Lyon","Marseille","Nice","Toulouse"],
-        first:["Louis","Hugo","Gabriel","Arthur","Lucas","Emma","Chloe","Camille","Lea","Manon"],
-        last:["Martin","Bernard","Dubois","Thomas","Robert","Richard","Petit","Durand"]
-    },
-    {
-        country:"Germany",
-        cities:["Berlin","Munich","Hamburg","Cologne","Frankfurt"],
-        first:["Lukas","Leon","Paul","Felix","Jonas","Max","Anna","Lena","Mia","Hannah","Laura"],
-        last:["Müller","Schmidt","Schneider","Fischer","Weber","Meyer","Wagner","Becker"]
-    },
-    {
-        country:"United States",
-        cities:["New York","Chicago","Seattle","Austin","Boston","Los Angeles","Denver"],
-        first:["Ethan","Noah","Liam","Mason","Lucas","Oliver","Emma","Olivia","Ava","Mia","Chloe","Sophie"],
-        last:["Smith","Johnson","Brown","Davis","Miller","Wilson","Moore","Taylor","Anderson","Thomas"]
-    },
-    {
-        country:"Canada",
-        cities:["Toronto","Vancouver","Montreal","Calgary","Ottawa"],
-        first:["Liam","Ethan","Noah","Jack","Owen","Maya","Emma","Claire","Sophie","Ella"],
-        last:["Smith","Brown","Martin","Wilson","Taylor","Campbell","Anderson","Clark"]
-    },
-    {
-        country:"United Kingdom",
-        cities:["London","Manchester","Bristol","Leeds","Liverpool","Edinburgh"],
-        first:["Oliver","George","Harry","Jack","Arthur","Charlie","Amelia","Isla","Emily","Sophie","Grace"],
-        last:["Smith","Jones","Taylor","Brown","Williams","Wilson","Davies","Evans"]
-    },
-    {
-        country:"Australia",
-        cities:["Sydney","Melbourne","Brisbane","Perth","Adelaide"],
-        first:["Jack","William","Noah","Oliver","Leo","James","Charlotte","Isla","Mia","Ruby","Grace"],
-        last:["Smith","Jones","Williams","Brown","Wilson","Taylor","Anderson","Walker"]
-    },
-    {
-        country:"Spain",
-        cities:["Madrid","Barcelona","Valencia","Seville","Bilbao"],
-        first:["Alejandro","Daniel","Pablo","Carlos","Miguel","Lucas","Sofia","Lucia","Elena","Carmen","Clara"],
-        last:["Garcia","Fernandez","Gonzalez","Rodriguez","Lopez","Martinez","Sanchez","Perez"]
-    },
-    {
-        country:"Italy",
-        cities:["Rome","Milan","Naples","Turin","Florence"],
-        first:["Luca","Matteo","Marco","Andrea","Alessandro","Francesco","Sofia","Giulia","Chiara","Elena"],
-        last:["Rossi","Russo","Ferrari","Esposito","Bianchi","Romano","Colombo","Ricci"]
-    },
-    {
-        country:"Mexico",
-        cities:["Mexico City","Guadalajara","Monterrey","Puebla","Cancún"],
-        first:["Santiago","Mateo","Diego","Luis","Carlos","Javier","Sofia","Valeria","Camila","Lucia"],
-        last:["Garcia","Hernandez","Martinez","Lopez","Gonzalez","Perez","Rodriguez","Sanchez"]
-    },
-    {
-        country:"Egypt",
-        cities:["Cairo","Alexandria","Giza","Luxor"],
-        first:["Omar","Youssef","Karim","Adam","Ahmed","Amr","Mariam","Nour","Salma","Laila"],
-        last:["Hassan","Ali","Mahmoud","Ibrahim","Mostafa","Khalil","Farouk"]
-    },
-    {
-        country:"Nigeria",
-        cities:["Lagos","Abuja","Ibadan","Kano"],
-        first:["Daniel","David","Samuel","Michael","Joshua","James","Ada","Amara","Chioma","Grace"],
-        last:["Okafor","Adeyemi","Okoro","Adebayo","Eze","Balogun","Obi"]
-    },
-    {
-        country:"Turkey",
-        cities:["Istanbul","Ankara","Izmir","Bursa","Antalya"],
-        first:["Emir","Kerem","Mert","Can","Arda","Efe","Zeynep","Elif","Derya","Defne"],
-        last:["Yilmaz","Kaya","Demir","Sahin","Celik","Aydin","Arslan"]
-    },
-    {
-        country:"Poland",
-        cities:["Warsaw","Krakow","Gdansk","Wroclaw"],
-        first:["Jakub","Jan","Antoni","Piotr","Kacper","Adam","Zofia","Julia","Maja","Oliwia"],
-        last:["Nowak","Kowalski","Wisniewski","Wojcik","Kaminski","Lewandowski"]
-    },
-    {
-        country:"Russia",
-        cities:["Moscow","Saint Petersburg","Kazan","Novosibirsk"],
-        first:["Alexander","Dmitri","Nikolai","Mikhail","Ivan","Alexei","Anna","Sofia","Maria","Elena"],
-        last:["Ivanov","Petrov","Sokolov","Smirnov","Volkov","Kuznetsov"]
-    },
-    {
-        country:"Greece",
-        cities:["Athens","Thessaloniki","Patras"],
-        first:["Nikos","Giorgos","Dimitris","Alexandros","Maria","Eleni","Sofia","Katerina"],
-        last:["Papadopoulos","Georgiou","Nikolaidis","Pappas","Dimitriou"]
-    },
-    {
-        country:"China",
-        cities:["Shanghai","Beijing","Shenzhen","Guangzhou","Chengdu"],
-        first:["Wei","Jun","Hao","Ming","Tao","Li","Yue","Mei","Xin","Lin"],
-        last:["Wang","Li","Zhang","Liu","Chen","Yang","Huang","Zhao"]
-    },
-    {
-        country:"Thailand",
-        cities:["Bangkok","Chiang Mai","Pattaya","Phuket"],
-        first:["Narin","Krit","Than","Anan","Preecha","Mali","Nicha","Pim","Suda"],
-        last:["Sukhum","Chai","Srisuk","Wong","Kittisak"]
-    },
-    {
-        country:"Vietnam",
-        cities:["Hanoi","Ho Chi Minh City","Da Nang","Hai Phong"],
-        first:["Minh","Nam","Huy","Long","Duc","Lan","Linh","Mai","Thao"],
-        last:["Nguyen","Tran","Le","Pham","Hoang","Vo","Phan"]
-    },
-    {
-        country:"Indonesia",
-        cities:["Jakarta","Bandung","Surabaya","Yogyakarta","Bali"],
-        first:["Rizky","Dimas","Budi","Arif","Fajar","Ayu","Putri","Sari","Dewi"],
-        last:["Santoso","Wijaya","Saputra","Pratama","Hidayat"]
-    },
-    {
-        country:"South Africa",
-        cities:["Johannesburg","Cape Town","Durban","Pretoria"],
-        first:["Liam","Thabo","Sipho","Daniel","Ethan","Zanele","Aisha","Maya","Lerato"],
-        last:["Nkosi","Dlamini","Mokoena","Naidoo","Pillay"]
-    }
-];
-
-/* =========================================================
-   WORLDS
-========================================================= */
-
-const WORLD_CATALOG = [
-    {
-        type:"video-game",
-        name:"Fantasy RPG",
-        emoji:"⚔️",
-        locations:["Moonfall Village","Ironroot Forest","Kingdom of Eldoria","Whispering Ruins"]
-    },
-    {
-        type:"video-game",
-        name:"MMORPG",
-        emoji:"🛡️",
-        locations:["Central Spawn","Crystal Harbor","Guild District","Old Market"]
-    },
-    {
-        type:"video-game",
-        name:"Dungeon Crawler",
-        emoji:"🏰",
-        locations:["Dungeon Entrance","Floor 17","Potion Alley","Boss Room Lobby"]
-    },
-    {
-        type:"video-game",
-        name:"Survival Game",
-        emoji:"🏕️",
-        locations:["Pine Camp","Abandoned Factory","River Base","Northern Outpost"]
-    },
-    {
-        type:"video-game",
-        name:"Sandbox Game",
-        emoji:"🧱",
-        locations:["Spawn Village","Redstone District","Sky Island","Creeper Plains"]
-    },
-    {
-        type:"video-game",
-        name:"Farming Sim",
-        emoji:"🌾",
-        locations:["Sunflower Farm","Green Valley","Market Town","Windmill Road"]
-    },
-    {
-        type:"video-game",
-        name:"Sci-Fi Game",
-        emoji:"🚀",
-        locations:["Orbital Station","Mars Colony","Neon Sector","Outer Rim"]
-    },
-    {
-        type:"video-game",
-        name:"Horror Game",
-        emoji:"👻",
-        locations:["Old Hospital","Foggy Town","Basement Level","Abandoned Motel"]
-    },
-    {
-        type:"video-game",
-        name:"Soulslike",
-        emoji:"🔥",
-        locations:["Ashen Cathedral","Forgotten Keep","Black Marsh","Ruined Capital"]
-    },
-    {
-        type:"video-game",
-        name:"Tactical Game",
-        emoji:"🎯",
-        locations:["Command Center","Training Yard","Northern Front","Watchtower"]
-    },
-
-    {
-        type:"novel",
-        name:"Fantasy Novel",
-        emoji:"📖",
-        locations:["Royal Capital","Mage Quarter","Ancient Library","Dragon Pass"]
-    },
-    {
-        type:"novel",
-        name:"Detective Mystery",
-        emoji:"🕵️",
-        locations:["Rainy District","Police Archive","Old Theater","Harbor Street"]
-    },
-    {
-        type:"novel",
-        name:"Romance Novel",
-        emoji:"🌹",
-        locations:["Riverside Café","Old Bookshop","University Street","Seaside Hotel"]
-    },
-    {
-        type:"novel",
-        name:"Dystopian Fiction",
-        emoji:"🏙️",
-        locations:["Sector 9","Central Authority","Lower District","Checkpoint 4"]
-    },
-    {
-        type:"novel",
-        name:"Historical Fiction",
-        emoji:"🏛️",
-        locations:["Old Capital","Market Square","Royal Court","Harbor Quarter"]
-    },
-    {
-        type:"novel",
-        name:"Sci-Fi Novel",
-        emoji:"🪐",
-        locations:["Orbital Colony","Lunar City","Research Ring","Deep Space Port"]
-    },
-    {
-        type:"novel",
-        name:"Mystery Novel",
-        emoji:"🔎",
-        locations:["Fog Street","Manor House","Village Station","Locked Library"]
-    },
-
-    {
-        type:"manhwa",
-        name:"Dungeon Hunter",
-        emoji:"🗡️",
-        locations:["Hunter Association","Gate District","Ranker Plaza","Dungeon Lobby"]
-    },
-    {
-        type:"manhwa",
-        name:"Regression",
-        emoji:"⏳",
-        locations:["Second Timeline","Academy Gate","Future Capital","Old Guild Hall"]
-    },
-    {
-        type:"manhwa",
-        name:"Tower",
-        emoji:"🗼",
-        locations:["Tower Floor 1","Tower Floor 50","Ranker Lobby","Testing Room"]
-    },
-    {
-        type:"manhwa",
-        name:"Murim",
-        emoji:"🥋",
-        locations:["Mountain Sect","Training Yard","Tea House","Martial Market"]
-    },
-    {
-        type:"manhwa",
-        name:"Academy",
-        emoji:"🎓",
-        locations:["Magic Academy","Dormitory","Training Hall","Library Wing"]
-    },
-    {
-        type:"manhwa",
-        name:"Villainess",
-        emoji:"👑",
-        locations:["Royal Ballroom","Noble District","Garden Palace","Tea Room"]
-    },
-    {
-        type:"manhwa",
-        name:"Hunter Guild",
-        emoji:"🏹",
-        locations:["Guild Office","Raid Gate","Hunter Café","Equipment Shop"]
-    },
-
-    {
-        type:"comic",
-        name:"DC Comics — Gotham City",
-        emoji:"🦇",
-        locations:["Gotham Docks","Crime Alley","Wayne District","Gotham Market"]
-    },
-    {
-        type:"comic",
-        name:"DC Comics — Metropolis",
-        emoji:"🦸",
-        locations:["Metropolis Downtown","Daily Planet District","Centennial Park","West End"]
-    },
-    {
-        type:"comic",
-        name:"DC Comics — Central City",
-        emoji:"⚡",
-        locations:["Central City Station","Downtown","Police Lab","Riverside"]
-    },
-    {
-        type:"comic",
-        name:"DC Comics — Themyscira",
-        emoji:"🏛️",
-        locations:["Island Harbor","Training Grounds","Temple Road","Royal Gardens"]
-    },
-    {
-        type:"comic",
-        name:"Marvel Comics — New York",
-        emoji:"🕷️",
-        locations:["Queens","Hell's Kitchen","Midtown","Brooklyn"]
-    },
-    {
-        type:"comic",
-        name:"Marvel Comics — Wakanda",
-        emoji:"🐾",
-        locations:["Golden City","Market District","Research Center","Royal Road"]
-    },
-    {
-        type:"comic",
-        name:"Marvel Comics — Asgard",
-        emoji:"⚡",
-        locations:["Rainbow Bridge","Royal Road","Golden Hall","Market Square"]
-    },
-    {
-        type:"comic",
-        name:"Superhero Comic City",
-        emoji:"💥",
-        locations:["Hero Plaza","Villain District","City Hall","Metro Station"]
-    },
-    {
-        type:"comic",
-        name:"Noir Comic Universe",
-        emoji:"🕶️",
-        locations:["Rainy Boulevard","Back Alley","Neon Club","Old Station"]
-    },
-    {
-        type:"comic",
-        name:"Cosmic Comic Universe",
-        emoji:"🌌",
-        locations:["Starport","Nebula Market","Orbital City","Void Station"]
-    },
-    {
-        type:"comic",
-        name:"Supernatural Comic Town",
-        emoji:"🌙",
-        locations:["Old Cemetery","Moonlit Street","Occult Bookshop","Forest Edge"]
-    },
-    {
-        type:"comic",
-        name:"Indie Slice-of-Life Comic",
-        emoji:"☕",
-        locations:["Corner Café","Apartment Block","Local Bookshop","Bus Stop"]
-    },
-
-    {
-        type:"real-world",
-        name:"Real World — City Life",
-        emoji:"🏙️",
-        locations:["Downtown","Bus Stop","Office District","Shopping Street"]
-    },
-    {
-        type:"real-world",
-        name:"Real World — Café",
-        emoji:"☕",
-        locations:["Corner Café","Coffee Counter","Back Kitchen","Window Table"]
-    },
-    {
-        type:"real-world",
-        name:"Real World — Office",
-        emoji:"💼",
-        locations:["Open Office","Meeting Room","Reception","Break Room"]
-    },
-    {
-        type:"real-world",
-        name:"Real World — School",
-        emoji:"🏫",
-        locations:["Classroom","Staff Room","Library","School Gate"]
-    },
-    {
-        type:"real-world",
-        name:"Real World — Hospital",
-        emoji:"🏥",
-        locations:["Reception","Staff Corridor","Cafeteria","Waiting Area"]
-    },
-    {
-        type:"real-world",
-        name:"Real World — Shop",
-        emoji:"🏪",
-        locations:["Front Counter","Storage Room","Market Street","Cash Desk"]
-    },
-    {
-        type:"real-world",
-        name:"Real World — Transport",
-        emoji:"🚌",
-        locations:["Bus Terminal","Railway Station","Taxi Stand","Platform"]
-    },
-    {
-        type:"real-world",
-        name:"Real World — Workshop",
-        emoji:"🔧",
-        locations:["Garage","Workshop Floor","Tool Room","Service Desk"]
-    }
-];
-
-/* =========================================================
-   NPC JOBS
-========================================================= */
-
-const JOBS = [
-    "Barista",
-    "Receptionist",
-    "Teacher",
-    "Librarian",
-    "Mechanic",
-    "Delivery Rider",
-    "Security Guard",
-    "Cashier",
-    "Shopkeeper",
-    "Photographer",
-    "Office Worker",
-    "Software Developer",
-    "Chef",
-    "Waiter",
-    "Taxi Driver",
-    "Bus Conductor",
-    "Hotel Receptionist",
-    "Farmer",
-    "Warehouse Worker",
-    "Bookstore Clerk",
-    "Electrician",
-    "Graphic Designer",
-    "Nurse",
-    "Journalist",
-    "Accountant",
-    "Construction Worker",
-    "Cleaner",
-    "Sales Assistant",
-    "Florist",
-    "Bakery Worker"
-];
-
-/* =========================================================
-   NPC PERSONALITIES
-========================================================= */
-
-const PERSONALITIES = [
-    "quiet observer",
-    "overly enthusiastic",
-    "sarcastic realist",
-    "friendly gossip",
-    "professional complainer",
-    "optimistic disaster",
-    "sleep-deprived worker",
-    "mysteriously calm",
-    "permanent side-quest energy",
-    "local legend according to exactly three people",
-    "extremely literal",
-    "accidentally philosophical",
-    "chaotic but polite",
-    "suspiciously organized",
-    "quietly ambitious",
-    "dramatic for no reason",
-    "helpful but exhausted",
-    "competitive about everything"
-];
-
-/* =========================================================
-   POST TEMPLATES
-========================================================= */
-
-const POST_TEMPLATES = [
-
-    "The hero came back today. Apparently he needed another identical healing potion. I have been selling him the same bottle for three years. Neither of us has questioned this.",
-
-    "Someone asked me where the castle is. I pointed directly at it. They walked into a tree.",
-
-    "I have one line of dialogue. They have heard it 847 times. Somehow I am the repetitive one.",
-
-    "The chosen one saved the kingdom today. Immediately afterwards, they stole someone's horse.",
-
-    "Management announced that we are now 'living our best NPC lives.' They also removed our pensions.",
-
-    "A stranger walked into my shop, opened every chest, broke three chairs and left without buying anything.",
-
-    "I watched someone spend twenty minutes deciding which door to open. Both doors lead to the same room.",
-
-    "The boss fight started at 9:00. I am technically still waiting for the cutscene to finish.",
-
-    "My entire job is standing here until someone walks close enough to activate my dialogue.",
-
-    "I have been guarding this bridge for six years. Nobody has ever asked what is under it.",
-
-    "A player asked if this quest was optional. I have been standing here holding the quest item since Tuesday.",
-
-    "Today someone complimented my hat. This is the best character development I have received all year.",
-
-    "The legendary warrior bought three sandwiches and asked if I had a loyalty card.",
-
-    "I saw the main character today. They were carrying seventeen swords and absolutely no food.",
-
-    "The adventurer sold me a rare magical sword for the price of a sandwich. I am beginning to suspect the economy is broken.",
-
-    "My shift ends when the hero leaves town. The hero has been in town for eleven hours.",
-
-    "The prophecy said a great warrior would arrive. A confused tourist arrived instead. We gave them the prophecy anyway.",
-
-    "I work at the inn. The same party has rented the same room for six months and somehow never sleeps.",
-
-    "The wizard asked for directions to the library. I pointed at the building labelled LIBRARY.",
-
-    "Someone tried to intimidate me by dramatically removing their sunglasses. It was nighttime.",
-
-    "Today I learned that being a background character does not exempt you from paperwork.",
-
-    "The guild board has 37 quests. Every single one involves collecting something from the same forest.",
-
-    "I opened the shop this morning. A legendary warrior immediately sold me seventeen spoons.",
-
-    "A mysterious stranger entered town during a thunderstorm. Turns out they were just looking for the bus stop.",
-
-    "The dungeon has a secret door. I know because I installed it.",
-
-    "Nobody notices the NPCs until they need directions.",
-
-    "I have never seen the final boss. I have, however, seen everyone return from there and complain about the music.",
-
-    "Today a customer asked if the item was rare. I said yes. They bought six.",
-
-    "The quest giver next door has started using motivational quotes. Morale is somehow worse.",
-
-    "Someone asked whether the sword was cursed. I said probably. They bought it anyway.",
-
-    "My workplace has a mysterious locked room. Management calls it 'the server room.' The adventurers call it 'bonus content.'",
-
-    "The hero said they would return tomorrow. They always say tomorrow.",
-
-    "I saw the same person die seven times today. They kept coming back like nothing happened.",
-
-    "The town guard has officially banned people from jumping on the furniture. The furniture has filed an appeal.",
-
-    "A customer complained that my dialogue options were too limited. I have filed a complaint with management.",
-
-    "Someone stole the town bell. Nobody knows why. Everyone is pretending this is normal.",
-
-    "The blacksmith says business is slow. Then three heroes arrived carrying broken swords.",
-
-    "I asked the mage why they were glowing. They said it was 'a passive effect.' I regret asking.",
-
-    "Today was peaceful. Suspiciously peaceful. I expect a dragon by dinner.",
-
-    "My manager said the customer is always right. The customer asked me where the moon is.",
-
-    "I spent the whole day polishing the same sword. Nobody has ever bought it.",
-
-    "The delivery arrived three days early. The customer accused us of time travel.",
-
-    "My boss scheduled a meeting to discuss why nobody attends meetings.",
-
-    "Someone stole the office stapler. The investigation has been going on for two weeks.",
-
-    "I said I was five minutes away. Traffic has now become a philosophical problem.",
-
-    "The coffee machine made a noise that sounded like a warning. We all ignored it.",
-
-    "My shift started at 8. The clock says 8:03. Management says I am already late.",
-
-    "A customer asked for decaf and then ordered three energy drinks.",
-
-    "The printer has been broken for six months. Today it printed one page by itself. Nobody wants to talk about it.",
-
-    "The library is quiet until someone whispers loudly about how quiet the library is.",
-
-    "I organized the entire storage room. Someone immediately moved everything.",
-
-    "The elevator stopped on every floor today. It has become a sightseeing tour.",
-
-    "My lunch break lasted twelve minutes. Seven were spent finding somewhere to sit.",
-
-    "A customer returned an item because it 'felt suspicious.' Honestly, fair.",
-
-    "The meeting could have been an email. The email could have been silence.",
-
-    "Someone asked me to fix their computer. It was not plugged in.",
-
-    "I have explained the same policy seventeen times today. The policy has not changed.",
-
-    "My neighbor bought a new lawn chair and now considers themselves an outdoor enthusiast.",
-
-    "The bus was late. Everyone complained. Then it arrived early tomorrow.",
-
-    "A tourist asked me where the famous local landmark was while standing directly beside it.",
-
-    "The café ran out of cups. We have entered a new phase of civilization.",
-
-    "I accidentally waved back at someone who was waving at a person behind me. We are now friends.",
-
-    "My phone battery is at 3%. I have chosen optimism.",
-
-    "The weather app said clear skies. The sky has submitted a rebuttal.",
-
-    "I went to the supermarket for one thing. I returned with twelve things and forgot the one thing.",
-
-    "I have no idea what is happening, but everyone else is walking quickly, so I am walking quickly too.",
-
-    "The mechanic said the car makes a strange noise. I said it has always made that noise. He stared at me for ten seconds.",
-
-    "The receptionist asked who I was here to see. I forgot why I came.",
-
-    "I spent an hour looking for my glasses. They were on my head.",
-
-    "The office group chat has 96 unread messages. I am choosing peace.",
-
-    "I cleaned the counter five minutes ago. Someone has already spilled coffee on it.",
-
-    "The shop is closing in ten minutes. Suddenly everyone has urgent shopping to do.",
-
-    "My coworker said 'quick question.' It was not a quick question.",
-
-    "The librarian gave me a look because I laughed. The book was funny.",
-
-    "I arrived early. This is not a personality trait. I simply misunderstood the time.",
-
-    "The delivery address said 'blue door.' There are seventeen blue doors.",
-
-    "I fixed the machine. It immediately broke again out of respect.",
-
-    "Someone asked if I work here while I was wearing the uniform, name badge and standing behind the counter.",
-
-    "I am not saying the office printer is haunted. I am saying it knows when I am in a hurry.",
-
-    "Today I discovered a shortcut. It took longer than the normal route.",
-
-    "My boss said we need to think outside the box. We are still inside the meeting room.",
-
-    "I made a to-do list. Writing the list became item number one.",
-
-    "The customer said 'no rush.' Then checked the time six times.",
-
-    "I have mastered the art of looking busy when there is absolutely nothing to do."
-];
-
-/* =========================================================
-   WORLD-SPECIFIC TEMPLATES
-========================================================= */
-
-const SPECIAL_POSTS = {
-    "Gotham": [
-        "The rain started again. Gotham apparently has a subscription.",
-        "Someone left a mysterious package outside the shop. I am not touching it. I have learned from previous incidents.",
-        "The night shift is quiet. Too quiet. Somewhere, a dramatic cape is probably moving across a rooftop."
-    ],
-    "Metropolis": [
-        "Something flew over the city at impossible speed. I was more concerned about my sandwich.",
-        "The skyline looks beautiful today. Someone is repairing another building. Again.",
-        "A superhero battle happened three blocks away. Management still expects everyone to arrive on time."
-    ],
-    "Marvel": [
-        "The city had another super-powered incident. The coffee shop stayed open anyway.",
-        "Someone dropped a strange piece of technology on the sidewalk. Nobody knows who owns it.",
-        "I have officially stopped being surprised when something explodes downtown."
-    ],
-    "Dungeon": [
-        "Another adventurer asked me whether Floor 17 is dangerous. I said yes. They asked if the loot is good. I said yes. They went anyway.",
-        "The dungeon receptionist has processed 400 raid parties this month.",
-        "Someone defeated the boss and immediately asked where the nearest snack shop was."
-    ],
-    "Tower": [
-        "Floor 50 has a boss. Floor 49 has paperwork. Somehow the paperwork is scarier.",
-        "Everyone wants to climb the tower. Nobody wants to clean the stairs.",
-        "A ranker asked for directions. I pointed upward. That was apparently sufficient."
-    ],
-    "Hunter": [
-        "The guild is full again. Someone brought a sword longer than the meeting table.",
-        "A hunter sold three rare items and immediately spent all the money on snacks.",
-        "The gate opened at 9. Everyone arrived at 8:30 and complained about waiting."
-    ]
-};
-
-/* =========================================================
-   APP STATE
-========================================================= */
+/* ============================================================
+   STATE
+============================================================ */
 
 let npcs = [];
+let worlds = [];
 let posts = [];
-let currentUser = null;
-let currentView = "home";
-let currentProfileId = null;
-let searchTerm = "";
-let usedNames = new Set();
-let usedHandles = new Set();
-let usedPostSignatures = new Set();
-let feedMode = "home";
+let quests = [];
 
-/* =========================================================
-   AVATARS
-========================================================= */
 
-function avatarFor(seed){
-    return "https://api.dicebear.com/9.x/adventurer/svg?seed=" +
-        encodeURIComponent(seed);
-}
+/* ============================================================
+   API
+============================================================ */
 
-/* =========================================================
-   NPC GENERATION
-========================================================= */
+async function loadData() {
 
-function makeName(country){
-    let attempts = 0;
+    try {
 
-    while(attempts < 100){
-        attempts++;
-
-        const first = pick(country.first);
-        const last = pick(country.last);
-        const name = first + " " + last;
-
-        if(!usedNames.has(name)){
-            usedNames.add(name);
-            return name;
-        }
-    }
-
-    return pick(country.first) + " " + pick(country.last) + " " + rand(9999);
-}
-
-function makeHandle(name){
-    const base = name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g,"")
-        .slice(0,18);
-
-    let handle = "@" + base;
-
-    if(usedHandles.has(handle)){
-        handle = "@" + base + rand(99999);
-    }
-
-    usedHandles.add(handle);
-    return handle;
-}
-
-function makeNPC(forceWorld=null){
-
-    const country = pick(COUNTRY_DATA);
-    const name = makeName(country);
-    const world = forceWorld || pick(WORLD_CATALOG);
-
-    let job;
-
-    if(world.type === "real-world"){
-        job = pick(JOBS);
-    }else{
-        job = pick([
-            "Merchant",
-            "Quest Giver",
-            "Blacksmith",
-            "Innkeeper",
-            "Guard",
-            "Healer",
-            "Scout",
-            "Archivist",
-            "Guild Clerk",
-            "Village Baker",
-            "Potion Seller",
-            "Map Maker",
-            "Shopkeeper",
-            "Courier",
-            "Gatekeeper",
-            "Trainer"
+        const results = await Promise.all([
+            fetch("/api/npcs"),
+            fetch("/api/worlds"),
+            fetch("/api/posts"),
+            fetch("/api/quests")
         ]);
+
+        npcs = await results[0].json();
+        worlds = await results[1].json();
+        posts = await results[2].json();
+        quests = await results[3].json();
+
+        renderAll();
+
+    } catch (error) {
+
+        console.error(error);
+
+        showToast("Could not load Omniverse data");
+
     }
 
-    const personality = pick(PERSONALITIES);
-    const location = pick(
-        world.locations.length
-            ? world.locations
-            : country.cities
-    );
-
-    const id = uid("npc");
-
-    const npc = {
-        id,
-        name,
-        handle:makeHandle(name),
-        country:country.country,
-        location,
-        avatar:avatarFor(name + id),
-        cover:avatarFor("cover-" + id),
-        job,
-        bio:buildBio(name,job,personality,world),
-        personality,
-        npcType:world.type === "real-world" ? "Real Person NPC" : "Fictional World NPC",
-        worldType:world.type,
-        world:world.name,
-        worldEmoji:world.emoji,
-        level:rand(100)+1,
-        followers:rand(90000)+120,
-        following:rand(1800)+20,
-        online:chance(45),
-        verified:chance(8),
-        posts:[]
-    };
-
-    npcs.push(npc);
-
-    return npc;
 }
 
-function buildBio(name,job,personality,world){
-    const bios = [
-        `${job} in ${world.name}. ${personality}.`,
-        `${job} • ${personality} • currently surviving ${world.name}.`,
-        `Just another ${job} trying to finish today's quest.`,
-        `${job} with permanent side-quest energy.`,
-        `I work here. Apparently that makes me important.`,
-        `${personality}. Professionally employed as a ${job}.`,
-        `Background character. Unexpectedly opinionated.`
-    ];
 
-    return pick(bios);
-}
+/* ============================================================
+   NAVIGATION
+============================================================ */
 
-/* =========================================================
-   POST GENERATION
-========================================================= */
+function showPage(page) {
 
-function specialTemplateFor(worldName){
-    if(worldName.includes("Gotham")) return pick(SPECIAL_POSTS.Gotham);
-    if(worldName.includes("Metropolis")) return pick(SPECIAL_POSTS.Metropolis);
-    if(worldName.includes("Marvel")) return pick(SPECIAL_POSTS.Marvel);
-    if(worldName.includes("Dungeon")) return pick(SPECIAL_POSTS.Dungeon);
-    if(worldName.includes("Tower")) return pick(SPECIAL_POSTS.Tower);
-    if(worldName.includes("Hunter")) return pick(SPECIAL_POSTS.Hunter);
+    document
+        .querySelectorAll(".page")
+        .forEach(el => {
 
-    return null;
-}
+            el.classList.remove("active");
 
-function createPost(npc){
-
-    let text;
-    let attempts = 0;
-
-    while(attempts < 100){
-        attempts++;
-
-        const special = specialTemplateFor(npc.world);
-
-        if(special && chance(35)){
-            text = special;
-        }else{
-            text = pick(POST_TEMPLATES);
-        }
-
-        const signature = npc.id + "|" + text;
-
-        if(!usedPostSignatures.has(signature)){
-            usedPostSignatures.add(signature);
-            break;
-        }
-    }
-
-    const post = {
-        id:uid("post"),
-        authorId:npc.id,
-        text,
-        timestamp:randomTimestamp(),
-        likes:rand(9000),
-        comments:rand(800),
-        shares:rand(500),
-        reposts:rand(300),
-        saves:rand(900),
-        media:chance(19),
-        tag:pick([
-            "NPC Life",
-            "Side Quest",
-            "Daily Routine",
-            "Lore",
-            "Quest Update",
-            "Work",
-            "World Event",
-            "Unimportant News"
-        ]),
-        world:npc.world,
-        reactions:{
-            laugh:rand(300),
-            fire:rand(200),
-            confused:rand(180)
-        },
-        isLiked:false,
-        isSaved:false,
-        isReposted:false,
-        commentsList:[]
-    };
-
-    posts.push(post);
-    npc.posts.push(post.id);
-
-    return post;
-}
-
-function randomTimestamp(){
-    const minutes = rand(60*24*8);
-    return Date.now() - minutes * 60 * 1000;
-}
-
-/* =========================================================
-   GENERATE WORLD
-========================================================= */
-
-function generateWorld(){
-
-    npcs = [];
-    posts = [];
-    usedNames = new Set();
-    usedHandles = new Set();
-    usedPostSignatures = new Set();
-
-    const count = 22 + rand(10);
-
-    for(let i=0;i<count;i++){
-        const npc = makeNPC();
-
-        const postCount = 2 + rand(3);
-
-        for(let p=0;p<postCount;p++){
-            createPost(npc);
-        }
-    }
-
-    currentUser = npcs[0];
-
-    renderEverything();
-}
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-function renderEverything(){
-    renderUser();
-    renderHomeFeed();
-    renderWidgets();
-}
-
-function renderUser(){
-
-    if(!currentUser) return;
-
-    document.getElementById("topAvatar").src = currentUser.avatar;
-    document.getElementById("sideAvatar").src = currentUser.avatar;
-    document.getElementById("sideName").textContent = currentUser.name;
-    document.getElementById("sideHandle").textContent = currentUser.handle;
-}
-
-function getNPC(id){
-    return npcs.find(n => n.id === id);
-}
-
-function getPost(id){
-    return posts.find(p => p.id === id);
-}
-
-function sortedPosts(){
-    return [...posts].sort((a,b) => b.timestamp - a.timestamp);
-}
-
-function filteredPosts(){
-
-    let result = sortedPosts();
-
-    if(searchTerm.trim()){
-        const q = searchTerm.toLowerCase();
-
-        result = result.filter(post => {
-
-            const npc = getNPC(post.authorId);
-
-            return (
-                post.text.toLowerCase().includes(q) ||
-                post.world.toLowerCase().includes(q) ||
-                post.tag.toLowerCase().includes(q) ||
-                npc.name.toLowerCase().includes(q) ||
-                npc.handle.toLowerCase().includes(q) ||
-                npc.country.toLowerCase().includes(q)
-            );
         });
+
+    const target =
+        document.getElementById("page-" + page);
+
+    if (target) {
+
+        target.classList.add("active");
+
     }
 
-    return result;
+    document
+        .querySelectorAll(".nav-item, .mobile-nav button")
+        .forEach(button => {
+
+            button.classList.toggle(
+                "active",
+                button.dataset.page === page
+            );
+
+        });
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
 }
 
-function renderHomeFeed(){
 
-    if(currentView !== "home") return;
+/* ============================================================
+   FEED
+============================================================ */
 
-    const feed = document.getElementById("feedContent");
+function renderFeed(list = posts) {
 
-    document.getElementById("feedTitle").textContent =
-        searchTerm ? "Search Results" : "Home";
+    const container =
+        document.getElementById("feed");
 
-    document.getElementById("feedSubtitle").textContent =
-        searchTerm
-            ? `Searching for "${searchTerm}"`
-            : "Fresh NPC activity from multiple worlds.";
+    if (!container) return;
 
-    let html = "";
+    if (!list.length) {
 
-    if(!searchTerm){
-        html += renderComposer();
-    }
-
-    const list = filteredPosts();
-
-    if(!list.length){
-        html += `
-            <div class="empty">
-                <div class="empty-icon">🫥</div>
-                <strong>No NPCs found.</strong>
-                <div>Try another search.</div>
+        container.innerHTML = `
+            <div class="card empty">
+                <div class="empty-icon">🌌</div>
+                No events found.
             </div>
         `;
-    }else{
-        list.forEach(post => {
-            html += renderPost(post);
-        });
+
+        return;
     }
 
-    feed.innerHTML = html;
-}
+    container.innerHTML =
+        list.map(post => `
 
-function renderComposer(){
-
-    return `
-        <div class="composer" id="composer">
-            <div class="composer-top">
-                <img class="composer-avatar"
-                     src="${escapeHTML(currentUser.avatar)}"
-                     alt="${escapeHTML(currentUser.name)}">
-
-                <textarea
-                    id="composerText"
-                    maxlength="1000"
-                    placeholder="What is happening in your NPC life?"
-                ></textarea>
-            </div>
-
-            <div class="composer-bottom">
-
-                <div class="composer-tools">
-                    <button class="composer-tool" onclick="addComposerHint('📷')" title="Add media">📷</button>
-                    <button class="composer-tool" onclick="addComposerHint('🎮')" title="Game">🎮</button>
-                    <button class="composer-tool" onclick="addComposerHint('📍')" title="Location">📍</button>
-                    <button class="composer-tool" onclick="addComposerHint('😂')" title="Emoji">😂</button>
-                    <button class="composer-tool" onclick="generatePostIdea()" title="Random idea">✨</button>
-                </div>
-
-                <button class="post-btn" onclick="createUserPost()">
-                    Post
-                </button>
-
-            </div>
-        </div>
-    `;
-}
-
-function renderPost(post){
-
-    const npc = getNPC(post.authorId);
-
-    if(!npc) return "";
-
-    const comments = post.commentsList || [];
-
-    return `
-        <article class="post" id="${escapeHTML(post.id)}">
+        <article class="card post">
 
             <div class="post-head">
 
-                <button class="avatar-btn"
-                        onclick="openProfile('${escapeHTML(npc.id)}')"
-                        aria-label="Open ${escapeHTML(npc.name)} profile">
-
-                    <img
-                        class="post-avatar"
-                        src="${escapeHTML(npc.avatar)}"
-                        alt="${escapeHTML(npc.name)}"
-                    >
-
-                </button>
-
-                <div class="post-author">
-
-                    <div class="author-line">
-
-                        <span
-                            class="author-name"
-                            onclick="openProfile('${escapeHTML(npc.id)}')"
-                        >
-                            ${escapeHTML(npc.name)}
-                        </span>
-
-                        ${npc.verified ? `<span class="verified">✓</span>` : ""}
-
-                        <span class="author-handle">
-                            ${escapeHTML(npc.handle)}
-                        </span>
-
-                        <span class="post-time">
-                            · ${formatTime(post.timestamp)}
-                        </span>
-
-                    </div>
-
-                    <div class="post-meta">
-
-                        <span class="world-badge">
-                            ${escapeHTML(npc.worldEmoji)} ${escapeHTML(npc.world)}
-                        </span>
-
-                        <span>•</span>
-
-                        <span>${escapeHTML(post.tag)}</span>
-
-                    </div>
-
-                </div>
-
-                <button
-                    class="more-btn"
-                    onclick="postMenu('${escapeHTML(post.id)}')"
-                    title="More"
+                <img
+                    class="avatar"
+                    src="${post.avatar}"
                 >
-                    ⋯
-                </button>
 
-            </div>
+                <div class="post-user">
 
-            <div class="post-text">
-                ${escapeHTML(post.text)}
-            </div>
+                    <strong>
+                        ${escapeHTML(post.npc)}
+                    </strong>
 
-            ${
-                post.media
-                ?
-                `
-                <div class="post-media">
-                    <div class="media-overlay">
-                        <div class="media-title">
-                            ${escapeHTML(npc.worldEmoji)} ${escapeHTML(post.tag)}
-                        </div>
-                        <div class="media-caption">
-                            Scene from ${escapeHTML(npc.world)}
-                        </div>
-                    </div>
+                    <small>
+                        ${escapeHTML(post.role)}
+                        ·
+                        ${escapeHTML(post.world)}
+                        ·
+                        ${escapeHTML(post.time)}
+                    </small>
+
                 </div>
-                `
-                :
-                ""
-            }
+
+                <span class="post-tag">
+                    ${escapeHTML(post.tag)}
+                </span>
+
+            </div>
+
+            <div class="post-body">
+
+                ${escapeHTML(post.text)}
+
+            </div>
+
+            <div class="post-meta">
+
+                ${post.likes} likes
+                ·
+                ${post.comments} comments
+                ·
+                ${post.reposts} reposts
+
+            </div>
 
             <div class="post-actions">
 
                 <button
-                    class="action-btn ${post.isLiked ? "liked" : ""}"
-                    onclick="toggleLike('${escapeHTML(post.id)}')"
-                    title="Like"
+                    class="post-action"
+                    onclick="likePost(${post.id}, this)"
                 >
-                    <span>${post.isLiked ? "❤️" : "♡"}</span>
-                    <span class="action-label">Like</span>
-                    <span class="action-count">${formatNumber(post.likes)}</span>
+                    ♡ Like
                 </button>
 
                 <button
-                    class="action-btn"
-                    onclick="toggleComments('${escapeHTML(post.id)}')"
-                    title="Comment"
+                    class="post-action"
+                    onclick="showToast('Comment panel opened')"
                 >
-                    <span>💬</span>
-                    <span class="action-label">Comment</span>
-                    <span class="action-count">${formatNumber(post.comments)}</span>
+                    ○ Comment
                 </button>
 
                 <button
-                    class="action-btn ${post.isReposted ? "reposted" : ""}"
-                    onclick="repost('${escapeHTML(post.id)}')"
-                    title="Repost"
+                    class="post-action"
+                    onclick="showToast('Event reposted')"
                 >
-                    <span>🔁</span>
-                    <span class="action-label">Repost</span>
-                    <span class="action-count">${formatNumber(post.reposts)}</span>
+                    ↻ Repost
                 </button>
 
                 <button
-                    class="action-btn"
-                    onclick="sharePost('${escapeHTML(post.id)}')"
-                    title="Share"
+                    class="post-action"
+                    onclick="showToast('Event saved')"
                 >
-                    <span>📤</span>
-                    <span class="action-label">Share</span>
-                    <span class="action-count">${formatNumber(post.shares)}</span>
-                </button>
-
-                <button
-                    class="action-btn ${post.isSaved ? "saved" : ""}"
-                    onclick="toggleSave('${escapeHTML(post.id)}')"
-                    title="Save"
-                >
-                    <span>${post.isSaved ? "🔖" : "🏷️"}</span>
-                    <span class="action-label">Save</span>
+                    ☆ Save
                 </button>
 
             </div>
-
-            <div id="comments-${escapeHTML(post.id)}" class="hidden">
-
-                ${
-                    comments.length
-                    ?
-                    `
-                    <div class="comments-list">
-                        ${comments.map(comment => `
-                            <div class="comment">
-                                <div class="comment-author">
-                                    ${escapeHTML(comment.author)}
-                                </div>
-                                <div class="comment-text">
-                                    ${escapeHTML(comment.text)}
-                                </div>
-                            </div>
-                        `).join("")}
-                    </div>
-                    `
-                    :
-                    ""
-                }
-
-                <div class="comment-box">
-
-                    <input
-                        id="comment-input-${escapeHTML(post.id)}"
-                        type="text"
-                        maxlength="300"
-                        placeholder="Write a comment..."
-                        onkeydown="commentKey(event,'${escapeHTML(post.id)}')"
-                    >
-
-                    <button
-                        class="comment-send"
-                        onclick="addComment('${escapeHTML(post.id)}')"
-                    >
-                        Send
-                    </button>
-
-                </div>
-
-            </div>
-
-            ${
-                comments.length
-                ?
-                `
-                <div class="comment-preview">
-                    <strong>${escapeHTML(comments[comments.length-1].author)}</strong>
-                    · ${escapeHTML(comments[comments.length-1].text)}
-                </div>
-                `
-                :
-                ""
-            }
 
         </article>
-    `;
+
+    `).join("");
+
 }
 
-/* =========================================================
-   FEED ACTIONS
-========================================================= */
 
-function toggleLike(id){
+/* ============================================================
+   EXPLORE
+============================================================ */
 
-    const post = getPost(id);
+function renderExplore() {
 
-    if(!post) return;
+    const grid =
+        document.getElementById("exploreGrid");
 
-    if(post.isLiked){
-        post.isLiked = false;
-        post.likes = Math.max(0,post.likes - 1);
-        toast("Like removed");
-    }else{
-        post.isLiked = true;
-        post.likes++;
-        toast("❤️ Liked");
-    }
+    if (!grid) return;
 
-    refreshPost(id);
-}
+    grid.innerHTML =
+        posts.map(post => `
 
-function toggleSave(id){
+        <div class="card post">
 
-    const post = getPost(id);
-
-    if(!post) return;
-
-    post.isSaved = !post.isSaved;
-
-    toast(post.isSaved ? "🔖 Saved" : "Removed from saved");
-
-    refreshPost(id);
-}
-
-function repost(id){
-
-    const post = getPost(id);
-
-    if(!post) return;
-
-    if(post.isReposted){
-        post.isReposted = false;
-        post.reposts = Math.max(0,post.reposts - 1);
-        toast("Repost removed");
-    }else{
-        post.isReposted = true;
-        post.reposts++;
-        toast("🔁 Reposted");
-    }
-
-    refreshPost(id);
-}
-
-function sharePost(id){
-
-    const post = getPost(id);
-
-    if(!post) return;
-
-    post.shares++;
-
-    const text =
-        `NPCBook: ${post.text}`;
-
-    if(navigator.share){
-
-        navigator.share({
-            title:"NPCBook",
-            text
-        }).then(()=>{
-            toast("📤 Shared");
-        }).catch(()=>{
-            toast("Share cancelled");
-        });
-
-    }else{
-
-        if(navigator.clipboard){
-            navigator.clipboard.writeText(text)
-                .then(()=>{
-                    toast("📋 Post copied to clipboard");
-                })
-                .catch(()=>{
-                    toast("📤 Share link prepared");
-                });
-        }else{
-            toast("📤 Share action completed");
-        }
-    }
-
-    refreshPost(id);
-}
-
-function toggleComments(id){
-
-    const box = document.getElementById("comments-" + id);
-
-    if(!box) return;
-
-    box.classList.toggle("hidden");
-
-    if(!box.classList.contains("hidden")){
-
-        const input =
-            document.getElementById("comment-input-" + id);
-
-        if(input){
-            setTimeout(()=>input.focus(),100);
-        }
-    }
-}
-
-function commentKey(event,id){
-
-    if(event.key === "Enter"){
-        event.preventDefault();
-        addComment(id);
-    }
-}
-
-function addComment(id){
-
-    const post = getPost(id);
-
-    if(!post) return;
-
-    const input =
-        document.getElementById("comment-input-" + id);
-
-    if(!input) return;
-
-    const text = input.value.trim();
-
-    if(!text){
-        toast("Write something first");
-        return;
-    }
-
-    if(!post.commentsList){
-        post.commentsList = [];
-    }
-
-    post.commentsList.push({
-        id:uid("comment"),
-        author:currentUser.name,
-        text
-    });
-
-    post.comments++;
-
-    input.value = "";
-
-    toast("💬 Comment posted");
-
-    refreshPost(id);
-
-    setTimeout(()=>{
-        const box = document.getElementById("comments-" + id);
-
-        if(box){
-            box.classList.remove("hidden");
-        }
-    },30);
-}
-
-function refreshPost(id){
-
-    if(currentView !== "home") return;
-
-    const postElement = document.getElementById(id);
-
-    if(!postElement) return;
-
-    const post = getPost(id);
-
-    if(!post) return;
-
-    postElement.outerHTML = renderPost(post);
-
-    const commentsBox =
-        document.getElementById("comments-" + id);
-
-    if(commentsBox && post.commentsList.length){
-        commentsBox.classList.remove("hidden");
-    }
-}
-
-function postMenu(id){
-
-    const post = getPost(id);
-
-    if(!post) return;
-
-    showModal(
-        "Post Options",
-        `
-        <div class="option-grid">
-
-            <button class="option-card" onclick="toggleSave('${escapeHTML(id)}');closeModal()">
-                <strong>🔖 Save / Unsave</strong>
-                <span>Keep this post available in your temporary world.</span>
-            </button>
-
-            <button class="option-card" onclick="sharePost('${escapeHTML(id)}');closeModal()">
-                <strong>📤 Share</strong>
-                <span>Share this NPC post.</span>
-            </button>
-
-            <button class="option-card" onclick="repost('${escapeHTML(id)}');closeModal()">
-                <strong>🔁 Repost</strong>
-                <span>Add this post to your temporary activity.</span>
-            </button>
-
-            <button class="option-card" onclick="copyPost('${escapeHTML(id)}')">
-                <strong>📋 Copy</strong>
-                <span>Copy the post text.</span>
-            </button>
-
-        </div>
-        `
-    );
-}
-
-function copyPost(id){
-
-    const post = getPost(id);
-
-    if(!post) return;
-
-    if(navigator.clipboard){
-        navigator.clipboard.writeText(post.text)
-            .then(()=>{
-                toast("📋 Copied");
-                closeModal();
-            });
-    }else{
-        toast("Copy unavailable on this browser");
-    }
-}
-
-/* =========================================================
-   CREATE USER POST
-========================================================= */
-
-function createUserPost(){
-
-    const input = document.getElementById("composerText");
-
-    if(!input) return;
-
-    const text = input.value.trim();
-
-    if(!text){
-        toast("Write something before posting");
-        input.focus();
-        return;
-    }
-
-    const post = {
-        id:uid("post"),
-        authorId:currentUser.id,
-        text,
-        timestamp:Date.now(),
-        likes:0,
-        comments:0,
-        shares:0,
-        reposts:0,
-        saves:0,
-        media:false,
-        tag:"My NPC Post",
-        world:currentUser.world,
-        reactions:{
-            laugh:0,
-            fire:0,
-            confused:0
-        },
-        isLiked:false,
-        isSaved:false,
-        isReposted:false,
-        commentsList:[]
-    };
-
-    posts.unshift(post);
-    currentUser.posts.unshift(post.id);
-
-    input.value = "";
-
-    toast("🚀 Your NPC post is live");
-
-    renderHomeFeed();
-}
-
-function addComposerHint(symbol){
-
-    const input = document.getElementById("composerText");
-
-    if(!input) return;
-
-    input.value += " " + symbol + " ";
-    input.focus();
-}
-
-function generatePostIdea(){
-
-    const input = document.getElementById("composerText");
-
-    if(!input) return;
-
-    const ideas = [
-        "Today I discovered that my workplace has a secret side quest.",
-        "I have officially become the NPC everyone asks for directions.",
-        "Nobody prepared me for today's random encounter.",
-        "My daily routine has become suspiciously repetitive.",
-        "Someone just gave me a quest and forgot the reward.",
-        "I survived another completely normal NPC day.",
-        "Breaking news: I have absolutely no idea what is happening."
-    ];
-
-    input.value = pick(ideas);
-    input.focus();
-}
-
-function focusComposer(){
-
-    goHome();
-
-    setTimeout(()=>{
-        const composer = document.getElementById("composer");
-
-        if(composer){
-            composer.scrollIntoView({
-                behavior:"smooth",
-                block:"center"
-            });
-
-            const input = document.getElementById("composerText");
-
-            if(input){
-                input.focus();
-            }
-        }
-    },50);
-}
-
-/* =========================================================
-   PROFILE
-========================================================= */
-
-function openProfile(id){
-
-    const npc = getNPC(id);
-
-    if(!npc) return;
-
-    currentView = "profile";
-    currentProfileId = id;
-
-    setNavActive("nav-profile");
-    setMobileActive("mobile-profile");
-
-    document.getElementById("feedTitle").textContent = "NPC Profile";
-    document.getElementById("feedSubtitle").textContent =
-        npc.handle;
-
-    const feed = document.getElementById("feedContent");
-
-    const profilePosts = posts
-        .filter(p => p.authorId === id)
-        .sort((a,b)=>b.timestamp-a.timestamp);
-
-    feed.innerHTML = `
-        <div class="profile-page">
-
-            <div class="profile-cover"></div>
-
-            <div class="profile-main">
-
-                <div class="profile-top">
-
-                    <img
-                        class="profile-avatar"
-                        src="${escapeHTML(npc.avatar)}"
-                        alt="${escapeHTML(npc.name)}"
-                    >
-
-                    ${
-                        npc.id === currentUser.id
-                        ?
-                        ""
-                        :
-                        `
-                        <button
-                            class="follow-btn ${npc.followingMe ? "following" : ""}"
-                            onclick="toggleFollow('${escapeHTML(npc.id)}')"
-                        >
-                            ${npc.followingMe ? "Following" : "Follow"}
-                        </button>
-                        `
-                    }
-
-                </div>
-
-                <div class="profile-name">
-                    ${escapeHTML(npc.name)}
-                    ${npc.verified ? `<span class="verified">✓</span>` : ""}
-                </div>
-
-                <div class="profile-handle">
-                    ${escapeHTML(npc.handle)}
-                </div>
-
-                <div class="profile-bio">
-                    ${escapeHTML(npc.bio)}
-                </div>
-
-                <div class="profile-info">
-                    <span>📍 ${escapeHTML(npc.location)}, ${escapeHTML(npc.country)}</span>
-                    <span>💼 ${escapeHTML(npc.job)}</span>
-                    <span>${escapeHTML(npc.worldEmoji)} ${escapeHTML(npc.world)}</span>
-                </div>
-
-                <div class="profile-stats">
-                    <div class="stat">
-                        <strong>${formatNumber(npc.followers)}</strong> Followers
-                    </div>
-
-                    <div class="stat">
-                        <strong>${formatNumber(npc.following)}</strong> Following
-                    </div>
-
-                    <div class="stat">
-                        <strong>${profilePosts.length}</strong> Posts
-                    </div>
-                </div>
-
-                <div class="profile-tabs">
-                    <button class="profile-tab active">Posts</button>
-                    <button class="profile-tab" onclick="toast('Replies view coming to this temporary world')">Replies</button>
-                    <button class="profile-tab" onclick="showNPCMedia('${escapeHTML(npc.id)}')">Media</button>
-                </div>
-
-            </div>
-
-        </div>
-
-        <div style="height:14px"></div>
-
-        ${
-            profilePosts.length
-            ?
-            profilePosts.map(renderPost).join("")
-            :
-            `
-            <div class="empty">
-                <div class="empty-icon">📭</div>
-                No posts yet.
-            </div>
-            `
-        }
-    `;
-
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    });
-}
-
-function toggleFollow(id){
-
-    const npc = getNPC(id);
-
-    if(!npc) return;
-
-    npc.followingMe = !npc.followingMe;
-
-    if(npc.followingMe){
-        npc.followers++;
-        toast("👥 Following " + npc.name);
-    }else{
-        npc.followers = Math.max(0,npc.followers-1);
-        toast("Unfollowed " + npc.name);
-    }
-
-    openProfile(id);
-}
-
-function showNPCMedia(id){
-
-    const npc = getNPC(id);
-
-    if(!npc) return;
-
-    const mediaPosts =
-        posts.filter(p => p.authorId === id && p.media);
-
-    showModal(
-        "Media — " + npc.name,
-        mediaPosts.length
-        ?
-        mediaPosts.map(p=>`
-            <div class="quest">
-                <div class="quest-title">
-                    ${escapeHTML(p.tag)}
-                </div>
-                <div class="quest-desc">
-                    ${escapeHTML(p.text)}
-                </div>
-            </div>
-        `).join("")
-        :
-        `<div class="empty">No media posts in this world.</div>`
-    );
-}
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-function goHome(){
-
-    currentView = "home";
-    currentProfileId = null;
-    searchTerm = "";
-
-    const input = document.getElementById("searchInput");
-
-    if(input){
-        input.value = "";
-    }
-
-    setNavActive("nav-home");
-    setMobileActive("mobile-home");
-
-    renderHomeFeed();
-
-    window.scrollTo({
-        top:0,
-        behavior:"smooth"
-    });
-}
-
-function handleSearch(value){
-
-    searchTerm = value.trim();
-
-    currentView = "home";
-
-    setNavActive("nav-home");
-    setMobileActive("mobile-search");
-
-    renderHomeFeed();
-}
-
-function focusSearch(){
-
-    const input = document.getElementById("searchInput");
-
-    if(input){
-        input.focus();
-
-        window.scrollTo({
-            top:0,
-            behavior:"smooth"
-        });
-    }
-}
-
-function setNavActive(id){
-
-    document.querySelectorAll(".nav-item")
-        .forEach(el=>el.classList.remove("active"));
-
-    const el = document.getElementById(id);
-
-    if(el){
-        el.classList.add("active");
-    }
-}
-
-function setMobileActive(id){
-
-    document.querySelectorAll(".mobile-nav button")
-        .forEach(el=>el.classList.remove("active"));
-
-    const el = document.getElementById(id);
-
-    if(el){
-        el.classList.add("active");
-    }
-}
-
-/* =========================================================
-   RANDOM WORLD
-========================================================= */
-
-function newWorld(){
-
-    toast("🎲 Generating a new temporary world...");
-
-    setTimeout(()=>{
-        generateWorld();
-        goHome();
-        toast("🌎 New NPC world generated");
-    },80);
-}
-
-/* =========================================================
-   RANDOM POST
-========================================================= */
-
-function randomPost(){
-
-    if(!posts.length) return;
-
-    const post = pick(posts);
-
-    goHome();
-
-    setTimeout(()=>{
-
-        const el = document.getElementById(post.id);
-
-        if(el){
-            el.scrollIntoView({
-                behavior:"smooth",
-                block:"center"
-            });
-
-            el.animate(
-                [
-                    {transform:"scale(1)"},
-                    {transform:"scale(1.02)"},
-                    {transform:"scale(1)"}
-                ],
-                {
-                    duration:500
-                }
-            );
-        }
-
-    },100);
-}
-
-/* =========================================================
-   GENERATE NPC
-========================================================= */
-
-function generateNPC(){
-
-    const npc = makeNPC();
-
-    const amount = 2 + rand(3);
-
-    for(let i=0;i<amount;i++){
-        createPost(npc);
-    }
-
-    toast("✨ New NPC generated: " + npc.name);
-
-    renderWidgets();
-
-    if(currentView === "home"){
-        renderHomeFeed();
-    }else{
-        openProfile(npc.id);
-    }
-}
-
-/* =========================================================
-   WIDGETS
-========================================================= */
-
-function renderWidgets(){
-
-    const trends = [
-        ["#NPCProblems",rand(900000)],
-        ["#SideQuest",rand(700000)],
-        ["#MainCharacter",rand(600000)],
-        ["#QuestUpdate",rand(500000)],
-        ["#LoreDrop",rand(400000)],
-        ["#BackgroundCharacter",rand(350000)]
-    ];
-
-    document.getElementById("trendsWidget").innerHTML =
-        trends.map(t=>`
-            <div class="trend">
-                <div class="trend-label">Trending</div>
-                <div class="trend-name">${t[0]}</div>
-                <div class="trend-count">${formatNumber(t[1])} posts</div>
-            </div>
-        `).join("");
-
-    const quests = [
-        ["Find the Lost Spoon","Ask three NPCs about a suspicious spoon.",rand(90)],
-        ["Survive the Monday Boss Fight","Reach the end of your shift.",rand(80)],
-        ["Collect 5 Side Quests","Interact with random NPCs.",rand(70)],
-        ["Locate the Legendary Snack","The snack is probably nearby.",rand(60)]
-    ];
-
-    document.getElementById("questsWidget").innerHTML =
-        quests.map(q=>`
-            <div class="quest">
-                <div class="quest-title">${q[0]}</div>
-                <div class="quest-desc">${q[1]}</div>
-                <div class="progress">
-                    <div style="width:${q[2]}%"></div>
-                </div>
-            </div>
-        `).join("");
-
-    const people = [...npcs]
-        .filter(n=>n.id !== currentUser.id)
-        .sort(()=>Math.random()-.5)
-        .slice(0,4);
-
-    document.getElementById("peopleWidget").innerHTML =
-        people.map(n=>`
-            <div class="side-user-row" style="margin-bottom:12px">
+            <div class="post-head">
 
                 <img
-                    src="${escapeHTML(n.avatar)}"
-                    style="width:38px;height:38px;border-radius:50%;object-fit:cover"
-                    alt=""
+                    class="avatar"
+                    src="${post.avatar}"
                 >
 
-                <div style="flex:1;min-width:0">
-                    <div
-                        style="font-size:13px;font-weight:800;cursor:pointer"
-                        onclick="openProfile('${escapeHTML(n.id)}')"
-                    >
-                        ${escapeHTML(n.name)}
-                    </div>
+                <div class="post-user">
 
-                    <div style="font-size:11px;color:var(--muted)">
-                        ${escapeHTML(n.job)}
-                    </div>
+                    <strong>
+                        ${escapeHTML(post.npc)}
+                    </strong>
+
+                    <small>
+                        ${escapeHTML(post.world)}
+                    </small>
+
                 </div>
 
+            </div>
+
+            <div class="post-body" style="padding-left:0">
+
+                ${escapeHTML(post.text)}
+
+            </div>
+
+            <button
+                class="btn"
+                onclick="openPost(${post.id})"
+            >
+                View Event
+            </button>
+
+        </div>
+
+    `).join("");
+
+}
+
+
+/* ============================================================
+   WORLDS
+============================================================ */
+
+function renderWorlds() {
+
+    const grid =
+        document.getElementById("worldGrid");
+
+    if (!grid) return;
+
+    grid.innerHTML =
+        worlds.map(world => `
+
+        <div class="card world-card">
+
+            <div class="world-cover"></div>
+
+            <h3>
+                ${escapeHTML(world.name)}
+            </h3>
+
+            <p class="card-muted">
+                ${escapeHTML(world.description)}
+            </p>
+
+            <div class="card-row">
+
+                <span class="pill">
+                    ${escapeHTML(world.type)}
+                </span>
+
+                <span class="pill">
+                    ${escapeHTML(world.population)}
+                </span>
+
+            </div>
+
+            <div class="card-row">
+
                 <button
-                    onclick="toggleFollow('${escapeHTML(n.id)}')"
-                    style="
-                        border:1px solid var(--border);
-                        background:transparent;
-                        color:var(--text);
-                        border-radius:9px;
-                        min-height:34px;
-                        padding:0 9px;
-                        font-size:11px;
-                    "
+                    class="btn btn-primary"
+                    onclick="openWorld(${world.id})"
                 >
-                    Follow
+                    Enter World
                 </button>
 
             </div>
-        `).join("");
+
+        </div>
+
+    `).join("");
+
 }
 
-/* =========================================================
-   TRENDING
-========================================================= */
 
-function showTrending(){
+/* ============================================================
+   NPCS
+============================================================ */
 
-    currentView = "home";
-    feedMode = "trending";
+function renderNPCs() {
 
-    setNavActive("nav-trending");
-    setMobileActive("mobile-home");
+    const grid =
+        document.getElementById("npcGrid");
 
-    document.getElementById("feedTitle").textContent =
-        "🔥 Trending";
+    if (!grid) return;
 
-    document.getElementById("feedSubtitle").textContent =
-        "Posts with suspicious amounts of NPC activity.";
+    grid.innerHTML =
+        npcs.map(npc => `
 
-    const trending = [...posts]
-        .sort((a,b)=>
-            (b.likes+b.comments+b.shares) -
-            (a.likes+a.comments+a.shares)
-        )
-        .slice(0,15);
+        <div
+            class="card npc-card"
+            onclick="openNPC(${npc.id})"
+            style="cursor:pointer"
+        >
 
-    document.getElementById("feedContent").innerHTML =
-        trending.map(renderPost).join("");
+            <img
+                class="avatar"
+                src="${npc.avatar}"
+            >
 
-    window.scrollTo({top:0,behavior:"smooth"});
+            <div class="npc-info">
+
+                <h3>
+                    ${escapeHTML(npc.name)}
+                </h3>
+
+                <p class="card-muted">
+                    ${escapeHTML(npc.role)}
+                </p>
+
+                <div class="npc-status">
+
+                    <span class="${
+                        npc.online ? "online" : ""
+                    }"></span>
+
+                    <span class="pill">
+                        Lv. ${npc.level}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    `).join("");
+
 }
 
-/* =========================================================
+
+/* ============================================================
    QUESTS
-========================================================= */
+============================================================ */
 
-function showQuests(){
+function renderQuests() {
 
-    currentView = "panel";
+    const grid =
+        document.getElementById("questGrid");
 
-    setNavActive("nav-quests");
-    setMobileActive("mobile-home");
+    if (!grid) return;
 
-    document.getElementById("feedTitle").textContent =
-        "🎯 Quests";
+    grid.innerHTML =
+        quests.map((quest, index) => `
 
-    document.getElementById("feedSubtitle").textContent =
-        "Every NPC needs unnecessary objectives.";
+        <div class="card quest-card">
 
-    const quests = [
-        ["The Missing Key","Find the key that nobody actually lost.","23%"],
-        ["Talk to 5 NPCs","Ask five people about absolutely nothing.","48%"],
-        ["The Legendary Sandwich","Locate the sandwich before someone eats it.","71%"],
-        ["Return the Book","A library book has been overdue for 12 years.","12%"],
-        ["Defeat Monday","Survive a full Monday without starting a new career.","63%"],
-        ["Unlock Secret Dialogue","Say something nobody has heard before.","4%"],
-        ["Collect 100 Coins","Nobody knows why.","89%"],
-        ["Find the Main Character","They are probably late.","37%"]
-    ];
+            <span class="pill">
+                QUEST ${String(index + 1).padStart(2,"0")}
+            </span>
 
-    document.getElementById("feedContent").innerHTML =
-        quests.map(q=>`
-            <div class="quest" style="margin-bottom:12px;padding:16px">
-                <div class="quest-title" style="font-size:15px">
-                    ${q[0]}
-                </div>
+            <br><br>
 
-                <div class="quest-desc" style="font-size:13px">
-                    ${q[1]}
-                </div>
+            <h3>
+                ${escapeHTML(quest.name)}
+            </h3>
 
-                <div class="progress" style="height:7px">
-                    <div style="width:${q[2]}"></div>
-                </div>
+            <p class="card-muted">
+                ${escapeHTML(quest.world)}
+            </p>
 
-                <div style="color:var(--muted);font-size:11px;margin-top:7px">
-                    Progress ${q[2]}
-                </div>
+            <div class="card-row">
+
+                <span class="pill">
+                    ${escapeHTML(quest.difficulty)}
+                </span>
+
+                <strong>
+                    ${escapeHTML(quest.reward)}
+                </strong>
+
             </div>
-        `).join("");
 
-    window.scrollTo({top:0,behavior:"smooth"});
+            <div class="card-row">
+
+                <button
+                    class="btn btn-primary"
+                    onclick="acceptQuest('${escapeHTML(quest.name)}')"
+                >
+                    Accept Quest
+                </button>
+
+            </div>
+
+        </div>
+
+    `).join("");
+
 }
 
-/* =========================================================
+
+/* ============================================================
    MARKET
-========================================================= */
+============================================================ */
 
-function showMarket(){
+function renderMarket() {
 
-    currentView = "panel";
+    const grid =
+        document.getElementById("marketGrid");
 
-    setNavActive("nav-market");
-    setMobileActive("mobile-home");
+    if (!grid) return;
 
-    document.getElementById("feedTitle").textContent =
-        "🛒 NPC Market";
+    grid.innerHTML =
+        MARKET.map(item => `
 
-    document.getElementById("feedSubtitle").textContent =
-        "Completely unnecessary items for completely necessary NPCs.";
+        <div class="card market-card">
 
-    const items = [
-        ["🗡️ Slightly Used Hero Sword","+2 confidence, -7 durability","850 gold"],
-        ["🧪 Mystery Potion","Probably healing. Probably.","320 gold"],
-        ["📜 Ancient Quest Scroll","Contains three paragraphs of instructions.","140 gold"],
-        ["🥪 Legendary Sandwich","Restores 100% hunger.","75 gold"],
-        ["🗝️ Suspicious Key","No known door.","90 gold"],
-        ["🧢 Background NPC Hat","Increases background character energy.","50 gold"],
-        ["📚 Forbidden Library Card","Probably not actually forbidden.","210 gold"],
-        ["🪙 Completely Normal Coin","Suspiciously shiny.","10 gold"]
-    ];
-
-    document.getElementById("feedContent").innerHTML = `
-        <div class="option-grid">
-            ${items.map(item=>`
-                <div class="option-card" style="padding:18px">
-                    <div style="font-size:28px">${item[0].split(" ")[0]}</div>
-                    <strong>${escapeHTML(item[0].slice(item[0].indexOf(" ")+1))}</strong>
-                    <span>${escapeHTML(item[1])}</span>
-
-                    <div style="
-                        margin-top:12px;
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:center;
-                    ">
-                        <strong>${escapeHTML(item[2])}</strong>
-
-                        <button
-                            onclick="buyItem('${escapeHTML(item[0])}')"
-                            style="
-                                border:0;
-                                background:var(--accent);
-                                color:white;
-                                border-radius:9px;
-                                padding:8px 11px;
-                                font-weight:750;
-                            "
-                        >
-                            Buy
-                        </button>
-                    </div>
-                </div>
-            `).join("")}
-        </div>
-    `;
-
-    window.scrollTo({top:0,behavior:"smooth"});
-}
-
-function buyItem(item){
-    toast("🛒 Purchased " + item + " for this temporary world.");
-}
-
-/* =========================================================
-   NOTIFICATIONS
-========================================================= */
-
-function showNotifications(){
-
-    const notifications = [
-        "❤️ Someone liked your NPC activity.",
-        "💬 A random NPC commented on a post.",
-        "👥 Someone followed your temporary NPC.",
-        "🎯 New quest available.",
-        "🔥 Your side quest is trending.",
-        "📖 A lore update was detected.",
-        "🔁 Someone reposted a post."
-    ];
-
-    showModal(
-        "🔔 Notifications",
-        notifications.map((n,i)=>`
-            <div class="quest">
-                <div class="quest-title">${escapeHTML(n)}</div>
-                <div class="quest-desc">${i+1} minutes ago</div>
-            </div>
-        `).join("")
-    );
-}
-
-/* =========================================================
-   MESSAGES
-========================================================= */
-
-function showMessages(){
-
-    const people = [...npcs]
-        .filter(n=>n.id !== currentUser.id)
-        .slice(0,7);
-
-    showModal(
-        "💬 Messages",
-        `
-        <div style="margin-bottom:12px;color:var(--muted);font-size:12px">
-            Temporary messages. Nothing is saved.
-        </div>
-
-        ${people.map(n=>`
-            <button
-                onclick="openChat('${escapeHTML(n.id)}')"
+            <div
                 style="
-                    width:100%;
-                    display:flex;
-                    align-items:center;
-                    gap:10px;
-                    padding:11px;
-                    margin-bottom:7px;
-                    border:1px solid var(--border);
-                    border-radius:12px;
-                    background:#15171c;
-                    color:var(--text);
-                    text-align:left;
+                    width:55px;
+                    height:55px;
+                    display:grid;
+                    place-items:center;
+                    border-radius:15px;
+                    background:rgba(139,92,246,.12);
+                    font-size:25px;
+                    margin-bottom:13px;
                 "
             >
-                <img
-                    src="${escapeHTML(n.avatar)}"
-                    style="width:40px;height:40px;border-radius:50%"
-                    alt=""
+                ◈
+            </div>
+
+            <h3>
+                ${escapeHTML(item[0])}
+            </h3>
+
+            <p class="card-muted">
+                ${escapeHTML(item[1])}
+            </p>
+
+            <div class="card-row">
+
+                <strong>
+                    ${escapeHTML(item[2])} credits
+                </strong>
+
+                <button
+                    class="btn"
+                    onclick="showToast('Item selected')"
                 >
+                    View
+                </button>
 
-                <div>
-                    <strong>${escapeHTML(n.name)}</strong>
-                    <div style="font-size:11px;color:var(--muted)">
-                        ${escapeHTML(pick([
-                            "Are you free for a side quest?",
-                            "You will never believe what happened.",
-                            "I found the missing item.",
-                            "Meet me at the usual location.",
-                            "The quest giver is broken again."
-                        ]))}
-                    </div>
-                </div>
-            </button>
-        `).join("")}
-        `
-    );
+            </div>
+
+        </div>
+
+    `).join("");
+
 }
 
-function openChat(id){
 
-    const npc = getNPC(id);
+/* ============================================================
+   NPC MODAL
+============================================================ */
 
-    if(!npc) return;
+function openNPC(id) {
 
-    showModal(
-        "💬 Chat with " + npc.name,
-        `
-        <div style="
-            border:1px solid var(--border);
-            border-radius:13px;
-            padding:13px;
-            margin-bottom:12px;
-        ">
-            <strong>${escapeHTML(npc.name)}</strong>
-            <div style="color:var(--muted);font-size:12px;margin-top:3px">
-                ${escapeHTML(npc.world)}
-            </div>
-        </div>
+    const npc =
+        npcs.find(x => x.id === id);
 
-        <div class="quest">
-            <div class="quest-title">NPC</div>
-            <div class="quest-desc">
-                Hello. I have been waiting here for someone to trigger my dialogue.
-            </div>
-        </div>
+    if (!npc) return;
 
-        <div class="modal-field">
-            <label class="modal-label">Message</label>
-            <input
-                id="chatMessage"
-                class="modal-input"
-                placeholder="Type a message..."
+    document.getElementById("modalTitle").textContent =
+        npc.name;
+
+    document.getElementById("modalContent").innerHTML = `
+
+        <div style="text-align:center">
+
+            <img
+                src="${npc.avatar}"
+                style="
+                    width:100px;
+                    height:100px;
+                    border-radius:50%;
+                    object-fit:cover;
+                    border:4px solid rgba(139,92,246,.4);
+                "
             >
+
+            <h2 style="margin-top:12px">
+                ${escapeHTML(npc.name)}
+            </h2>
+
+            <p class="card-muted">
+                ${escapeHTML(npc.role)}
+            </p>
+
+            <br>
+
+            <p class="card-muted">
+                ${escapeHTML(npc.bio)}
+            </p>
+
+            <br>
+
+            <div class="card-row">
+
+                <span class="pill">
+                    ${escapeHTML(npc.world)}
+                </span>
+
+                <span class="pill">
+                    Level ${npc.level}
+                </span>
+
+            </div>
+
         </div>
 
-        <button
-            class="modal-submit"
-            onclick="sendChat('${escapeHTML(id)}')"
-        >
-            Send Message
-        </button>
-        `
-    );
-}
-
-function sendChat(id){
-
-    const npc = getNPC(id);
-    const input = document.getElementById("chatMessage");
-
-    if(!npc || !input) return;
-
-    const text = input.value.trim();
-
-    if(!text){
-        toast("Write a message first");
-        return;
-    }
-
-    closeModal();
-
-    toast("💬 Message sent to " + npc.name);
-}
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-function showSettings(){
-
-    currentView = "panel";
-
-    setNavActive("nav-home");
-
-    document.getElementById("feedTitle").textContent =
-        "⚙️ Settings";
-
-    document.getElementById("feedSubtitle").textContent =
-        "Temporary settings for this browser session.";
-
-    document.getElementById("feedContent").innerHTML = `
-
-        <div class="widget" style="margin-bottom:12px">
-
-            <div class="widget-title">
-                NPCBook Preferences
-            </div>
-
-            <div class="quest">
-                <div class="quest-title">🌎 World Generation</div>
-                <div class="quest-desc">
-                    Every refresh creates a new temporary world.
-                </div>
-            </div>
-
-            <div class="quest">
-                <div class="quest-title">💾 Storage</div>
-                <div class="quest-desc">
-                    NPCBook does not use LocalStorage or SessionStorage.
-                    Data exists only in browser memory.
-                </div>
-            </div>
-
-            <div class="quest">
-                <div class="quest-title">📱 Responsive Mode</div>
-                <div class="quest-desc">
-                    The interface automatically adapts to desktop,
-                    tablet, iPad, Android and iPhone screen sizes.
-                </div>
-            </div>
-
-            <button
-                class="modal-submit"
-                onclick="newWorld()"
-                style="margin-top:10px"
-            >
-                🎲 Generate Completely New World
-            </button>
-
-        </div>
     `;
 
-    window.scrollTo({top:0,behavior:"smooth"});
+    showModal();
+
 }
 
-/* =========================================================
+
+/* ============================================================
+   WORLD MODAL
+============================================================ */
+
+function openWorld(id) {
+
+    const world =
+        worlds.find(x => x.id === id);
+
+    if (!world) return;
+
+    document.getElementById("modalTitle").textContent =
+        world.name;
+
+    document.getElementById("modalContent").innerHTML = `
+
+        <div class="world-cover"></div>
+
+        <h2>
+            ${escapeHTML(world.name)}
+        </h2>
+
+        <p class="card-muted" style="margin-top:8px">
+            ${escapeHTML(world.description)}
+        </p>
+
+        <br>
+
+        <div class="card-row">
+
+            <span class="pill">
+                ${escapeHTML(world.type)}
+            </span>
+
+            <span class="pill">
+                ${escapeHTML(world.population)}
+            </span>
+
+        </div>
+
+        <br>
+
+        <button
+            class="btn btn-primary btn-full"
+            onclick="showToast('Entering ${escapeHTML(world.name)}')"
+        >
+            Enter World
+        </button>
+
+    `;
+
+    showModal();
+
+}
+
+
+/* ============================================================
+   POST MODAL
+============================================================ */
+
+function openPost(id) {
+
+    const post =
+        posts.find(x => x.id === id);
+
+    if (!post) return;
+
+    document.getElementById("modalTitle").textContent =
+        "Event";
+
+    document.getElementById("modalContent").innerHTML = `
+
+        <div class="post-head">
+
+            <img
+                class="avatar"
+                src="${post.avatar}"
+            >
+
+            <div class="post-user">
+
+                <strong>
+                    ${escapeHTML(post.npc)}
+                </strong>
+
+                <small>
+                    ${escapeHTML(post.world)}
+                </small>
+
+            </div>
+
+        </div>
+
+        <p
+            style="
+                line-height:1.7;
+                margin-top:18px;
+            "
+        >
+            ${escapeHTML(post.text)}
+        </p>
+
+        <br>
+
+        <button
+            class="btn btn-primary"
+            onclick="showToast('Event followed')"
+        >
+            Follow Event
+        </button>
+
+    `;
+
+    showModal();
+
+}
+
+
+/* ============================================================
+   CREATE POST
+============================================================ */
+
+async function createPost() {
+
+    const input =
+        document.getElementById("postText");
+
+    const text =
+        input.value.trim();
+
+    if (!text) {
+
+        showToast("Write something first");
+
+        return;
+
+    }
+
+    try {
+
+        const response =
+            await fetch("/api/post", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    text: text
+                })
+
+            });
+
+        if (!response.ok) {
+
+            showToast("Could not publish event");
+
+            return;
+
+        }
+
+        const post =
+            await response.json();
+
+        posts.unshift(post);
+
+        input.value = "";
+
+        renderFeed();
+
+        showToast("Event published");
+
+    } catch {
+
+        showToast("Server error");
+
+    }
+
+}
+
+
+/* ============================================================
+   GENERATE NPC
+============================================================ */
+
+async function generateNPC() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/generate/npc",
+                { method: "POST" }
+            );
+
+        const npc =
+            await response.json();
+
+        npcs.push(npc);
+
+        renderNPCs();
+
+        openNPC(npc.id);
+
+        showToast("New NPC generated");
+
+    } catch {
+
+        showToast("NPC generation failed");
+
+    }
+
+}
+
+
+/* ============================================================
+   GENERATE WORLD
+============================================================ */
+
+async function generateWorld() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/generate/world",
+                { method: "POST" }
+            );
+
+        const world =
+            await response.json();
+
+        worlds.push(world);
+
+        renderWorlds();
+
+        openWorld(world.id);
+
+        showToast("New world generated");
+
+    } catch {
+
+        showToast("World generation failed");
+
+    }
+
+}
+
+
+/* ============================================================
+   LIKE
+============================================================ */
+
+function likePost(id, button) {
+
+    const post =
+        posts.find(x => x.id === id);
+
+    if (!post) return;
+
+    post.likes++;
+
+    button.textContent =
+        "♥ Liked";
+
+    button.style.color =
+        "#ec4899";
+
+    renderFeed(posts);
+
+}
+
+
+/* ============================================================
+   QUEST
+============================================================ */
+
+function acceptQuest(name) {
+
+    showToast(
+        "Quest accepted: " + name
+    );
+
+}
+
+
+/* ============================================================
+   SEARCH
+============================================================ */
+
+function globalSearch(value) {
+
+    const query =
+        value.trim().toLowerCase();
+
+    if (!query) {
+
+        if (
+            document
+                .getElementById("page-home")
+                .classList.contains("active")
+        ) {
+
+            renderFeed();
+
+        }
+
+        return;
+
+    }
+
+    showPage("explore");
+
+    const results =
+        posts.filter(post =>
+            (
+                post.npc + " " +
+                post.role + " " +
+                post.world + " " +
+                post.text
+            )
+            .toLowerCase()
+            .includes(query)
+        );
+
+    const grid =
+        document.getElementById("exploreGrid");
+
+    grid.innerHTML =
+        results.length
+            ? results.map(post => `
+
+                <div class="card post">
+
+                    <div class="post-head">
+
+                        <img
+                            class="avatar"
+                            src="${post.avatar}"
+                        >
+
+                        <div class="post-user">
+
+                            <strong>
+                                ${escapeHTML(post.npc)}
+                            </strong>
+
+                            <small>
+                                ${escapeHTML(post.world)}
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="post-body"
+                        style="padding-left:0"
+                    >
+                        ${escapeHTML(post.text)}
+                    </div>
+
+                </div>
+
+            `).join("")
+            :
+            `
+                <div class="card empty">
+                    <div class="empty-icon">🔎</div>
+                    No results found.
+                </div>
+            `;
+
+}
+
+
+/* ============================================================
    MODAL
-========================================================= */
+============================================================ */
 
-function showModal(title,body){
+function showModal() {
 
-    document.getElementById("modalTitle").textContent = title;
-    document.getElementById("modalBody").innerHTML = body;
+    document
+        .getElementById("modal")
+        .classList.add("show");
 
-    document.getElementById("modalBackdrop")
-        .classList.remove("hidden");
-
-    document.body.style.overflow = "hidden";
 }
 
-function closeModal(){
+function hideModal() {
 
-    document.getElementById("modalBackdrop")
-        .classList.add("hidden");
+    document
+        .getElementById("modal")
+        .classList.remove("show");
 
-    document.body.style.overflow = "";
 }
 
-function backdropClose(event){
+function closeModal(event) {
 
-    if(event.target.id === "modalBackdrop"){
-        closeModal();
+    if (
+        event.target.id === "modal"
+    ) {
+
+        hideModal();
+
     }
+
 }
 
-/* =========================================================
-   FORMAT
-========================================================= */
 
-function formatNumber(num){
-
-    num = Number(num) || 0;
-
-    if(num >= 1000000){
-        return (num/1000000).toFixed(1).replace(".0","") + "M";
-    }
-
-    if(num >= 1000){
-        return (num/1000).toFixed(1).replace(".0","") + "K";
-    }
-
-    return String(num);
-}
-
-function formatTime(timestamp){
-
-    const diff =
-        Math.max(0,Date.now() - timestamp);
-
-    const mins =
-        Math.floor(diff / 60000);
-
-    if(mins < 1){
-        return "now";
-    }
-
-    if(mins < 60){
-        return mins + "m";
-    }
-
-    const hours =
-        Math.floor(mins / 60);
-
-    if(hours < 24){
-        return hours + "h";
-    }
-
-    const days =
-        Math.floor(hours / 24);
-
-    if(days < 7){
-        return days + "d";
-    }
-
-    return Math.floor(days/7) + "w";
-}
-
-/* =========================================================
+/* ============================================================
    TOAST
-========================================================= */
+============================================================ */
 
-function toast(message){
+let toastTimer;
 
-    const container =
-        document.getElementById("toastContainer");
+function showToast(message) {
 
-    const item =
-        document.createElement("div");
+    const toast =
+        document.getElementById("toast");
 
-    item.className = "toast";
-    item.textContent = message;
+    toast.textContent =
+        message;
 
-    container.appendChild(item);
+    toast.classList.add("show");
 
-    setTimeout(()=>{
-        item.remove();
-    },2600);
+    clearTimeout(toastTimer);
+
+    toastTimer =
+        setTimeout(() => {
+
+            toast.classList.remove("show");
+
+        }, 2500);
+
 }
 
-/* =========================================================
-   KEYBOARD SHORTCUTS
-========================================================= */
 
-document.addEventListener("keydown",function(event){
+/* ============================================================
+   ESCAPE HTML
+============================================================ */
 
-    if(event.key === "Escape"){
-        closeModal();
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+/* ============================================================
+   RENDER EVERYTHING
+============================================================ */
+
+function renderAll() {
+
+    renderFeed();
+    renderExplore();
+    renderWorlds();
+    renderNPCs();
+    renderQuests();
+    renderMarket();
+
+}
+
+
+/* ============================================================
+   START
+============================================================ */
+
+loadData();
+
+
+/* ============================================================
+   KEYBOARD
+============================================================ */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (event.key === "Escape") {
+
+            hideModal();
+
+        }
+
     }
-
-    if((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k"){
-        event.preventDefault();
-        focusSearch();
-    }
-});
-
-/* =========================================================
-   INITIAL START
-========================================================= */
-
-generateWorld();
+);
 
 </script>
+
 </body>
 </html>
-'''
+"""
 
-Path("index.html").write_text(HTML, encoding="utf-8")
-print("NPCBook generated successfully: index.html")
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=True
+    )
