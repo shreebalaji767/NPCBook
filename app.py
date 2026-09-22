@@ -11,10 +11,11 @@ import re
 # Run:
 #     python app.py
 #
-# Creates:
+# Generates:
 #     site/index.html
 #     site/robots.txt
 #     site/sitemap.xml
+#     site/site.webmanifest
 #
 # No Flask
 # No database
@@ -26,10 +27,11 @@ OUTPUT_DIR = Path("site")
 OUTPUT_FILE = OUTPUT_DIR / "index.html"
 ROBOTS_FILE = OUTPUT_DIR / "robots.txt"
 SITEMAP_FILE = OUTPUT_DIR / "sitemap.xml"
+MANIFEST_FILE = OUTPUT_DIR / "site.webmanifest"
 
 
 # ============================================================
-# WEBSITE SETTINGS
+# WEBSITE DATA
 # ============================================================
 
 SITE_DATA = {
@@ -43,8 +45,6 @@ SITE_DATA = {
         "worlds, quests, factions, lore and stories."
     ),
 
-    # IMPORTANT:
-    # This is the public website URL.
     "url": "https://npcbook.onrender.com/",
 
     "language": "en",
@@ -56,6 +56,7 @@ SITE_DATA = {
         "NPCs",
         "NPC database",
         "fictional characters",
+        "fictional NPCs",
         "characters",
         "fantasy characters",
         "game characters",
@@ -145,6 +146,8 @@ SITE_DATA = {
 
     # ========================================================
     # NPC DATABASE
+    #
+    # Add more NPCs here.
     # ========================================================
 
     "featured_npcs": [
@@ -276,19 +279,16 @@ SITE_DATA = {
 # ============================================================
 
 def esc(value):
-    """HTML escape."""
     return html.escape(str(value), quote=True)
 
 
 def slug(value):
-    """Create a simple URL/search slug."""
     value = str(value).lower().strip()
     value = re.sub(r"[^a-z0-9]+", "-", value)
     return value.strip("-")
 
 
 def search_text(*values):
-    """Create normalized searchable text."""
     return " ".join(
         str(value).lower()
         for value in values
@@ -296,7 +296,7 @@ def search_text(*values):
 
 
 # ============================================================
-# GENERATE SEO KEYWORDS
+# SEO KEYWORDS
 # ============================================================
 
 def generate_keywords(data):
@@ -323,25 +323,23 @@ def generate_keywords(data):
             quest["difficulty"]
         ])
 
-    # Remove duplicates while preserving order.
     result = []
-
     seen = set()
 
     for keyword in keywords:
 
-        key = str(keyword).lower().strip()
+        value = str(keyword).strip()
+        key = value.lower()
 
         if key and key not in seen:
-
             seen.add(key)
-            result.append(key)
+            result.append(value)
 
     return ", ".join(result)
 
 
 # ============================================================
-# BUILD NPC HTML
+# NPC HTML
 # ============================================================
 
 def build_npc_html(data):
@@ -371,8 +369,18 @@ def build_npc_html(data):
             else "?"
         )
 
-        output += f"""
+        npc_json = json.dumps(
+            {
+                "name": npc["name"],
+                "role": npc["role"],
+                "world": npc["world"],
+                "level": str(npc["level"]),
+                "description": npc["description"]
+            },
+            ensure_ascii=False
+        )
 
+        output += f"""
         <article
             class="npc-card"
             data-type="npc"
@@ -388,6 +396,10 @@ def build_npc_html(data):
             <div class="npc-content">
 
                 <div class="npc-top">
+
+                    <span class="npc-badge">
+                        NPC
+                    </span>
 
                     <span class="npc-level">
                         LVL {level}
@@ -411,13 +423,7 @@ def build_npc_html(data):
 
                 <button
                     class="card-button"
-                    onclick="openNPC(
-                        {json.dumps(npc["name"])},
-                        {json.dumps(npc["role"])},
-                        {json.dumps(npc["world"])},
-                        {json.dumps(str(npc["level"]))},
-                        {json.dumps(npc["description"])}
-                    )"
+                    onclick='openNPC({json.dumps(npc["name"], ensure_ascii=False)}, {json.dumps(npc["role"], ensure_ascii=False)}, {json.dumps(npc["world"], ensure_ascii=False)}, {json.dumps(str(npc["level"]), ensure_ascii=False)}, {json.dumps(npc["description"], ensure_ascii=False)})'
                 >
                     View Character →
                 </button>
@@ -431,7 +437,7 @@ def build_npc_html(data):
 
 
 # ============================================================
-# BUILD WORLD HTML
+# WORLD HTML
 # ============================================================
 
 def build_world_html(data):
@@ -454,7 +460,6 @@ def build_world_html(data):
         )
 
         output += f"""
-
         <article
             class="world-card"
             data-type="world"
@@ -493,7 +498,7 @@ def build_world_html(data):
 
 
 # ============================================================
-# BUILD QUEST HTML
+# QUEST HTML
 # ============================================================
 
 def build_quest_html(data):
@@ -517,7 +522,6 @@ def build_quest_html(data):
         )
 
         output += f"""
-
         <article
             class="quest-card"
             data-type="quest"
@@ -556,7 +560,7 @@ def build_quest_html(data):
 
 
 # ============================================================
-# BUILD CATEGORY HTML
+# CATEGORY HTML
 # ============================================================
 
 def build_category_html(data):
@@ -570,7 +574,6 @@ def build_category_html(data):
         description = esc(category["description"])
 
         output += f"""
-
         <article class="category-card">
 
             <div class="category-icon">
@@ -587,9 +590,7 @@ def build_category_html(data):
 
             <button
                 class="card-button"
-                onclick="showCategory(
-                    {json.dumps(category["name"])}
-                )"
+                onclick='showCategory({json.dumps(category["name"], ensure_ascii=False)})'
             >
                 Explore →
             </button>
@@ -601,7 +602,7 @@ def build_category_html(data):
 
 
 # ============================================================
-# BUILD STATS
+# STATS HTML
 # ============================================================
 
 def build_stats_html(data):
@@ -611,7 +612,6 @@ def build_stats_html(data):
     for name, value in data["stats"].items():
 
         output += f"""
-
         <div class="stat-card">
 
             <div class="stat-number">
@@ -629,7 +629,10 @@ def build_stats_html(data):
 
 
 # ============================================================
-# BUILD JSON-LD SEO
+# JSON-LD
+#
+# IMPORTANT:
+# This function fixes the original SyntaxError.
 # ============================================================
 
 def build_json_ld(data):
@@ -660,24 +663,40 @@ def build_json_ld(data):
 
         {
             "@type": "CollectionPage",
+            "@id": base_url + "/#npc-directory",
             "name": "NPC Directory",
             "description": (
                 "Explore NPC characters from NPC OMNIVERSE."
-            },
+            ),
             "url": base_url + "/#npcs"
         },
 
         {
             "@type": "CollectionPage",
+            "@id": base_url + "/#world-directory",
             "name": "World Directory",
             "description": (
                 "Explore worlds and realities from NPC OMNIVERSE."
-            },
+            ),
             "url": base_url + "/#worlds"
+        },
+
+        {
+            "@type": "CollectionPage",
+            "@id": base_url + "/#quest-directory",
+            "name": "Quest Directory",
+            "description": (
+                "Explore quests and adventures from NPC OMNIVERSE."
+            ),
+            "url": base_url + "/#quests"
         }
     ]
 
-    # Add NPC structured data.
+
+    # --------------------------------------------------------
+    # NPC structured data
+    # --------------------------------------------------------
+
     for npc in data["featured_npcs"]:
 
         graph.append({
@@ -696,6 +715,7 @@ def build_json_ld(data):
             }
         })
 
+
     schema = {
         "@context": "https://schema.org",
         "@graph": graph
@@ -709,7 +729,7 @@ def build_json_ld(data):
 
 
 # ============================================================
-# BUILD MAIN HTML
+# MAIN HTML
 # ============================================================
 
 def build_html(data):
@@ -733,11 +753,8 @@ def build_html(data):
         ensure_ascii=False
     )
 
-    return f"""<!DOCTYPE html>
-
-<html
-    lang="{esc(data["language"])}"
->
+    template = r"""<!DOCTYPE html>
+<html lang="__LANGUAGE__">
 
 <head>
 
@@ -750,36 +767,41 @@ def build_html(data):
 
 <meta
     name="theme-color"
-    content="#080b14"
+    content="#070b16"
 >
 
 <title>
-    {site_name} — Explore NPCs, Worlds, Quests & Stories
+    __SITE_NAME__ — Explore NPCs, Worlds, Quests & Stories
 </title>
 
 <meta
     name="description"
-    content="{description}"
+    content="__DESCRIPTION__"
 >
 
 <meta
     name="keywords"
-    content="{keywords}"
+    content="__KEYWORDS__"
 >
 
 <meta
     name="author"
-    content="{esc(data["author"])}"
+    content="__AUTHOR__"
 >
 
 <meta
     name="robots"
-    content="index, follow, max-image-preview:large"
+    content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
 >
 
 <link
     rel="canonical"
-    href="{canonical_url}"
+    href="__CANONICAL__"
+>
+
+<link
+    rel="manifest"
+    href="/site.webmanifest"
 >
 
 
@@ -794,22 +816,27 @@ def build_html(data):
 
 <meta
     property="og:title"
-    content="{site_name} — Explore the Omniverse"
+    content="__SITE_NAME__ — Explore the Omniverse"
 >
 
 <meta
     property="og:description"
-    content="{description}"
+    content="__DESCRIPTION__"
 >
 
 <meta
     property="og:url"
-    content="{canonical_url}"
+    content="__CANONICAL__"
 >
 
 <meta
     property="og:site_name"
-    content="{site_name}"
+    content="__SITE_NAME__"
+>
+
+<meta
+    property="og:locale"
+    content="en_US"
 >
 
 
@@ -824,12 +851,12 @@ def build_html(data):
 
 <meta
     name="twitter:title"
-    content="{site_name} — Explore the Omniverse"
+    content="__SITE_NAME__ — Explore the Omniverse"
 >
 
 <meta
     name="twitter:description"
-    content="{description}"
+    content="__DESCRIPTION__"
 >
 
 
@@ -838,7 +865,7 @@ def build_html(data):
 ========================================================= -->
 
 <script type="application/ld+json">
-{json_ld}
+__JSON_LD__
 </script>
 
 
@@ -848,19 +875,18 @@ def build_html(data):
    RESET
 ============================================================ */
 
-* {{
+* {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-}}
+}
 
-html {{
+html {
     scroll-behavior: smooth;
-    scroll-padding-top: 90px;
-}}
+}
 
-body {{
-
+body {
+    min-height: 100vh;
     font-family:
         Inter,
         ui-sans-serif,
@@ -870,1022 +896,1076 @@ body {{
         "Segoe UI",
         sans-serif;
 
+    color: #f4f7ff;
     background:
-
         radial-gradient(
-            circle at 10% 0%,
-            #18213b 0,
-            transparent 35%
+            circle at 20% 10%,
+            rgba(88, 71, 255, 0.16),
+            transparent 32%
         ),
-
         radial-gradient(
-            circle at 90% 20%,
-            #19133b 0,
+            circle at 80% 20%,
+            rgba(0, 210, 255, 0.10),
             transparent 30%
         ),
+        #070b16;
 
-        #05070d;
+    line-height: 1.6;
+}
 
-    color: #f5f7ff;
-
-    min-height: 100vh;
-
-    overflow-x: hidden;
-}}
+body.modal-open {
+    overflow: hidden;
+}
 
 button,
-input {{
+input {
     font: inherit;
-}}
+}
 
-button {{
+button {
     cursor: pointer;
-}}
+}
 
-button:focus-visible,
-input:focus-visible {{
-    outline: 2px solid #8b7cff;
-    outline-offset: 3px;
-}}
-
-.container {{
-
-    width:
-        min(
-            1400px,
-            calc(100% - 40px)
-        );
-
-    margin: auto;
-}}
+a {
+    color: inherit;
+    text-decoration: none;
+}
 
 
 /* ============================================================
    HEADER
 ============================================================ */
 
-header {{
-
+.site-header {
     position: sticky;
-
     top: 0;
+    z-index: 1000;
 
-    z-index: 100;
+    backdrop-filter: blur(20px);
 
-    background:
-        rgba(5, 7, 13, .86);
-
-    backdrop-filter:
-        blur(20px);
+    background: rgba(7, 11, 22, 0.88);
 
     border-bottom:
         1px solid
-        rgba(255,255,255,.08);
-}}
+        rgba(255, 255, 255, 0.08);
+}
 
-.nav {{
-
-    min-height: 74px;
+.header-inner {
+    width: min(1400px, calc(100% - 32px));
+    min-height: 76px;
+    margin: auto;
 
     display: flex;
-
     align-items: center;
-
-    justify-content: space-between;
-
     gap: 20px;
-}}
+}
 
-.logo {{
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 11px;
 
-    font-size: 20px;
+    min-width: max-content;
+}
 
-    font-weight: 950;
+.logo-mark {
+    width: 42px;
+    height: 42px;
 
-    letter-spacing: -.8px;
+    display: grid;
+    place-items: center;
 
-    white-space: nowrap;
-}}
-
-.logo span {{
+    border-radius: 14px;
 
     background:
         linear-gradient(
-            90deg,
-            #9c91ff,
-            #49dfff
+            135deg,
+            #735cff,
+            #18c8ff
         );
 
-    -webkit-background-clip: text;
+    box-shadow:
+        0 10px 35px
+        rgba(71, 117, 255, 0.25);
+}
 
-    background-clip: text;
+.logo-text {
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+}
 
-    color: transparent;
-}}
-
-.nav-links {{
-
-    display: flex;
-
-    gap: 5px;
-
-    overflow-x: auto;
-}}
-
-.nav-links button {{
-
-    background: transparent;
-
-    border: 0;
-
-    color: #aeb6ca;
-
-    padding: 10px 13px;
-
-    border-radius: 10px;
-
-    font-weight: 700;
-}}
-
-.nav-links button:hover {{
-
-    background:
-        rgba(255,255,255,.07);
-
-    color: white;
-}}
+.logo-sub {
+    color: #7f8ba9;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
 
 
 /* ============================================================
    SEARCH
 ============================================================ */
 
-.search {{
-
-    width: 270px;
-
+.search {
     position: relative;
-}}
+    flex: 1;
+    max-width: 620px;
+    margin-left: auto;
+}
 
-.search input {{
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
-    width: 100%;
+    min-height: 46px;
 
-    background:
-        rgba(255,255,255,.065);
+    padding: 0 12px;
 
     border:
         1px solid
-        rgba(255,255,255,.10);
+        rgba(255, 255, 255, 0.10);
 
-    border-radius: 13px;
+    border-radius: 15px;
 
-    padding: 12px 14px;
+    background:
+        rgba(255, 255, 255, 0.045);
 
-    color: white;
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
 
-    outline: none;
-}}
+.search-box:focus-within {
+    border-color:
+        rgba(114, 92, 255, 0.75);
 
-.search input::placeholder {{
-    color: #727c94;
-}}
+    background:
+        rgba(255, 255, 255, 0.07);
 
-.search input:focus {{
-    border-color: #7d70ff;
-}}
+    box-shadow:
+        0 0 0 4px
+        rgba(114, 92, 255, 0.10);
+}
+
+.search-icon {
+    color: #8590aa;
+    font-size: 18px;
+}
+
+.search-input {
+    width: 100%;
+    min-width: 0;
+
+    border: 0;
+    outline: 0;
+
+    color: #fff;
+    background: transparent;
+}
+
+.search-input::placeholder {
+    color: #68748e;
+}
+
+.search-shortcut {
+    flex: none;
+
+    padding: 3px 7px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.10);
+
+    border-radius: 7px;
+
+    color: #78849d;
+    font-size: 11px;
+}
+
+.search-clear {
+    display: none;
+
+    width: 30px;
+    height: 30px;
+
+    border: 0;
+    border-radius: 9px;
+
+    color: #aab4c9;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.search-clear.visible {
+    display: grid;
+    place-items: center;
+}
 
 
 /* ============================================================
-   SEARCH PANEL
+   SEARCH RESULTS PANEL
 ============================================================ */
 
-.search-panel {{
+.search-panel {
+    position: absolute;
 
-    position: fixed;
+    left: 0;
+    right: 0;
+    top: calc(100% + 10px);
 
-    top: 82px;
-
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    width:
-        min(
-            850px,
-            calc(100% - 30px)
-        );
+    display: none;
 
     max-height: 70vh;
-
     overflow-y: auto;
 
-    background:
-        rgba(13,17,29,.98);
+    padding: 10px;
 
     border:
         1px solid
-        rgba(255,255,255,.12);
+        rgba(255, 255, 255, 0.10);
 
-    border-radius: 20px;
+    border-radius: 18px;
+
+    background:
+        rgba(10, 15, 29, 0.98);
 
     box-shadow:
-        0 30px 100px
-        rgba(0,0,0,.5);
+        0 30px 80px
+        rgba(0, 0, 0, 0.45);
 
-    padding: 12px;
+    z-index: 2000;
+}
 
-    display: none;
-}}
-
-.search-panel.active {{
+.search-panel.active {
     display: block;
-}}
+}
 
-.search-result {{
+.search-status {
+    padding: 9px 10px 7px;
 
+    color: #7e8aa4;
+
+    font-size: 12px;
+}
+
+.search-section-title {
+    padding:
+        12px
+        10px
+        6px;
+
+    color: #7d8aff;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+}
+
+.search-result {
     display: flex;
-
     align-items: center;
+    gap: 12px;
 
-    gap: 14px;
-
-    padding: 13px;
+    padding: 10px;
 
     border-radius: 13px;
 
-    color: white;
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
 
-    text-decoration: none;
-
-    border:
-        1px solid transparent;
-}}
-
-.search-result:hover {{
-
+.search-result:hover {
     background:
-        rgba(255,255,255,.06);
+        rgba(255, 255, 255, 0.06);
 
-    border-color:
-        rgba(255,255,255,.08);
-}}
+    transform: translateX(2px);
+}
 
-.search-result-avatar {{
-
+.search-result-avatar {
     width: 42px;
     height: 42px;
 
-    min-width: 42px;
+    flex: none;
 
     display: grid;
     place-items: center;
 
     border-radius: 12px;
 
+    color: #fff;
     background:
         linear-gradient(
-            145deg,
-            #55508e,
-            #15172b
+            135deg,
+            #735cff,
+            #18c8ff
         );
 
     font-weight: 900;
-}}
+}
 
-.search-result-info {{
+.search-result-info {
     min-width: 0;
-}}
+}
 
-.search-result-title {{
-    font-weight: 850;
-}}
+.search-result-title {
+    font-weight: 800;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-.search-result-meta {{
+.search-result-meta {
+    margin-top: 2px;
 
-    margin-top: 3px;
-
-    color: #8992a8;
+    color: #78849d;
 
     font-size: 12px;
-}}
 
-.search-section-title {{
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-    padding:
-        10px
-        10px
-        7px;
-
-    color: #8e85ff;
-
-    font-size: 11px;
-
-    text-transform: uppercase;
-
-    letter-spacing: .12em;
-
-    font-weight: 900;
-}}
-
-.no-results {{
-
-    padding: 35px 15px;
+.no-results {
+    padding: 30px 16px;
 
     text-align: center;
 
-    color: #7e879d;
-}}
+    color: #8994aa;
+}
+
+.no-results strong {
+    color: #fff;
+}
 
 
 /* ============================================================
    HERO
 ============================================================ */
 
-.hero {{
+.hero {
+    position: relative;
+
+    width: min(1400px, calc(100% - 32px));
+
+    margin: 0 auto;
 
     padding:
         100px
         0
-        65px;
-}}
-
-.hero-grid {{
+        70px;
 
     display: grid;
-
     grid-template-columns:
-        minmax(0, 1.4fr)
-        minmax(300px, .6fr);
+        minmax(0, 1.15fr)
+        minmax(280px, 0.85fr);
 
-    gap: 35px;
+    gap: 70px;
 
     align-items: center;
-}}
+}
 
-.badge {{
-
+.hero-eyebrow {
     display: inline-flex;
+    align-items: center;
+    gap: 8px;
 
-    padding: 7px 12px;
+    padding:
+        7px
+        12px;
+
+    border:
+        1px solid
+        rgba(116, 93, 255, 0.25);
 
     border-radius: 999px;
 
+    color: #9c91ff;
+
     background:
-        rgba(125,112,255,.12);
+        rgba(116, 93, 255, 0.08);
 
-    border:
-        1px solid
-        rgba(125,112,255,.3);
+    font-size: 11px;
+    font-weight: 900;
 
-    color: #bcb5ff;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
 
-    font-size: 12px;
+.hero h1 {
+    margin-top: 22px;
 
-    font-weight: 800;
-
-    margin-bottom: 20px;
-}}
-
-.hero h1 {{
+    max-width: 850px;
 
     font-size:
-        clamp(
-            44px,
-            7vw,
-            88px
-        );
+        clamp(44px, 7vw, 86px);
 
-    line-height: .95;
+    line-height: 0.98;
 
-    letter-spacing: -4px;
+    letter-spacing: -0.055em;
+}
 
-    max-width: 900px;
-}}
-
-.hero h1 span {{
-
+.gradient-text {
     background:
         linear-gradient(
-            90deg,
-            #9c91ff,
-            #49dfff,
-            #c48cff
+            110deg,
+            #ffffff 10%,
+            #9d91ff 48%,
+            #48dfff 90%
         );
 
     -webkit-background-clip: text;
-
     background-clip: text;
 
     color: transparent;
-}}
+}
 
-.hero p {{
+.hero-description {
+    max-width: 700px;
 
-    color: #aab3c9;
+    margin-top: 24px;
 
-    font-size: 18px;
+    color: #8e9ab4;
 
-    line-height: 1.7;
+    font-size:
+        clamp(16px, 2vw, 19px);
+}
 
-    max-width: 720px;
-
-    margin-top: 25px;
-}}
-
-.hero-actions {{
-
+.hero-actions {
     display: flex;
+    flex-wrap: wrap;
 
     gap: 12px;
 
-    flex-wrap: wrap;
-
     margin-top: 30px;
-}}
+}
 
-.primary-btn,
-.secondary-btn {{
+.primary-button,
+.secondary-button {
+    min-height: 48px;
 
-    border-radius: 12px;
+    padding:
+        0
+        18px;
 
-    padding: 13px 19px;
+    border-radius: 13px;
 
-    border:
-        1px solid transparent;
+    font-weight: 800;
+}
 
-    font-weight: 850;
-}}
+.primary-button {
+    border: 0;
 
-.primary-btn {{
-
-    background: white;
-
-    color: #070910;
-}}
-
-.secondary-btn {{
+    color: #fff;
 
     background:
-        rgba(255,255,255,.06);
+        linear-gradient(
+            135deg,
+            #735cff,
+            #28bff0
+        );
 
-    border-color:
-        rgba(255,255,255,.10);
+    box-shadow:
+        0 14px 35px
+        rgba(83, 91, 255, 0.22);
+}
 
-    color: white;
-}}
+.secondary-button {
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.10);
 
-.primary-btn:hover,
-.secondary-btn:hover {{
-    transform: translateY(-2px);
-}}
+    color: #dbe2f3;
+
+    background:
+        rgba(255, 255, 255, 0.04);
+}
 
 
 /* ============================================================
-   ORB
+   HERO ORB
 ============================================================ */
 
-.hero-orb {{
-
-    min-height: 340px;
+.hero-visual {
+    min-height: 390px;
 
     display: grid;
-
     place-items: center;
 
-    border-radius: 30px;
+    position: relative;
+}
 
-    background:
+.orb {
+    width:
+        clamp(220px, 30vw, 360px);
 
-        radial-gradient(
-            circle,
-            rgba(118,103,255,.30),
-            transparent 55%
-        ),
-
-        rgba(255,255,255,.035);
-
-    border:
-        1px solid
-        rgba(255,255,255,.08);
-}}
-
-.orb {{
-
-    width: 190px;
-
-    height: 190px;
+    aspect-ratio: 1;
 
     border-radius: 50%;
 
     background:
-
         radial-gradient(
             circle at 35% 30%,
-            #d5d0ff,
-            #7166ff 35%,
-            #272153 65%,
-            #090b14 100%
+            #d9faff 0%,
+            #7e83ff 16%,
+            #4534a6 38%,
+            #111b46 67%,
+            #080b16 72%
         );
 
     box-shadow:
+        0 0 90px
+        rgba(91, 95, 255, 0.35),
 
-        0 0 80px
-        rgba(115,100,255,.65),
-
-        inset -30px -25px 50px
-        rgba(0,0,0,.5);
+        inset
+        -30px
+        -30px
+        70px
+        rgba(0, 0, 0, 0.50);
 
     animation:
-        float 5s ease-in-out infinite;
-}}
+        floatOrb 7s ease-in-out infinite;
+}
 
-@keyframes float {{
+.orb::before,
+.orb::after {
+    content: "";
 
-    0%,100% {{
-        transform: translateY(0);
-    }}
+    position: absolute;
 
-    50% {{
-        transform: translateY(-15px);
-    }}
-}}
+    border-radius: 50%;
+
+    border:
+        1px solid
+        rgba(140, 160, 255, 0.25);
+
+    transform: rotate(-20deg);
+}
+
+.orb::before {
+    width: 120%;
+    height: 45%;
+}
+
+.orb::after {
+    width: 45%;
+    height: 120%;
+}
+
+@keyframes floatOrb {
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-14px) rotate(4deg);
+    }
+}
+
+
+/* ============================================================
+   SECTION
+============================================================ */
+
+.section {
+    width:
+        min(1400px, calc(100% - 32px));
+
+    margin: 0 auto;
+
+    padding:
+        65px
+        0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+
+    gap: 20px;
+
+    margin-bottom: 25px;
+}
+
+.section-kicker {
+    color: #8277ff;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.section-title {
+    margin-top: 5px;
+
+    font-size:
+        clamp(27px, 4vw, 42px);
+
+    letter-spacing: -0.035em;
+}
+
+.section-description {
+    max-width: 570px;
+
+    color: #7f8aa3;
+}
 
 
 /* ============================================================
    STATS
 ============================================================ */
 
-.stats {{
-
+.stats-grid {
     display: grid;
 
     grid-template-columns:
-        repeat(4, 1fr);
+        repeat(4, minmax(0, 1fr));
 
     gap: 14px;
+}
 
-    padding-bottom: 70px;
-}}
-
-.stat-card {{
-
+.stat-card {
     padding: 25px;
 
-    background:
-        rgba(255,255,255,.045);
-
     border:
         1px solid
-        rgba(255,255,255,.08);
-
-    border-radius: 18px;
-}}
-
-.stat-number {{
-
-    font-size: 30px;
-
-    font-weight: 950;
-}}
-
-.stat-label {{
-
-    margin-top: 5px;
-
-    color: #8f99b2;
-}}
-
-
-/* ============================================================
-   SECTIONS
-============================================================ */
-
-section {{
-    padding: 35px 0 75px;
-}}
-
-.section-header {{
-
-    display: flex;
-
-    align-items: end;
-
-    justify-content: space-between;
-
-    gap: 20px;
-
-    margin-bottom: 25px;
-}}
-
-.section-header h2 {{
-
-    font-size: 32px;
-
-    letter-spacing: -1px;
-}}
-
-.section-header p {{
-
-    color: #8e97ad;
-
-    margin-top: 5px;
-}}
-
-
-/* ============================================================
-   CATEGORY
-============================================================ */
-
-.category-grid {{
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    gap: 16px;
-}}
-
-.category-card,
-.npc-card,
-.world-card,
-.quest-card {{
-
-    background:
-
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.065),
-            rgba(255,255,255,.025)
-        );
-
-    border:
-        1px solid
-        rgba(255,255,255,.08);
+        rgba(255, 255, 255, 0.08);
 
     border-radius: 20px;
 
-    transition:
-        transform .2s,
-        border-color .2s,
-        box-shadow .2s;
+    background:
+        rgba(255, 255, 255, 0.035);
+}
 
-    overflow: hidden;
-}}
+.stat-number {
+    font-size: 34px;
+    font-weight: 950;
+    letter-spacing: -0.04em;
+}
+
+.stat-label {
+    margin-top: 4px;
+
+    color: #78849d;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+
+/* ============================================================
+   CARD GRIDS
+============================================================ */
+
+.category-grid,
+.npc-grid,
+.world-grid,
+.quest-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 16px;
+}
+
+
+/* ============================================================
+   CATEGORY CARDS
+============================================================ */
+
+.category-card {
+    padding: 24px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,0.055),
+            rgba(255,255,255,0.02)
+        );
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease;
+}
 
 .category-card:hover,
 .npc-card:hover,
 .world-card:hover,
-.quest-card:hover {{
-
-    transform:
-        translateY(-4px);
+.quest-card:hover {
+    transform: translateY(-4px);
 
     border-color:
-        rgba(140,130,255,.35);
+        rgba(124, 105, 255, 0.35);
+}
 
-    box-shadow:
-        0 15px 40px
-        rgba(0,0,0,.18);
-}}
+.category-icon {
+    width: 52px;
+    height: 52px;
 
-.category-card {{
-    padding: 25px;
-}}
-
-.category-icon {{
-
-    font-size: 34px;
+    display: grid;
+    place-items: center;
 
     margin-bottom: 18px;
-}}
 
-.category-card h3 {{
+    border-radius: 16px;
+
+    background:
+        rgba(114, 92, 255, 0.10);
+
+    font-size: 25px;
+}
+
+.category-card h3 {
     font-size: 20px;
-}}
+}
 
-.category-card p {{
-
-    color: #929bb0;
-
-    line-height: 1.6;
+.category-card p {
+    min-height: 78px;
 
     margin:
         8px
         0
-        20px;
-}}
+        18px;
+
+    color: #7f8aa3;
+
+    font-size: 14px;
+}
 
 
 /* ============================================================
-   BUTTONS
+   NPC CARDS
 ============================================================ */
 
-.card-button {{
-
-    border: 0;
-
-    background:
-        rgba(255,255,255,.08);
-
-    color: white;
-
-    padding:
-        9px
-        13px;
-
-    border-radius: 9px;
-
-    font-weight: 750;
-}}
-
-.card-button:hover {{
-    background:
-        rgba(255,255,255,.14);
-}}
-
-
-/* ============================================================
-   NPCS
-============================================================ */
-
-.npc-grid {{
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(2, 1fr);
-
-    gap: 16px;
-}}
-
-.npc-card {{
+.npc-card {
     display: flex;
-}}
-
-.npc-avatar {{
-
-    width: 110px;
-
-    min-width: 110px;
-
-    display: grid;
-
-    place-items: center;
-
-    font-size: 40px;
-
-    font-weight: 950;
-
-    background:
-
-        radial-gradient(
-            circle,
-            #55508e,
-            #15172b
-        );
-}}
-
-.npc-content {{
-
-    padding: 22px;
+    gap: 16px;
 
     min-width: 0;
 
-    flex: 1;
-}}
+    padding: 20px;
 
-.npc-top {{
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
 
-    display: flex;
-
-    justify-content: end;
-}}
-
-.npc-level {{
-
-    font-size: 11px;
-
-    font-weight: 900;
-
-    padding:
-        5px
-        8px;
-
-    border-radius: 7px;
+    border-radius: 20px;
 
     background:
-        rgba(96,220,255,.1);
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,0.055),
+            rgba(255,255,255,0.018)
+        );
 
-    color: #71ddff;
-}}
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        opacity 0.2s ease;
+}
 
-.npc-content h3 {{
+.npc-avatar {
+    width: 58px;
+    height: 58px;
 
-    margin-top: 8px;
+    flex: none;
 
-    font-size: 23px;
-}}
+    display: grid;
+    place-items: center;
 
-.npc-role {{
+    border-radius: 17px;
 
-    color: #b5aaff;
+    color: #fff;
 
+    background:
+        linear-gradient(
+            135deg,
+            #735cff,
+            #18c8ff
+        );
+
+    font-size: 22px;
+    font-weight: 950;
+
+    box-shadow:
+        0 10px 30px
+        rgba(75, 90, 255, 0.20);
+}
+
+.npc-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.npc-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+
+    margin-bottom: 8px;
+}
+
+.npc-badge,
+.npc-level,
+.world-type,
+.difficulty {
+    display: inline-block;
+
+    padding:
+        4px
+        8px;
+
+    border-radius: 999px;
+
+    font-size: 9px;
+    font-weight: 900;
+
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.npc-badge {
+    color: #8e84ff;
+    background: rgba(113, 92, 255, 0.10);
+}
+
+.npc-level {
+    color: #73dfff;
+    background: rgba(35, 198, 241, 0.08);
+}
+
+.npc-card h3,
+.world-card h3,
+.quest-card h3 {
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.npc-role {
     margin-top: 4px;
-}}
 
-.npc-world {{
-
-    color: #778197;
-
-    margin-top: 10px;
+    color: #a298ff;
 
     font-size: 13px;
-}}
+    font-weight: 800;
+}
 
-.npc-content p {{
+.npc-world {
+    margin-top: 6px;
 
-    color: #929bb0;
+    color: #78849d;
 
-    line-height: 1.6;
+    font-size: 12px;
+}
 
-    margin:
-        13px
-        0
-        18px;
-}}
+.npc-card p {
+    margin-top: 11px;
+
+    color: #7f8aa3;
+
+    font-size: 13px;
+}
 
 
 /* ============================================================
-   WORLDS
+   BUTTON
 ============================================================ */
 
-.world-grid {{
+.card-button {
+    width: 100%;
+
+    min-height: 42px;
+
+    margin-top: 16px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.09);
+
+    border-radius: 11px;
+
+    color: #e8ecf7;
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+    font-size: 12px;
+    font-weight: 850;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.card-button:hover {
+    background:
+        rgba(114, 92, 255, 0.12);
+
+    border-color:
+        rgba(114, 92, 255, 0.30);
+}
+
+
+/* ============================================================
+   WORLD CARDS
+============================================================ */
+
+.world-card,
+.quest-card {
+    padding: 22px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    border-radius: 20px;
+
+    background:
+        rgba(255, 255, 255, 0.035);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.world-symbol {
+    width: 55px;
+    height: 55px;
 
     display: grid;
-
-    grid-template-columns:
-        repeat(2, 1fr);
-
-    gap: 16px;
-}}
-
-.world-card {{
-
-    padding: 24px;
-
-    display: flex;
-
-    gap: 20px;
-}}
-
-.world-symbol {{
-
-    width: 65px;
-
-    height: 65px;
-
-    min-width: 65px;
-
-    display: grid;
-
     place-items: center;
+
+    margin-bottom: 17px;
 
     border-radius: 16px;
 
-    font-size: 30px;
+    background:
+        rgba(28, 196, 238, 0.08);
+
+    font-size: 25px;
+}
+
+.world-type {
+    color: #63d9f5;
 
     background:
-        rgba(117,106,255,.12);
-}}
+        rgba(25, 190, 232, 0.08);
+}
 
-.world-type {{
+.world-card p {
+    margin-top: 10px;
 
-    color: #8e85ff;
+    color: #7f8aa3;
+
+    font-size: 13px;
+}
+
+.world-info {
+    margin-top: 18px;
+
+    color: #a7b0c5;
 
     font-size: 12px;
-
     font-weight: 800;
-
-    text-transform: uppercase;
-}}
-
-.world-card h3 {{
-
-    font-size: 22px;
-
-    margin:
-        4px
-        0
-        8px;
-}}
-
-.world-card p {{
-
-    color: #929bb0;
-
-    line-height: 1.6;
-}}
-
-.world-info {{
-
-    margin-top: 15px;
-
-    color: #788298;
-
-    font-size: 13px;
-}}
+}
 
 
 /* ============================================================
-   QUESTS
+   QUEST CARDS
 ============================================================ */
 
-.quest-grid {{
+.quest-icon {
+    width: 55px;
+    height: 55px;
 
     display: grid;
+    place-items: center;
 
-    grid-template-columns:
-        repeat(3, 1fr);
+    margin-bottom: 17px;
 
-    gap: 16px;
-}}
+    border-radius: 16px;
 
-.quest-card {{
+    background:
+        rgba(255, 116, 116, 0.08);
 
-    padding: 22px;
+    font-size: 25px;
+}
 
-    display: flex;
+.difficulty {
+    color: #ffb28d;
 
-    gap: 15px;
-}}
+    background:
+        rgba(255, 133, 96, 0.09);
+}
 
-.quest-icon {{
-    font-size: 30px;
-}}
+.quest-card h3 {
+    margin-top: 9px;
+}
 
-.difficulty {{
+.quest-card p {
+    margin-top: 8px;
 
-    color: #ffbd72;
-
-    font-size: 11px;
-
-    font-weight: 900;
-
-    text-transform: uppercase;
-}}
-
-.quest-card h3 {{
-    margin: 5px 0;
-}}
-
-.quest-card p {{
-
-    color: #8992a8;
+    color: #7f8aa3;
 
     font-size: 13px;
-}}
+}
 
-.quest-reward {{
+.quest-reward {
+    margin-top: 17px;
 
-    margin-top: 15px;
+    color: #8ee7bc;
 
-    color: #79e1bd;
-
-    font-weight: 800;
-}}
+    font-size: 13px;
+    font-weight: 900;
+}
 
 
 /* ============================================================
-   FOOTER
+   SEARCH FILTERING
 ============================================================ */
 
-footer {{
+.npc-card.hidden,
+.world-card.hidden,
+.quest-card.hidden {
+    display: none;
+}
 
-    border-top:
-        1px solid
-        rgba(255,255,255,.08);
+.search-highlight {
+    border-color:
+        rgba(115, 92, 255, 0.70) !important;
 
-    padding: 35px 0;
-
-    color: #717b91;
-
-    text-align: center;
-}}
+    box-shadow:
+        0 0 0 3px
+        rgba(115, 92, 255, 0.08);
+}
 
 
 /* ============================================================
    MODAL
 ============================================================ */
 
-.modal {{
-
+.modal {
     position: fixed;
-
     inset: 0;
-
-    z-index: 999;
 
     display: none;
 
@@ -1894,298 +1974,280 @@ footer {{
     padding: 20px;
 
     background:
-        rgba(0,0,0,.75);
+        rgba(0, 0, 0, 0.72);
 
-    backdrop-filter:
-        blur(8px);
-}}
+    backdrop-filter: blur(10px);
 
-.modal.active {{
+    z-index: 5000;
+}
+
+.modal.active {
     display: grid;
-}}
+}
 
-.modal-box {{
+.modal-box {
+    position: relative;
 
     width:
-        min(
-            550px,
-            100%
-        );
+        min(620px, 100%);
 
-    background: #111522;
-
-    border:
-        1px solid
-        rgba(255,255,255,.1);
-
-    border-radius: 22px;
+    max-height: 85vh;
+    overflow-y: auto;
 
     padding: 30px;
 
-    position: relative;
-}}
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.11);
 
-.close {{
+    border-radius: 24px;
 
+    background:
+        #0c1221;
+
+    box-shadow:
+        0 40px 100px
+        rgba(0, 0, 0, 0.55);
+}
+
+.modal-close {
     position: absolute;
 
-    top: 15px;
+    right: 18px;
+    top: 18px;
 
-    right: 15px;
+    width: 36px;
+    height: 36px;
 
     border: 0;
+    border-radius: 10px;
 
-    width: 35px;
-
-    height: 35px;
-
-    border-radius: 50%;
+    color: #aab4c8;
 
     background:
-        rgba(255,255,255,.08);
-
-    color: white;
+        rgba(255, 255, 255, 0.06);
 
     font-size: 18px;
-}}
+}
 
-.modal-box h2 {{
+.modal-box h2 {
+    padding-right: 45px;
+
     font-size: 30px;
-}}
+}
 
-.modal-box p {{
+.modal-box p {
+    margin-top: 15px;
 
-    color: #969fb4;
+    color: #8b96ad;
+}
 
-    line-height: 1.7;
+.modal-meta {
+    margin-top: 25px;
 
-    margin-top: 12px;
-}}
+    padding: 18px;
 
-.modal-meta {{
-
-    margin-top: 20px;
-
-    padding: 15px;
-
-    border-radius: 13px;
+    border-radius: 15px;
 
     background:
-        rgba(255,255,255,.045);
-}}
+        rgba(255, 255, 255, 0.04);
+
+    color: #a9b3c8;
+
+    font-size: 14px;
+}
+
+.modal-meta strong {
+    color: #fff;
+}
 
 
 /* ============================================================
-   SEARCH STATES
+   FOOTER
 ============================================================ */
 
-.hidden {{
-    display: none !important;
-}}
+.footer {
+    width:
+        min(1400px, calc(100% - 32px));
 
-.search-highlight {{
+    margin: auto;
 
-    border-color:
-        rgba(139,124,255,.7) !important;
+    padding:
+        50px
+        0
+        40px;
 
-    box-shadow:
-        0 0 0 2px
-        rgba(139,124,255,.12),
-        0 20px 50px
-        rgba(0,0,0,.2);
-}}
+    border-top:
+        1px solid
+        rgba(255, 255, 255, 0.07);
 
-#searchStatus {{
+    color: #68748e;
 
-    margin-top: 15px;
+    font-size: 12px;
+}
 
-    color: #929bb0;
-
-    min-height: 20px;
-}}
+.footer-inner {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
 
 
 /* ============================================================
    RESPONSIVE
 ============================================================ */
 
-@media (max-width: 1100px) {{
+@media (max-width: 1100px) {
 
-    .hero-grid {{
+    .hero {
         grid-template-columns: 1fr;
-    }}
 
-    .hero-orb {{
-        min-height: 260px;
-    }}
+        padding-top: 70px;
 
-    .category-grid {{
-        grid-template-columns:
-            repeat(2, 1fr);
-    }}
+        gap: 30px;
+    }
 
-    .quest-grid {{
-        grid-template-columns:
-            repeat(2, 1fr);
-    }}
-
-    .search {{
-        width: 220px;
-    }}
-}}
-
-
-@media (max-width: 800px) {{
-
-    .nav {{
-        min-height: 65px;
-    }}
-
-    .nav-links {{
-        display: none;
-    }}
-
-    .search {{
-        width:
-            min(
-                300px,
-                45vw
-            );
-    }}
-
-    .hero {{
-        padding:
-            60px
-            0
-            45px;
-    }}
-
-    .stats {{
-        grid-template-columns:
-            repeat(2, 1fr);
-
-        padding-bottom: 45px;
-    }}
+    .hero-visual {
+        min-height: 300px;
+    }
 
     .category-grid,
     .npc-grid,
     .world-grid,
-    .quest-grid {{
-        grid-template-columns: 1fr;
-    }}
-}}
-
-
-@media (max-width: 560px) {{
-
-    .container {{
-        width:
-            calc(100% - 24px);
-    }}
-
-    .logo {{
-        font-size: 16px;
-    }}
-
-    .search {{
-        width: 150px;
-    }}
-
-    .hero h1 {{
-
-        font-size: 47px;
-
-        letter-spacing: -2.5px;
-    }}
-
-    .hero p {{
-        font-size: 16px;
-    }}
-
-    .stats {{
+    .quest-grid {
         grid-template-columns:
-            repeat(2, 1fr);
-    }}
+            repeat(2, minmax(0, 1fr));
+    }
 
-    .stat-card {{
-        padding: 18px;
-    }}
+    .stats-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
 
-    .stat-number {{
-        font-size: 24px;
-    }}
 
-    .npc-card {{
-        flex-direction: column;
-    }}
+@media (max-width: 760px) {
 
-    .npc-avatar {{
+    .header-inner {
+        width:
+            min(100% - 20px, 1400px);
 
-        width: 100%;
+        min-height: 70px;
 
-        height: 95px;
+        flex-wrap: wrap;
 
-        min-width: 0;
-    }}
+        padding:
+            10px
+            0;
+    }
 
-    .world-card {{
-        flex-direction: column;
-    }}
+    .logo {
+        flex: 1;
+    }
 
-    .section-header {{
+    .logo-text {
+        font-size: 14px;
+    }
+
+    .search {
+        order: 3;
+
+        flex-basis: 100%;
+
+        max-width: none;
+
+        margin: 0;
+    }
+
+    .search-shortcut {
+        display: none;
+    }
+
+    .hero {
+        width:
+            min(100% - 20px, 1400px);
+
+        padding:
+            60px
+            0
+            40px;
+    }
+
+    .hero h1 {
+        font-size:
+            clamp(42px, 14vw, 68px);
+    }
+
+    .section {
+        width:
+            min(100% - 20px, 1400px);
+
+        padding:
+            45px
+            0;
+    }
+
+    .section-header {
         align-items: start;
 
         flex-direction: column;
-    }}
+    }
 
-    section {{
-        padding-bottom: 45px;
-    }}
-}}
-
-
-@media (max-width: 390px) {{
-
-    .logo {{
-        font-size: 14px;
-    }}
-
-    .search {{
-        width: 125px;
-    }}
-
-    .hero h1 {{
-        font-size: 40px;
-    }}
-
-    .stats {{
+    .category-grid,
+    .npc-grid,
+    .world-grid,
+    .quest-grid {
         grid-template-columns: 1fr;
-    }}
-}}
+    }
+
+    .stats-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .stat-card {
+        padding: 18px;
+    }
+
+    .stat-number {
+        font-size: 27px;
+    }
+
+    .footer {
+        width:
+            min(100% - 20px, 1400px);
+    }
+
+    .footer-inner {
+        flex-direction: column;
+    }
+}
 
 
-/* ============================================================
-   REDUCED MOTION
-============================================================ */
+@media (max-width: 440px) {
 
-@media (prefers-reduced-motion: reduce) {{
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
 
-    *,
-    *::before,
-    *::after {{
+    .npc-card {
+        flex-direction: column;
+    }
 
-        scroll-behavior: auto !important;
+    .npc-avatar {
+        width: 52px;
+        height: 52px;
+    }
 
-        animation-duration:
-            .01ms !important;
+    .hero-actions {
+        flex-direction: column;
+    }
 
-        animation-iteration-count:
-            1 !important;
-
-        transition-duration:
-            .01ms !important;
-    }}
-}}
+    .primary-button,
+    .secondary-button {
+        width: 100%;
+    }
+}
 
 </style>
 
@@ -2195,396 +2257,402 @@ footer {{
 <body>
 
 
-<!-- ==========================================================
+<!-- ========================================================
      HEADER
-=========================================================== -->
+========================================================= -->
 
-<header>
+<header class="site-header">
 
-<div class="container nav">
+    <div class="header-inner">
 
-<a
-    href="#home"
-    class="logo"
-    style="text-decoration:none;"
-    aria-label="NPC OMNIVERSE Home"
->
-    🌌 <span>{site_name}</span>
-</a>
+        <a
+            href="#home"
+            class="logo"
+            aria-label="NPC OMNIVERSE Home"
+        >
 
+            <div class="logo-mark">
+                ✦
+            </div>
 
-<nav
-    class="nav-links"
-    aria-label="Main navigation"
->
+            <div>
+                <div class="logo-text">
+                    NPC OMNIVERSE
+                </div>
 
-<button onclick="scrollToSection('home')">
-    Home
-</button>
+                <div class="logo-sub">
+                    Explore the Universe
+                </div>
+            </div>
 
-<button onclick="scrollToSection('categories')">
-    Explore
-</button>
-
-<button onclick="scrollToSection('npcs')">
-    NPCs
-</button>
-
-<button onclick="scrollToSection('worlds')">
-    Worlds
-</button>
-
-<button onclick="scrollToSection('quests')">
-    Quests
-</button>
-
-</nav>
+        </a>
 
 
-<div class="search">
+        <div class="search">
 
-<input
-    id="searchInput"
-    type="search"
-    autocomplete="off"
-    placeholder="Search NPCs, worlds..."
-    aria-label="Search NPCs, worlds and quests"
->
+            <div class="search-box">
 
-</div>
+                <span class="search-icon">
+                    ⌕
+                </span>
 
-</div>
+                <input
+                    id="searchInput"
+                    class="search-input"
+                    type="search"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="Search NPCs, worlds, quests..."
+                    aria-label="Search NPCs, worlds and quests"
+                >
+
+                <span
+                    id="searchShortcut"
+                    class="search-shortcut"
+                >
+                    /
+                </span>
+
+                <button
+                    id="searchClear"
+                    class="search-clear"
+                    type="button"
+                    aria-label="Clear search"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div
+                id="searchPanel"
+                class="search-panel"
+                role="region"
+                aria-label="Search results"
+            >
+
+                <div
+                    id="searchStatus"
+                    class="search-status"
+                ></div>
+
+                <div
+                    id="searchResults"
+                ></div>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </header>
 
 
-<!-- ==========================================================
-     LIVE SEARCH PANEL
-=========================================================== -->
-
-<div
-    id="searchPanel"
-    class="search-panel"
-    aria-live="polite"
->
-
-    <div id="searchResults"></div>
-
-</div>
-
-
-<!-- ==========================================================
-     MAIN
-=========================================================== -->
+<!-- ========================================================
+     HERO
+========================================================= -->
 
 <main>
-
-
-<!-- ==========================================================
-     HERO
-=========================================================== -->
 
 <section
     id="home"
     class="hero"
 >
 
-<div class="container hero-grid">
+    <div>
 
-<div>
+        <span class="hero-eyebrow">
+            ✦ THE NPC DATABASE
+        </span>
 
-<div class="badge">
-    ✦ THE INFINITE UNIVERSE
-</div>
+        <h1>
+            Welcome to the
+            <span class="gradient-text">
+                Omniverse.
+            </span>
+        </h1>
 
-
-<h1>
-    Welcome to
-    <span>the Omniverse.</span>
-</h1>
-
-
-<p>
-    {tagline}
-    {description}
-</p>
-
-
-<div class="hero-actions">
-
-<button
-    class="primary-btn"
-    onclick="scrollToSection('categories')"
->
-    Explore Universe
-</button>
+        <p class="hero-description">
+            __TAGLINE__
+            Discover NPCs, worlds, quests, factions,
+            lore and stories from an ever-expanding
+            fictional universe.
+        </p>
 
 
-<button
-    class="secondary-btn"
-    onclick="randomNPC()"
->
-    Random NPC
-</button>
+        <div class="hero-actions">
 
-</div>
+            <a
+                href="#npcs"
+                class="primary-button"
+                style="display:inline-flex;align-items:center;justify-content:center;"
+            >
+                Explore NPCs →
+            </a>
 
-</div>
+            <button
+                class="secondary-button"
+                type="button"
+                onclick="randomNPC()"
+            >
+                ✦ Random NPC
+            </button>
+
+        </div>
+
+    </div>
 
 
-<div
-    class="hero-orb"
-    aria-hidden="true"
->
+    <div class="hero-visual">
 
-<div class="orb"></div>
+        <div class="orb"></div>
 
-</div>
-
-</div>
+    </div>
 
 </section>
 
 
-<!-- ==========================================================
+<!-- ========================================================
      STATS
-=========================================================== -->
+========================================================= -->
 
-<div class="container">
+<section class="section">
 
-<div class="stats">
+    <div class="stats-grid">
 
-{stats_html}
+        __STATS__
 
-</div>
+    </div>
 
-</div>
+</section>
 
 
-<!-- ==========================================================
+<!-- ========================================================
      CATEGORIES
-=========================================================== -->
+========================================================= -->
 
-<section id="categories">
-
-<div class="container">
-
-<div class="section-header">
-
-<div>
-
-<h2>
-    Explore the Omniverse
-</h2>
-
-<p>
-    Discover everything inside the universe.
-</p>
-
-</div>
-
-</div>
-
-
-<div class="category-grid">
-
-{categories_html}
-
-</div>
-
-</div>
-
-</section>
-
-
-<!-- ==========================================================
-     NPCS
-=========================================================== -->
-
-<section id="npcs">
-
-<div class="container">
-
-<div class="section-header">
-
-<div>
-
-<h2>
-    Featured NPCs
-</h2>
-
-<p>
-    Characters waiting to be discovered.
-</p>
-
-<div id="searchStatus"></div>
-
-</div>
-
-</div>
-
-
-<div
-    class="npc-grid"
-    id="npcGrid"
+<section
+    id="categories"
+    class="section"
 >
 
-{npc_html}
+    <div class="section-header">
 
-</div>
+        <div>
 
-</div>
+            <div class="section-kicker">
+                Universe
+            </div>
+
+            <h2 class="section-title">
+                Explore Everything
+            </h2>
+
+        </div>
+
+        <p class="section-description">
+            Navigate through different parts of
+            the NPC OMNIVERSE.
+        </p>
+
+    </div>
+
+
+    <div class="category-grid">
+
+        __CATEGORIES__
+
+    </div>
 
 </section>
 
 
-<!-- ==========================================================
+<!-- ========================================================
+     NPC DIRECTORY
+========================================================= -->
+
+<section
+    id="npcs"
+    class="section"
+>
+
+    <div class="section-header">
+
+        <div>
+
+            <div class="section-kicker">
+                Characters
+            </div>
+
+            <h2 class="section-title">
+                NPC Directory
+            </h2>
+
+        </div>
+
+        <p class="section-description">
+            Search for a character using their name,
+            role, world or description.
+        </p>
+
+    </div>
+
+
+    <div
+        id="npcGrid"
+        class="npc-grid"
+    >
+
+        __NPCS__
+
+    </div>
+
+</section>
+
+
+<!-- ========================================================
      WORLDS
-=========================================================== -->
+========================================================= -->
 
-<section id="worlds">
-
-<div class="container">
-
-<div class="section-header">
-
-<div>
-
-<h2>
-    Worlds
-</h2>
-
-<p>
-    Explore different realities.
-</p>
-
-</div>
-
-</div>
-
-
-<div
-    class="world-grid"
-    id="worldGrid"
+<section
+    id="worlds"
+    class="section"
 >
 
-{worlds_html}
+    <div class="section-header">
 
-</div>
+        <div>
 
-</div>
+            <div class="section-kicker">
+                Realities
+            </div>
+
+            <h2 class="section-title">
+                Worlds
+            </h2>
+
+        </div>
+
+        <p class="section-description">
+            Explore the realities where NPCs,
+            civilizations and stories exist.
+        </p>
+
+    </div>
+
+
+    <div class="world-grid">
+
+        __WORLDS__
+
+    </div>
 
 </section>
 
 
-<!-- ==========================================================
+<!-- ========================================================
      QUESTS
-=========================================================== -->
+========================================================= -->
 
-<section id="quests">
-
-<div class="container">
-
-<div class="section-header">
-
-<div>
-
-<h2>
-    Active Quests
-</h2>
-
-<p>
-    Adventures across the Omniverse.
-</p>
-
-</div>
-
-</div>
-
-
-<div
-    class="quest-grid"
-    id="questGrid"
+<section
+    id="quests"
+    class="section"
 >
 
-{quests_html}
+    <div class="section-header">
 
-</div>
+        <div>
 
-</div>
+            <div class="section-kicker">
+                Adventures
+            </div>
+
+            <h2 class="section-title">
+                Quests
+            </h2>
+
+        </div>
+
+        <p class="section-description">
+            Missions, adventures and challenges
+            from across the Omniverse.
+        </p>
+
+    </div>
+
+
+    <div class="quest-grid">
+
+        __QUESTS__
+
+    </div>
 
 </section>
-
 
 </main>
 
 
-<!-- ==========================================================
-     FOOTER
-=========================================================== -->
-
-<footer>
-
-<div class="container">
-
-<strong>
-    {site_name}
-</strong>
-
-<br>
-<br>
-
-Explore. Create. Discover.
-
-<br>
-<br>
-
-<span>
-    © {site_name}
-</span>
-
-</div>
-
-</footer>
-
-
-<!-- ==========================================================
+<!-- ========================================================
      MODAL
-=========================================================== -->
+========================================================= -->
 
 <div
     id="modal"
     class="modal"
+    onclick="closeModal(event)"
     role="dialog"
     aria-modal="true"
     aria-labelledby="modalTitle"
-    onclick="closeModal(event)"
 >
 
-<div class="modal-box">
+    <div class="modal-box">
 
-<button
-    class="close"
-    aria-label="Close"
-    onclick="closeModal()"
->
-    ×
-</button>
+        <button
+            class="modal-close"
+            type="button"
+            onclick="closeModal()"
+            aria-label="Close"
+        >
+            ×
+        </button>
 
-<div id="modalContent"></div>
+        <div id="modalContent"></div>
+
+    </div>
 
 </div>
 
-</div>
+
+<!-- ========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="footer">
+
+    <div class="footer-inner">
+
+        <div>
+            © 2026 __SITE_NAME__
+        </div>
+
+        <div>
+            Explore. Create. Discover.
+        </div>
+
+    </div>
+
+</footer>
 
 
 <script>
 
 /* ============================================================
-   DATA
+   SITE DATA
 ============================================================ */
 
-const SITE_DATA = {data_json};
+const SITE_DATA = __SITE_DATA__;
 
 
 /* ============================================================
@@ -2593,6 +2661,9 @@ const SITE_DATA = {data_json};
 
 const searchInput =
     document.getElementById("searchInput");
+
+const searchClear =
+    document.getElementById("searchClear");
 
 const searchPanel =
     document.getElementById("searchPanel");
@@ -2603,230 +2674,64 @@ const searchResults =
 const searchStatus =
     document.getElementById("searchStatus");
 
-
-/* ============================================================
-   NAVIGATION
-============================================================ */
-
-function scrollToSection(id) {{
-
-    const element =
-        document.getElementById(id);
-
-    if (element) {{
-
-        element.scrollIntoView({{
-            behavior: "smooth",
-            block: "start"
-        }});
-
-    }}
-
-}}
-
-
-/* ============================================================
-   ESCAPE HTML
-   Important for dynamically generated search results.
-============================================================ */
-
-function escapeHTML(value) {{
-
-    return String(value)
-
-        .replace(/&/g, "&amp;")
-
-        .replace(/</g, "&lt;")
-
-        .replace(/>/g, "&gt;")
-
-        .replace(/"/g, "&quot;")
-
-        .replace(/'/g, "&#039;");
-
-}}
+const modal =
+    document.getElementById("modal");
 
 
 /* ============================================================
    NORMALIZE SEARCH
 ============================================================ */
 
-function normalize(value) {{
+function normalize(value) {
 
-    return String(value)
-
+    return String(value || "")
         .toLowerCase()
-
         .normalize("NFKD")
-
-        .replace(/[^\w\s-]/g, "")
-
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, " ")
         .replace(/\s+/g, " ")
-
         .trim();
 
-}}
+}
 
 
 /* ============================================================
-   SEARCH SCORING
+   ESCAPE HTML
 ============================================================ */
 
-/*
-    IMPORTANT SEARCH PRIORITY:
+function escapeHTML(value) {
 
-    1. Exact NPC name
-    2. NPC name starts with query
-    3. NPC name contains query
-    4. NPC role/world/description
-    5. Exact World name
-    6. World matches
-    7. Quest matches
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-    This means when searching for:
-
-        Kael Veyron
-
-    Kael Veyron appears at the TOP.
-*/
-
-function scoreResult(item, query) {{
-
-    const q =
-        normalize(query);
-
-    const name =
-        normalize(item.name);
-
-    const role =
-        normalize(item.role || "");
-
-    const world =
-        normalize(item.world || "");
-
-    const description =
-        normalize(item.description || "");
-
-    const difficulty =
-        normalize(item.difficulty || "");
-
-    const type =
-        item.type;
-
-
-    /* ========================================================
-       NPC PRIORITY
-    ======================================================== */
-
-    if (type === "npc") {{
-
-        if (name === q) {{
-            return 10000;
-        }}
-
-        if (name.startsWith(q)) {{
-            return 9000;
-        }}
-
-        if (name.includes(q)) {{
-            return 8000;
-        }}
-
-        if (role.includes(q)) {{
-            return 7000;
-        }}
-
-        if (world.includes(q)) {{
-            return 6500;
-        }}
-
-        if (description.includes(q)) {{
-            return 5000;
-        }}
-
-        return 0;
-    }}
-
-
-    /* ========================================================
-       WORLD PRIORITY
-    ======================================================== */
-
-    if (type === "world") {{
-
-        if (name === q) {{
-            return 6000;
-        }}
-
-        if (name.startsWith(q)) {{
-            return 5500;
-        }}
-
-        if (name.includes(q)) {{
-            return 5000;
-        }}
-
-        if (world.includes(q)) {{
-            return 4500;
-        }}
-
-        if (description.includes(q)) {{
-            return 3500;
-        }}
-
-        return 0;
-    }}
-
-
-    /* ========================================================
-       QUEST PRIORITY
-    ======================================================== */
-
-    if (type === "quest") {{
-
-        if (name === q) {{
-            return 4000;
-        }}
-
-        if (name.startsWith(q)) {{
-            return 3800;
-        }}
-
-        if (name.includes(q)) {{
-            return 3600;
-        }}
-
-        if (world.includes(q)) {{
-            return 3000;
-        }}
-
-        if (difficulty.includes(q)) {{
-            return 2500;
-        }}
-
-        return 0;
-    }}
-
-
-    return 0;
-}}
+}
 
 
 /* ============================================================
-   CREATE SEARCH DATA
+   GET SEARCH ITEMS
 ============================================================ */
 
-function getSearchItems() {{
+function getSearchItems() {
 
     const items = [];
 
 
-    SITE_DATA.featured_npcs.forEach(
-        (npc, index) => {{
+    /*
+       NPCS
+    */
 
-            items.push({{
+    SITE_DATA.featured_npcs.forEach(
+        (npc, index) => {
+
+            items.push({
 
                 type: "npc",
+
+                index: index,
 
                 name: npc.name,
 
@@ -2836,21 +2741,26 @@ function getSearchItems() {{
 
                 description: npc.description,
 
-                level: npc.level,
+                level: npc.level
 
-                index: index
-            }});
+            });
 
-        }}
+        }
     );
 
 
-    SITE_DATA.worlds.forEach(
-        world => {{
+    /*
+       WORLDS
+    */
 
-            items.push({{
+    SITE_DATA.worlds.forEach(
+        (world, index) => {
+
+            items.push({
 
                 type: "world",
+
+                index: index,
 
                 name: world.name,
 
@@ -2858,19 +2768,28 @@ function getSearchItems() {{
 
                 world: world.name,
 
-                description: world.description
-            }});
+                description: world.description,
 
-        }}
+                population: world.population
+
+            });
+
+        }
     );
 
 
-    SITE_DATA.quests.forEach(
-        quest => {{
+    /*
+       QUESTS
+    */
 
-            items.push({{
+    SITE_DATA.quests.forEach(
+        (quest, index) => {
+
+            items.push({
 
                 type: "quest",
+
+                index: index,
 
                 name: quest.title,
 
@@ -2878,69 +2797,357 @@ function getSearchItems() {{
 
                 world: quest.world,
 
-                difficulty: quest.difficulty,
-
                 description: quest.reward
-            }});
 
-        }}
+            });
+
+        }
     );
 
 
     return items;
-}}
+
+}
+
+
+/* ============================================================
+   SEARCH SCORE
+============================================================
+
+   NPC PRIORITY:
+
+   10000  exact NPC name
+    9000  NPC name starts with query
+    8000  NPC name contains query
+    6000  NPC role exact/starts/contains
+    5000  NPC world match
+    4000  NPC description match
+
+   WORLD:
+
+    3000  exact name
+    2800  starts with name
+    2500  contains name
+    2200  type
+    2000  description
+
+   QUEST:
+
+    1800  exact title
+    1600  title starts with query
+    1500  title contains query
+    1300  world
+    1200  difficulty
+    1100  reward
+============================================================ */
+
+function scoreResult(item, query) {
+
+    const name =
+        normalize(item.name);
+
+    const role =
+        normalize(item.role);
+
+    const world =
+        normalize(item.world);
+
+    const description =
+        normalize(item.description);
+
+
+    let score = 0;
+
+
+    /* ========================================================
+       NPC
+    ======================================================== */
+
+    if (item.type === "npc") {
+
+        if (name === query) {
+
+            score = 10000;
+
+        }
+
+        else if (name.startsWith(query)) {
+
+            score = 9000;
+
+        }
+
+        else if (name.includes(query)) {
+
+            score = 8000;
+
+        }
+
+        else if (role === query) {
+
+            score = 6500;
+
+        }
+
+        else if (role.startsWith(query)) {
+
+            score = 6200;
+
+        }
+
+        else if (role.includes(query)) {
+
+            score = 6000;
+
+        }
+
+        else if (world === query) {
+
+            score = 5500;
+
+        }
+
+        else if (world.startsWith(query)) {
+
+            score = 5300;
+
+        }
+
+        else if (world.includes(query)) {
+
+            score = 5000;
+
+        }
+
+        else if (description.includes(query)) {
+
+            score = 4000;
+
+        }
+
+    }
+
+
+    /* ========================================================
+       WORLD
+    ======================================================== */
+
+    else if (item.type === "world") {
+
+        if (name === query) {
+
+            score = 3000;
+
+        }
+
+        else if (name.startsWith(query)) {
+
+            score = 2800;
+
+        }
+
+        else if (name.includes(query)) {
+
+            score = 2500;
+
+        }
+
+        else if (role === query) {
+
+            score = 2300;
+
+        }
+
+        else if (role.includes(query)) {
+
+            score = 2200;
+
+        }
+
+        else if (description.includes(query)) {
+
+            score = 2000;
+
+        }
+
+    }
+
+
+    /* ========================================================
+       QUEST
+    ======================================================== */
+
+    else if (item.type === "quest") {
+
+        if (name === query) {
+
+            score = 1800;
+
+        }
+
+        else if (name.startsWith(query)) {
+
+            score = 1600;
+
+        }
+
+        else if (name.includes(query)) {
+
+            score = 1500;
+
+        }
+
+        else if (world.includes(query)) {
+
+            score = 1300;
+
+        }
+
+        else if (role.includes(query)) {
+
+            score = 1200;
+
+        }
+
+        else if (description.includes(query)) {
+
+            score = 1100;
+
+        }
+
+    }
+
+
+    /*
+       Small bonus for words.
+    */
+
+    if (
+        score > 0 &&
+        name.split(" ").includes(query)
+    ) {
+
+        score += 50;
+
+    }
+
+
+    return score;
+
+}
 
 
 /* ============================================================
    SEARCH
 ============================================================ */
 
-function searchSite() {{
+function searchSite() {
 
     const query =
         searchInput.value.trim();
-
 
     const normalizedQuery =
         normalize(query);
 
 
-    if (!normalizedQuery) {{
+    updateClearButton();
 
-        searchPanel.classList.remove("active");
 
-        searchResults.innerHTML = "";
+    if (!normalizedQuery) {
+
+        closeSearch();
 
         clearSearchFiltering();
 
         return;
-    }}
+
+    }
 
 
     const items =
         getSearchItems();
 
 
-    const results =
+    let results =
         items
+            .map(item => ({
 
-            .map(item => ({{
                 item: item,
+
                 score:
                     scoreResult(
                         item,
                         normalizedQuery
                     )
-            }}))
 
+            }))
             .filter(result =>
                 result.score > 0
-            )
-
-            .sort(
-                (a, b) =>
-                    b.score - a.score
             );
+
+
+    /*
+       IMPORTANT:
+
+       If an NPC name matches, NPC name
+       results stay above world/quest results.
+
+       This is an explicit NPC-first rule.
+    */
+
+    const npcNameMatches =
+        results.filter(result => {
+
+            if (result.item.type !== "npc") {
+                return false;
+            }
+
+            const name =
+                normalize(
+                    result.item.name
+                );
+
+            return (
+                name === normalizedQuery ||
+                name.startsWith(normalizedQuery) ||
+                name.includes(normalizedQuery)
+            );
+
+        });
+
+
+    if (npcNameMatches.length) {
+
+        results.sort((a, b) => {
+
+            const aNpc =
+                a.item.type === "npc";
+
+            const bNpc =
+                b.item.type === "npc";
+
+
+            if (aNpc !== bNpc) {
+
+                return bNpc - aNpc;
+
+            }
+
+
+            return b.score - a.score;
+
+        });
+
+    }
+
+    else {
+
+        results.sort(
+            (a, b) =>
+                b.score - a.score
+        );
+
+    }
 
 
     renderSearchResults(
@@ -2954,7 +3161,7 @@ function searchSite() {{
         normalizedQuery
     );
 
-}}
+}
 
 
 /* ============================================================
@@ -2964,12 +3171,15 @@ function searchSite() {{
 function renderSearchResults(
     results,
     query
-) {{
+) {
 
     searchPanel.classList.add("active");
 
 
-    if (!results.length) {{
+    if (!results.length) {
+
+        searchStatus.textContent =
+            `No results for "${query}"`;
 
         searchResults.innerHTML = `
 
@@ -2984,26 +3194,36 @@ function renderSearchResults(
                 Try another NPC, world or quest.
 
             </div>
+
         `;
 
         return;
-    }}
+
+    }
 
 
-    let html = "";
+    searchStatus.textContent =
+        `${results.length} result(s) for "${query}"`;
+
+
+    let output = "";
 
     let lastType = "";
 
 
     results
-        .slice(0, 20)
-        .forEach(result => {{
+        .slice(0, 25)
+        .forEach(result => {
 
             const item =
                 result.item;
 
 
-            if (item.type !== lastType) {{
+            /*
+               Section heading
+            */
+
+            if (item.type !== lastType) {
 
                 const label =
                     item.type === "npc"
@@ -3013,39 +3233,41 @@ function renderSearchResults(
                             : "Quests";
 
 
-                html += `
+                output += `
 
-                    <div
-                        class="search-section-title"
-                    >
-                        ${{label}}
+                    <div class="search-section-title">
+                        ${label}
                     </div>
+
                 `;
 
 
                 lastType =
                     item.type;
-            }}
+
+            }
 
 
-            if (item.type === "npc") {{
+            /*
+               NPC
+            */
 
-                html += `
+            if (item.type === "npc") {
+
+                output += `
 
                     <a
                         href="#npcs"
                         class="search-result"
-                        onclick="selectNPCSearch(
-                            ${{item.index}}
-                        )"
+                        onclick="selectNPCSearch(${item.index}); return false;"
                     >
 
                         <div
                             class="search-result-avatar"
                         >
-                            ${{escapeHTML(
+                            ${escapeHTML(
                                 item.name.charAt(0)
-                            )}}
+                            )}
                         </div>
 
                         <div
@@ -3055,39 +3277,46 @@ function renderSearchResults(
                             <div
                                 class="search-result-title"
                             >
-                                ${{escapeHTML(
+                                ${escapeHTML(
                                     item.name
-                                )}}
+                                )}
                             </div>
 
                             <div
                                 class="search-result-meta"
                             >
                                 NPC ·
-                                ${{escapeHTML(
+                                ${escapeHTML(
                                     item.role
-                                )}}
+                                )}
                                 ·
-                                🌌 ${{escapeHTML(
+                                🌌
+                                ${escapeHTML(
                                     item.world
-                                )}}
+                                )}
                             </div>
 
                         </div>
 
                     </a>
+
                 `;
-            }}
+
+            }
 
 
-            else if (item.type === "world") {{
+            /*
+               WORLD
+            */
 
-                html += `
+            else if (item.type === "world") {
+
+                output += `
 
                     <a
                         href="#worlds"
                         class="search-result"
-                        onclick="closeSearch()"
+                        onclick="selectWorldSearch(${item.index}); return false;"
                     >
 
                         <div
@@ -3103,35 +3332,41 @@ function renderSearchResults(
                             <div
                                 class="search-result-title"
                             >
-                                ${{escapeHTML(
+                                ${escapeHTML(
                                     item.name
-                                )}}
+                                )}
                             </div>
 
                             <div
                                 class="search-result-meta"
                             >
                                 World ·
-                                ${{escapeHTML(
+                                ${escapeHTML(
                                     item.role
-                                )}}
+                                )}
                             </div>
 
                         </div>
 
                     </a>
+
                 `;
-            }}
+
+            }
 
 
-            else {{
+            /*
+               QUEST
+            */
 
-                html += `
+            else {
+
+                output += `
 
                     <a
                         href="#quests"
                         class="search-result"
-                        onclick="closeSearch()"
+                        onclick="selectQuestSearch(${item.index}); return false;"
                     >
 
                         <div
@@ -3147,42 +3382,45 @@ function renderSearchResults(
                             <div
                                 class="search-result-title"
                             >
-                                ${{escapeHTML(
+                                ${escapeHTML(
                                     item.name
-                                )}}
+                                )}
                             </div>
 
                             <div
                                 class="search-result-meta"
                             >
                                 Quest ·
-                                ${{escapeHTML(
+                                ${escapeHTML(
                                     item.world
-                                )}}
+                                )}
                             </div>
 
                         </div>
 
                     </a>
-                `;
-            }}
 
-        }});
+                `;
+
+            }
+
+        });
 
 
     searchResults.innerHTML =
-        html;
-}}
+        output;
+
+}
 
 
 /* ============================================================
-   FILTER PAGE RESULTS
+   FILTER PAGE CARDS
 ============================================================ */
 
 function applySearchFiltering(
     results,
     query
-) {{
+) {
 
     const resultNames =
         new Set(
@@ -3195,75 +3433,79 @@ function applySearchFiltering(
         );
 
 
-    const npcCards =
-        document.querySelectorAll(
-            ".npc-card"
-        );
+    /*
+       NPC CARDS
+    */
 
+    document
+        .querySelectorAll(".npc-card")
+        .forEach(card => {
 
-    const worldCards =
-        document.querySelectorAll(
-            ".world-card"
-        );
+            const name =
+                normalize(
+                    card.dataset.name
+                );
 
-
-    const questCards =
-        document.querySelectorAll(
-            ".quest-card"
-        );
-
-
-    npcCards.forEach(card => {{
-
-        const name =
-            normalize(
-                card.dataset.name
+            card.classList.toggle(
+                "hidden",
+                !resultNames.has(name)
             );
 
-
-        card.classList.toggle(
-            "hidden",
-            !resultNames.has(name)
-        );
-
-    }});
+        });
 
 
-    worldCards.forEach(card => {{
+    /*
+       WORLD CARDS
+    */
 
-        const name =
-            normalize(
-                card.dataset.name
+    document
+        .querySelectorAll(".world-card")
+        .forEach(card => {
+
+            const name =
+                normalize(
+                    card.dataset.name
+                );
+
+            card.classList.toggle(
+                "hidden",
+                !resultNames.has(name)
             );
 
-
-        card.classList.toggle(
-            "hidden",
-            !resultNames.has(name)
-        );
-
-    }});
+        });
 
 
-    questCards.forEach(card => {{
+    /*
+       QUEST CARDS
+    */
 
-        const name =
-            normalize(
-                card.dataset.name
+    document
+        .querySelectorAll(".quest-card")
+        .forEach(card => {
+
+            const name =
+                normalize(
+                    card.dataset.name
+                );
+
+            card.classList.toggle(
+                "hidden",
+                !resultNames.has(name)
             );
 
-
-        card.classList.toggle(
-            "hidden",
-            !resultNames.has(name)
-        );
-
-    }});
+        });
 
 
-    /* ========================================================
-       MOVE BEST NPC TO TOP
-    ======================================================== */
+    /*
+       Move NPC matches according to score.
+
+       This means if the user searches:
+
+           Kael
+
+       Kael Veyron appears first inside
+       the NPC grid as well.
+    */
 
     const npcGrid =
         document.getElementById(
@@ -3271,64 +3513,56 @@ function applySearchFiltering(
         );
 
 
-    const sortedNPCs =
-        results
+    if (npcGrid) {
 
-            .filter(
-                result =>
-                    result.item.type === "npc"
-            )
-
-            .sort(
-                (a, b) =>
-                    b.score - a.score
-            );
-
-
-    sortedNPCs.forEach(
-        result => {{
-
-            const card =
-                document.querySelector(
-                    `.npc-card[data-name="${{CSS.escape(
-                        result.item.name
-                    )}}"]`
+        const npcResults =
+            results
+                .filter(
+                    result =>
+                        result.item.type === "npc"
+                )
+                .sort(
+                    (a, b) =>
+                        b.score - a.score
                 );
 
 
-            if (card) {{
+        npcResults.forEach(result => {
+
+            const card =
+                document.querySelector(
+                    `.npc-card[data-index="${result.item.index}"]`
+                );
+
+
+            if (card) {
+
                 npcGrid.appendChild(card);
-            }}
 
-        }}
-    );
+                card.classList.add(
+                    "search-highlight"
+                );
 
+            }
 
-    const best =
-        results[0];
+        });
 
+    }
 
-    if (best) {{
-
-        searchStatus.textContent =
-            `${{results.length}} result(s) for "${{query}}"`;
-
-    }}
-
-}}
+}
 
 
 /* ============================================================
-   CLEAR SEARCH FILTERING
+   CLEAR FILTERING
 ============================================================ */
 
-function clearSearchFiltering() {{
+function clearSearchFiltering() {
 
     document
         .querySelectorAll(
             ".npc-card, .world-card, .quest-card"
         )
-        .forEach(card => {{
+        .forEach(card => {
 
             card.classList.remove(
                 "hidden"
@@ -3338,59 +3572,196 @@ function clearSearchFiltering() {{
                 "search-highlight"
             );
 
-        }});
+        });
 
 
     searchStatus.textContent = "";
 
-}}
+}
 
 
 /* ============================================================
-   SELECT NPC FROM SEARCH
+   SELECT NPC
 ============================================================ */
 
-function selectNPCSearch(index) {{
+function selectNPCSearch(index) {
 
     const npc =
         SITE_DATA.featured_npcs[index];
 
 
-    if (!npc) {{
+    if (!npc) {
         return;
-    }}
+    }
 
 
     closeSearch();
 
+    clearSearchFiltering();
 
-    setTimeout(
-        () => {{
 
-            openNPC(
-                npc.name,
-                npc.role,
-                npc.world,
-                npc.level,
-                npc.description
-            );
+    const card =
+        document.querySelector(
+            `.npc-card[data-index="${index}"]`
+        );
 
-        }},
-        250
-    );
-}}
+
+    if (card) {
+
+        card.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        card.classList.add(
+            "search-highlight"
+        );
+
+    }
+
+
+    setTimeout(() => {
+
+        openNPC(
+            npc.name,
+            npc.role,
+            npc.world,
+            npc.level,
+            npc.description
+        );
+
+    }, 350);
+
+}
+
+
+/* ============================================================
+   SELECT WORLD
+============================================================ */
+
+function selectWorldSearch(index) {
+
+    closeSearch();
+
+    clearSearchFiltering();
+
+
+    const cards =
+        document.querySelectorAll(
+            ".world-card"
+        );
+
+    const card =
+        cards[index];
+
+
+    if (card) {
+
+        card.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        card.classList.add(
+            "search-highlight"
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   SELECT QUEST
+============================================================ */
+
+function selectQuestSearch(index) {
+
+    closeSearch();
+
+    clearSearchFiltering();
+
+
+    const cards =
+        document.querySelectorAll(
+            ".quest-card"
+        );
+
+    const card =
+        cards[index];
+
+
+    if (card) {
+
+        card.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+
+        card.classList.add(
+            "search-highlight"
+        );
+
+    }
+
+}
 
 
 /* ============================================================
    CLOSE SEARCH
 ============================================================ */
 
-function closeSearch() {{
+function closeSearch() {
 
     searchPanel.classList.remove(
         "active"
     );
-}}
+
+}
+
+
+/* ============================================================
+   CLEAR SEARCH
+============================================================ */
+
+function clearSearch() {
+
+    searchInput.value = "";
+
+    updateClearButton();
+
+    closeSearch();
+
+    clearSearchFiltering();
+
+}
+
+
+/* ============================================================
+   CLEAR BUTTON
+============================================================ */
+
+function updateClearButton() {
+
+    if (
+        searchInput.value.trim()
+    ) {
+
+        searchClear.classList.add(
+            "visible"
+        );
+
+    }
+
+    else {
+
+        searchClear.classList.remove(
+            "visible"
+        );
+
+    }
+
+}
 
 
 /* ============================================================
@@ -3403,34 +3774,18 @@ function openNPC(
     world,
     level,
     description
-) {{
-
-    const safeName =
-        escapeHTML(name);
-
-    const safeRole =
-        escapeHTML(role);
-
-    const safeWorld =
-        escapeHTML(world);
-
-    const safeLevel =
-        escapeHTML(level);
-
-    const safeDescription =
-        escapeHTML(description);
-
+) {
 
     document.getElementById(
         "modalContent"
     ).innerHTML = `
 
         <h2 id="modalTitle">
-            ${{safeName}}
+            ${escapeHTML(name)}
         </h2>
 
         <p>
-            ${{safeDescription}}
+            ${escapeHTML(description)}
         </p>
 
         <div class="modal-meta">
@@ -3439,7 +3794,7 @@ function openNPC(
                 Role:
             </strong>
 
-            ${{safeRole}}
+            ${escapeHTML(role)}
 
             <br><br>
 
@@ -3447,7 +3802,8 @@ function openNPC(
                 World:
             </strong>
 
-            🌌 ${{safeWorld}}
+            🌌
+            ${escapeHTML(world)}
 
             <br><br>
 
@@ -3455,27 +3811,37 @@ function openNPC(
                 Level:
             </strong>
 
-            ${{safeLevel}}
+            ${escapeHTML(level)}
 
         </div>
+
     `;
 
 
-    document
-        .getElementById("modal")
-        .classList.add("active");
+    modal.classList.add(
+        "active"
+    );
 
-}}
+    document.body.classList.add(
+        "modal-open"
+    );
+
+}
 
 
 /* ============================================================
    RANDOM NPC
 ============================================================ */
 
-function randomNPC() {{
+function randomNPC() {
 
     const npcs =
         SITE_DATA.featured_npcs;
+
+
+    if (!npcs.length) {
+        return;
+    }
 
 
     const npc =
@@ -3494,22 +3860,24 @@ function randomNPC() {{
         npc.level,
         npc.description
     );
-}}
+
+}
 
 
 /* ============================================================
    CATEGORY
 ============================================================ */
 
-function showCategory(category) {{
+function showCategory(category) {
 
     openModal(
         category,
-        `Explore the ${{escapeHTML(
+        `Explore the ${escapeHTML(
             category
-        )}} section of NPC OMNIVERSE.`
+        )} section of NPC OMNIVERSE.`
     );
-}}
+
+}
 
 
 /* ============================================================
@@ -3519,49 +3887,63 @@ function showCategory(category) {{
 function openModal(
     title,
     content
-) {{
+) {
 
     document.getElementById(
         "modalContent"
     ).innerHTML = `
 
         <h2 id="modalTitle">
-            ${{escapeHTML(title)}}
+            ${escapeHTML(title)}
         </h2>
 
         <p>
-            ${{content}}
+            ${content}
         </p>
+
     `;
 
 
-    document
-        .getElementById("modal")
-        .classList.add("active");
-}}
+    modal.classList.add(
+        "active"
+    );
+
+    document.body.classList.add(
+        "modal-open"
+    );
+
+}
 
 
 /* ============================================================
    CLOSE MODAL
 ============================================================ */
 
-function closeModal(event) {{
+function closeModal(event) {
 
     if (
         !event ||
-        event.target.id === "modal" ||
-        event.target.classList.contains("close")
-    ) {{
+        event.target === modal ||
+        event.target.classList.contains(
+            "modal-close"
+        )
+    ) {
 
-        document
-            .getElementById("modal")
-            .classList.remove("active");
-    }}
-}}
+        modal.classList.remove(
+            "active"
+        );
+
+        document.body.classList.remove(
+            "modal-open"
+        );
+
+    }
+
+}
 
 
 /* ============================================================
-   SEARCH EVENTS
+   SEARCH INPUT
 ============================================================ */
 
 searchInput.addEventListener(
@@ -3572,15 +3954,33 @@ searchInput.addEventListener(
 
 searchInput.addEventListener(
     "focus",
-    () => {{
+    () => {
 
         if (
             searchInput.value.trim()
-        ) {{
-            searchSite();
-        }}
+        ) {
 
-    }}
+            searchSite();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   SEARCH CLEAR
+============================================================ */
+
+searchClear.addEventListener(
+    "click",
+    () => {
+
+        clearSearch();
+
+        searchInput.focus();
+
+    }
 );
 
 
@@ -3590,7 +3990,7 @@ searchInput.addEventListener(
 
 document.addEventListener(
     "click",
-    event => {{
+    event => {
 
         const search =
             document.querySelector(
@@ -3599,15 +3999,17 @@ document.addEventListener(
 
 
         if (
-            !search.contains(event.target) &&
-            !searchPanel.contains(event.target)
-        ) {{
+            search &&
+            !search.contains(
+                event.target
+            )
+        ) {
 
             closeSearch();
 
-        }}
+        }
 
-    }}
+    }
 );
 
 
@@ -3617,30 +4019,83 @@ document.addEventListener(
 
 document.addEventListener(
     "keydown",
-    event => {{
+    event => {
 
-        if (event.key === "Escape") {{
+        /*
+           ESCAPE
+        */
 
-            document
-                .getElementById("modal")
-                .classList.remove(
+        if (
+            event.key === "Escape"
+        ) {
+
+            if (
+                modal.classList.contains(
+                    "active"
+                )
+            ) {
+
+                modal.classList.remove(
                     "active"
                 );
 
-            closeSearch();
+                document.body.classList.remove(
+                    "modal-open"
+                );
 
-        }}
+            }
+
+            else {
+
+                clearSearch();
+
+            }
+
+            return;
+
+        }
 
 
-        /* ====================================================
-           CTRL + K / COMMAND + K
-        ==================================================== */
+        /*
+           / SEARCH SHORTCUT
+
+           Do not trigger while typing in
+           another input or textarea.
+        */
+
+        if (
+            event.key === "/" &&
+            document.activeElement !== searchInput
+        ) {
+
+            const tag =
+                document.activeElement.tagName;
+
+
+            if (
+                tag !== "INPUT" &&
+                tag !== "TEXTAREA"
+            ) {
+
+                event.preventDefault();
+
+                searchInput.focus();
+
+            }
+
+        }
+
+
+        /*
+           CTRL + K
+           COMMAND + K
+        */
 
         if (
             (event.ctrlKey ||
              event.metaKey) &&
             event.key.toLowerCase() === "k"
-        ) {{
+        ) {
 
             event.preventDefault();
 
@@ -3648,9 +4103,39 @@ document.addEventListener(
 
             searchInput.select();
 
-        }}
+        }
 
-    }}
+
+        /*
+           ENTER
+
+           If a search result exists,
+           selecting the first result happens
+           when Enter is pressed.
+        */
+
+        if (
+            event.key === "Enter" &&
+            document.activeElement === searchInput
+        ) {
+
+            const first =
+                searchResults.querySelector(
+                    ".search-result"
+                );
+
+
+            if (first) {
+
+                event.preventDefault();
+
+                first.click();
+
+            }
+
+        }
+
+    }
 );
 
 
@@ -3658,21 +4143,91 @@ document.addEventListener(
    INITIALIZATION
 ============================================================ */
 
+updateClearButton();
+
 console.log(
-    "NPC OMNIVERSE loaded."
+    "NPC OMNIVERSE loaded successfully."
 );
 
 console.log(
-    "NPC search priority enabled."
+    "NPC-first search enabled."
+);
+
+console.log(
+    "Exact NPC name matches receive highest priority."
 );
 
 </script>
 
 
 </body>
-
 </html>
 """
+
+
+    # ========================================================
+    # SAFE PLACEHOLDER REPLACEMENT
+    #
+    # We intentionally use .replace() instead of a giant
+    # Python f-string. This prevents CSS/JavaScript braces
+    # from causing Python syntax problems.
+    # ========================================================
+
+    replacements = {
+
+        "__LANGUAGE__":
+            esc(data["language"]),
+
+        "__SITE_NAME__":
+            site_name,
+
+        "__DESCRIPTION__":
+            description,
+
+        "__KEYWORDS__":
+            keywords,
+
+        "__AUTHOR__":
+            esc(data["author"]),
+
+        "__CANONICAL__":
+            canonical_url,
+
+        "__TAGLINE__":
+            tagline,
+
+        "__STATS__":
+            stats_html,
+
+        "__CATEGORIES__":
+            categories_html,
+
+        "__NPCS__":
+            npc_html,
+
+        "__WORLDS__":
+            worlds_html,
+
+        "__QUESTS__":
+            quests_html,
+
+        "__JSON_LD__":
+            json_ld,
+
+        "__SITE_DATA__":
+            data_json
+    }
+
+
+    for key, value in replacements.items():
+
+        template = template.replace(
+            key,
+            value
+        )
+
+
+    return template
 
 
 # ============================================================
@@ -3683,56 +4238,195 @@ def build_robots(data):
 
     base_url = data["url"].rstrip("/")
 
-    return f"""User-agent: *
-Allow: /
-
-Sitemap: {base_url}/sitemap.xml
-"""
+    return (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "\n"
+        f"Sitemap: {base_url}/sitemap.xml\n"
+    )
 
 
 # ============================================================
 # SITEMAP
+#
+# IMPORTANT:
+# URL fragments such as #home or #npcs are NOT separate
+# crawlable URLs and should not be included in sitemap.xml.
 # ============================================================
 
 def build_sitemap(data):
 
     base_url = data["url"].rstrip("/")
 
-    urls = [
-        "/",
-        "/#home",
-        "/#categories",
-        "/#npcs",
-        "/#worlds",
-        "/#quests"
-    ]
-
-    entries = ""
-
-    for url in urls:
-
-        entries += f"""
-    <url>
-        <loc>{html.escape(base_url + url)}</loc>
-    </url>
-"""
-
-
     return f"""<?xml version="1.0" encoding="UTF-8"?>
-
 <urlset
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
 >
-{entries}
+    <url>
+        <loc>{html.escape(base_url + "/")}</loc>
+    </url>
 </urlset>
 """
 
 
 # ============================================================
-# MAIN
+# WEB MANIFEST
+# ============================================================
+
+def build_manifest(data):
+
+    manifest = {
+
+        "name": data["name"],
+
+        "short_name": "NPC OMNIVERSE",
+
+        "description": data["description"],
+
+        "start_url": "/",
+
+        "display": "standalone",
+
+        "background_color": "#070b16",
+
+        "theme_color": "#070b16",
+
+        "lang": data["language"],
+
+        "icons": []
+
+    }
+
+    return json.dumps(
+        manifest,
+        ensure_ascii=False,
+        indent=2
+    )
+
+
+# ============================================================
+# VALIDATE DATA
+# ============================================================
+
+def validate_data(data):
+
+    required_keys = [
+
+        "name",
+        "tagline",
+        "description",
+        "url",
+        "language",
+        "author",
+        "keywords",
+        "stats",
+        "categories",
+        "featured_npcs",
+        "worlds",
+        "quests"
+
+    ]
+
+
+    for key in required_keys:
+
+        if key not in data:
+
+            raise ValueError(
+                f"Missing SITE_DATA key: {key}"
+            )
+
+
+    for index, npc in enumerate(
+        data["featured_npcs"]
+    ):
+
+        required = [
+            "name",
+            "role",
+            "world",
+            "level",
+            "description"
+        ]
+
+        for key in required:
+
+            if key not in npc:
+
+                raise ValueError(
+                    f"NPC #{index + 1} is missing: {key}"
+                )
+
+
+    for index, world in enumerate(
+        data["worlds"]
+    ):
+
+        required = [
+            "name",
+            "type",
+            "population",
+            "description"
+        ]
+
+        for key in required:
+
+            if key not in world:
+
+                raise ValueError(
+                    f"World #{index + 1} is missing: {key}"
+                )
+
+
+    for index, quest in enumerate(
+        data["quests"]
+    ):
+
+        required = [
+            "title",
+            "difficulty",
+            "world",
+            "reward"
+        ]
+
+        for key in required:
+
+            if key not in quest:
+
+                raise ValueError(
+                    f"Quest #{index + 1} is missing: {key}"
+                )
+
+
+# ============================================================
+# MAIN BUILD
 # ============================================================
 
 def main():
+
+    print()
+    print("=" * 70)
+    print("NPC OMNIVERSE STATIC SITE GENERATOR")
+    print("=" * 70)
+    print()
+
+
+    # --------------------------------------------------------
+    # Validate
+    # --------------------------------------------------------
+
+    print("Checking website data...")
+
+    validate_data(
+        SITE_DATA
+    )
+
+    print("✓ Data validation passed")
+
+
+    # --------------------------------------------------------
+    # Create output directory
+    # --------------------------------------------------------
 
     OUTPUT_DIR.mkdir(
         parents=True,
@@ -3744,9 +4438,18 @@ def main():
     # index.html
     # --------------------------------------------------------
 
+    print("Generating index.html...")
+
+    html_content =
+        build_html(SITE_DATA)
+
     OUTPUT_FILE.write_text(
-        build_html(SITE_DATA),
+        html_content,
         encoding="utf-8"
+    )
+
+    print(
+        f"✓ Created {OUTPUT_FILE}"
     )
 
 
@@ -3754,9 +4457,15 @@ def main():
     # robots.txt
     # --------------------------------------------------------
 
+    print("Generating robots.txt...")
+
     ROBOTS_FILE.write_text(
         build_robots(SITE_DATA),
         encoding="utf-8"
+    )
+
+    print(
+        f"✓ Created {ROBOTS_FILE}"
     )
 
 
@@ -3764,49 +4473,102 @@ def main():
     # sitemap.xml
     # --------------------------------------------------------
 
+    print("Generating sitemap.xml...")
+
     SITEMAP_FILE.write_text(
         build_sitemap(SITE_DATA),
         encoding="utf-8"
     )
 
+    print(
+        f"✓ Created {SITEMAP_FILE}"
+    )
+
+
+    # --------------------------------------------------------
+    # webmanifest
+    # --------------------------------------------------------
+
+    print("Generating site.webmanifest...")
+
+    MANIFEST_FILE.write_text(
+        build_manifest(SITE_DATA),
+        encoding="utf-8"
+    )
+
+    print(
+        f"✓ Created {MANIFEST_FILE}"
+    )
+
+
+    # --------------------------------------------------------
+    # Summary
+    # --------------------------------------------------------
 
     print()
-    print("=" * 65)
-    print("NPC OMNIVERSE STATIC SITE CREATED")
-    print("=" * 65)
+    print("-" * 70)
+    print("BUILD COMPLETE")
+    print("-" * 70)
+
     print()
-    print(f"HTML:    {OUTPUT_FILE}")
-    print(f"ROBOTS:  {ROBOTS_FILE}")
-    print(f"SITEMAP: {SITEMAP_FILE}")
+    print(
+        f"NPCs:       {len(SITE_DATA['featured_npcs'])}"
+    )
+
+    print(
+        f"Worlds:     {len(SITE_DATA['worlds'])}"
+    )
+
+    print(
+        f"Quests:     {len(SITE_DATA['quests'])}"
+    )
+
+    print(
+        f"Categories: {len(SITE_DATA['categories'])}"
+    )
+
     print()
-    print("Website:")
-    print("https://npcbook.onrender.com/")
+    print("Generated files:")
+    print(f"  ✓ {OUTPUT_FILE}")
+    print(f"  ✓ {ROBOTS_FILE}")
+    print(f"  ✓ {SITEMAP_FILE}")
+    print(f"  ✓ {MANIFEST_FILE}")
+
     print()
-    print("Features:")
-    print("  ✓ Static HTML")
-    print("  ✓ No Flask")
-    print("  ✓ No database")
-    print("  ✓ SEO metadata")
+    print("Search:")
+    print("  ✓ Exact NPC name = highest priority")
+    print("  ✓ NPC name starts-with = very high priority")
+    print("  ✓ NPC name contains = high priority")
+    print("  ✓ NPC role/world/description matching")
+    print("  ✓ NPC results prioritized over worlds/quests")
+    print("  ✓ Search result count")
+    print("  ✓ No-results message")
+    print("  ✓ Clear search button")
+    print("  ✓ / keyboard shortcut")
+    print("  ✓ Ctrl + K / Cmd + K shortcut")
+    print("  ✓ Escape closes/clears search")
+    print("  ✓ Mobile search")
+    print("  ✓ NPC result opens character modal")
+
+    print()
+    print("SEO:")
+    print("  ✓ Canonical URL")
+    print("  ✓ Robots meta")
     print("  ✓ Open Graph")
     print("  ✓ Twitter metadata")
-    print("  ✓ JSON-LD structured data")
+    print("  ✓ JSON-LD")
     print("  ✓ robots.txt")
     print("  ✓ sitemap.xml")
-    print("  ✓ Responsive design")
-    print("  ✓ NPC-first search ranking")
-    print("  ✓ Exact NPC name gets highest priority")
-    print("  ✓ NPC partial matches appear before other content")
-    print("  ✓ Ctrl + K search shortcut")
+    print("  ✓ Web manifest")
+
     print()
-    print("Search priority:")
-    print("  1. Exact NPC name")
-    print("  2. NPC name starts with search")
-    print("  3. NPC name contains search")
-    print("  4. NPC role/world/description")
-    print("  5. World matches")
-    print("  6. Quest matches")
+    print("Website:")
+    print(
+        SITE_DATA["url"]
+    )
+
     print()
-    print("No server required for the generated site.")
+    print("=" * 70)
     print()
 
 
