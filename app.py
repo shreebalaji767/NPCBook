@@ -3184,35 +3184,35 @@ function performSearch(
                             class="search-result"
                             type="button"
                             onclick='openSearchItem(
-                                ${JSON.stringify(item.name)},
-                                ${JSON.stringify(item.type)}
+                                ${{JSON.stringify(item.name)}},
+                                ${{JSON.stringify(item.type)}}
                             )'
                         >
 
                             <span
                                 class="search-result-icon"
                             >
-                                ${escapeHTML(item.icon)}
+                                ${{escapeHTML(item.icon)}}
                             </span>
 
                             <span>
                                 <span
                                     class="search-result-title"
                                 >
-                                    ${escapeHTML(item.name)}
+                                    ${{escapeHTML(item.name)}}
                                 </span>
 
                                 <span
                                     class="search-result-meta"
                                 >
-                                    ${escapeHTML(item.meta)}
+                                    ${{escapeHTML(item.meta)}}
                                 </span>
                             </span>
 
                             <span
                                 class="search-result-type"
                             >
-                                ${escapeHTML(item.type)}
+                                ${{escapeHTML(item.type)}}
                             </span>
 
                         </button>
@@ -3466,27 +3466,27 @@ function openNPC(
         </div>
 
         <h2>
-            ${escapeHTML(name)}
+            ${{escapeHTML(name)}}
         </h2>
 
         <div class="modal-subtitle">
-            ${escapeHTML(role)}
+            ${{escapeHTML(role)}}
         </div>
 
         <div class="world-meta">
 
             <span>
-                🌍 ${escapeHTML(world)}
+                🌍 ${{escapeHTML(world)}}
             </span>
 
             <span>
-                LEVEL ${escapeHTML(level)}
+                LEVEL ${{escapeHTML(level)}}
             </span>
 
         </div>
 
         <p>
-            ${escapeHTML(description)}
+            ${{escapeHTML(description)}}
         </p>
 
     `;
@@ -3513,24 +3513,24 @@ function openWorld(
         </div>
 
         <h2>
-            ${escapeHTML(name)}
+            ${{escapeHTML(name)}}
         </h2>
 
         <div class="modal-subtitle">
-            ${escapeHTML(type)}
+            ${{escapeHTML(type)}}
         </div>
 
         <div class="world-meta">
 
             <span>
                 Population:
-                ${escapeHTML(population)}
+                ${{escapeHTML(population)}}
             </span>
 
         </div>
 
         <p>
-            ${escapeHTML(description)}
+            ${{escapeHTML(description)}}
         </p>
 
     `;
@@ -3558,27 +3558,27 @@ function openQuest(
         </div>
 
         <h2>
-            ${escapeHTML(name)}
+            ${{escapeHTML(name)}}
         </h2>
 
         <div class="modal-subtitle">
-            ${escapeHTML(difficulty)}
+            ${{escapeHTML(difficulty)}}
         </div>
 
         <div class="quest-meta">
 
             <span>
-                🌍 ${escapeHTML(world)}
+                🌍 ${{escapeHTML(world)}}
             </span>
 
             <span>
-                🎁 ${escapeHTML(reward)}
+                🎁 ${{escapeHTML(reward)}}
             </span>
 
         </div>
 
         <p>
-            ${escapeHTML(description)}
+            ${{escapeHTML(description)}}
         </p>
 
     `;
