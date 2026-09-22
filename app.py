@@ -10,6 +10,7 @@ import re
 # ============================================================
 
 OUTPUT_DIR = Path("site")
+
 OUTPUT_FILE = OUTPUT_DIR / "index.html"
 ROBOTS_FILE = OUTPUT_DIR / "robots.txt"
 SITEMAP_FILE = OUTPUT_DIR / "sitemap.xml"
@@ -19,10 +20,11 @@ MANIFEST_FILE = OUTPUT_DIR / "site.webmanifest"
 # ============================================================
 # SITE DATA
 #
-# THIS IS THE MAIN CONTENT FILE.
+# THIS IS THE MAIN CONTENT AREA.
 #
-# You can add/remove NPCs, worlds, quests and categories here
-# without changing the rest of the generator.
+# Add/remove content here.
+#
+# Duplicate content is automatically removed during build.
 # ============================================================
 
 SITE_DATA = {
@@ -71,37 +73,49 @@ SITE_DATA = {
         {
             "name": "Warriors",
             "icon": "⚔️",
-            "description": "Fighters, soldiers, champions and legendary warriors.",
+            "description": (
+                "Fighters, soldiers, champions and legendary warriors."
+            ),
         },
 
         {
             "name": "Mages",
             "icon": "🔮",
-            "description": "Spellcasters, sorcerers, wizards and arcane beings.",
+            "description": (
+                "Spellcasters, sorcerers, wizards and arcane beings."
+            ),
         },
 
         {
             "name": "Assassins",
             "icon": "🗡️",
-            "description": "Stealth specialists, spies, killers and shadows.",
+            "description": (
+                "Stealth specialists, spies, killers and shadows."
+            ),
         },
 
         {
             "name": "Adventurers",
             "icon": "🧭",
-            "description": "Explorers, travelers and heroes of unknown worlds.",
+            "description": (
+                "Explorers, travelers and heroes of unknown worlds."
+            ),
         },
 
         {
             "name": "Warlords",
             "icon": "👑",
-            "description": "Rulers, generals and commanders of great armies.",
+            "description": (
+                "Rulers, generals and commanders of great armies."
+            ),
         },
 
         {
             "name": "Mystics",
             "icon": "✨",
-            "description": "Ancient beings, prophets and mysterious entities.",
+            "description": (
+                "Ancient beings, prophets and mysterious entities."
+            ),
         },
 
     ],
@@ -241,19 +255,41 @@ SITE_DATA = {
 # ============================================================
 
 def esc(value):
-    """Escape text for safe HTML output."""
     return html.escape(str(value), quote=True)
 
 
 def slug(value):
-    """Create a URL/ID-friendly slug."""
     value = str(value).lower().strip()
     value = re.sub(r"[^a-z0-9]+", "-", value)
     return value.strip("-")
 
 
+def normalize_text(value):
+    """
+    Normalize text for duplicate detection.
+
+    Examples:
+
+        "Kael Veyron"
+        " kael   veyron "
+        "KAEL VEYRON"
+
+    are treated as the same value.
+    """
+
+    if value is None:
+        return ""
+
+    value = str(value)
+
+    value = value.replace("\u00a0", " ")
+
+    value = re.sub(r"\s+", " ", value)
+
+    return value.strip().casefold()
+
+
 def search_text(*values):
-    """Create normalized searchable text."""
     return " ".join(
         str(value).lower()
         for value in values
@@ -262,51 +298,365 @@ def search_text(*values):
 
 
 def json_attr(value):
-    """
-    JSON encode a value for use inside an HTML onclick attribute.
-    """
-    return esc(json.dumps(value, ensure_ascii=False))
+    return esc(
+        json.dumps(
+            value,
+            ensure_ascii=False,
+        )
+    )
 
+
+# ============================================================
+# UNIQUE KEY
+# ============================================================
+
+def content_key(item, fields):
+    """
+    Create a normalized duplicate key.
+
+    The same content with different capitalization or
+    accidental spacing gets the same key.
+    """
+
+    return tuple(
+        normalize_text(item.get(field, ""))
+        for field in fields
+    )
+
+
+# ============================================================
+# REMOVE DUPLICATES
+# ============================================================
+
+def remove_duplicate_items(items, fields):
+    """
+    Remove duplicate records.
+
+    The FIRST occurrence is preserved.
+
+    Example:
+
+        Kael Veyron
+        KAEL VEYRON
+        kael   veyron
+
+    are considered duplicates when name is used as a key.
+    """
+
+    result = []
+    seen = set()
+
+    for item in items or []:
+
+        if not isinstance(item, dict):
+            continue
+
+        key = content_key(
+            item,
+            fields,
+        )
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+        result.append(dict(item))
+
+    return result
+
+
+# ============================================================
+# ENSURE UNIQUE SLUGS
+# ============================================================
+
+def add_unique_ids(items, prefix):
+    """
+    Give every item a unique internal ID.
+
+    Duplicate slugs are automatically suffixed:
+
+        kael-veyron
+        kael-veyron-2
+        kael-veyron-3
+    """
+
+    result = []
+
+    used = set()
+
+    for item in items or []:
+
+        item = dict(item)
+
+        base = slug(
+            item.get("name", "")
+        )
+
+        if not base:
+            base = prefix
+
+        candidate = base
+        counter = 2
+
+        while candidate in used:
+
+            candidate = (
+                f"{base}-{counter}"
+            )
+
+            counter += 1
+
+        used.add(candidate)
+
+        item["id"] = (
+            f"{prefix}-{candidate}"
+        )
+
+        item["slug"] = candidate
+
+        result.append(item)
+
+    return result
+
+
+# ============================================================
+# CLEAN ALL CONTENT
+# ============================================================
+
+def clean_site_data(data):
+    """
+    Clean the complete site before generation.
+
+    This is the main anti-duplication system.
+    """
+
+    cleaned = dict(data)
+
+    # --------------------------------------------------------
+    # CATEGORIES
+    # --------------------------------------------------------
+
+    categories = remove_duplicate_items(
+        data.get("categories", []),
+        [
+            "name",
+        ],
+    )
+
+    cleaned["categories"] = add_unique_ids(
+        categories,
+        "category",
+    )
+
+    # --------------------------------------------------------
+    # NPCS
+    #
+    # Name is treated as the primary identity.
+    #
+    # This means two NPC records with the same name are
+    # considered the same NPC even if other fields differ.
+    # --------------------------------------------------------
+
+    npcs = remove_duplicate_items(
+        data.get("featured_npcs", []),
+        [
+            "name",
+        ],
+    )
+
+    cleaned["featured_npcs"] = add_unique_ids(
+        npcs,
+        "npc",
+    )
+
+    # --------------------------------------------------------
+    # WORLDS
+    # --------------------------------------------------------
+
+    worlds = remove_duplicate_items(
+        data.get("worlds", []),
+        [
+            "name",
+        ],
+    )
+
+    cleaned["worlds"] = add_unique_ids(
+        worlds,
+        "world",
+    )
+
+    # --------------------------------------------------------
+    # QUESTS
+    # --------------------------------------------------------
+
+    quests = remove_duplicate_items(
+        data.get("quests", []),
+        [
+            "name",
+        ],
+    )
+
+    cleaned["quests"] = add_unique_ids(
+        quests,
+        "quest",
+    )
+
+    return cleaned
+
+
+# ============================================================
+# DUPLICATE REPORT
+# ============================================================
+
+def count_removed(original, cleaned, field):
+    return max(
+        0,
+        len(original.get(field, []))
+        -
+        len(cleaned.get(field, []))
+    )
+
+
+def print_duplicate_report(original, cleaned):
+
+    categories_removed = count_removed(
+        original,
+        cleaned,
+        "categories",
+    )
+
+    npcs_removed = count_removed(
+        original,
+        cleaned,
+        "featured_npcs",
+    )
+
+    worlds_removed = count_removed(
+        original,
+        cleaned,
+        "worlds",
+    )
+
+    quests_removed = count_removed(
+        original,
+        cleaned,
+        "quests",
+    )
+
+    total_removed = (
+        categories_removed
+        + npcs_removed
+        + worlds_removed
+        + quests_removed
+    )
+
+    print()
+    print("CONTENT DUPLICATION CHECK")
+    print("-" * 60)
+
+    print(
+        f"Duplicate categories removed : "
+        f"{categories_removed}"
+    )
+
+    print(
+        f"Duplicate NPCs removed        : "
+        f"{npcs_removed}"
+    )
+
+    print(
+        f"Duplicate worlds removed      : "
+        f"{worlds_removed}"
+    )
+
+    print(
+        f"Duplicate quests removed      : "
+        f"{quests_removed}"
+    )
+
+    print(
+        f"Total duplicates removed      : "
+        f"{total_removed}"
+    )
+
+    print("-" * 60)
+
+
+# ============================================================
+# SEO KEYWORDS
+# ============================================================
 
 def generate_keywords(data):
-    """
-    Generate additional SEO keywords from site content.
-    """
 
-    keywords = list(data.get("keywords", []))
+    keywords = list(
+        data.get(
+            "keywords",
+            [],
+        )
+    )
 
-    for npc in data.get("featured_npcs", []):
-        keywords.extend([
-            npc.get("name", ""),
-            npc.get("role", ""),
-            npc.get("world", ""),
-        ])
+    for npc in data.get(
+        "featured_npcs",
+        [],
+    ):
 
-    for world in data.get("worlds", []):
-        keywords.extend([
-            world.get("name", ""),
-            world.get("type", ""),
-        ])
+        keywords.extend(
+            [
+                npc.get("name", ""),
+                npc.get("role", ""),
+                npc.get("world", ""),
+            ]
+        )
 
-    for quest in data.get("quests", []):
-        keywords.extend([
-            quest.get("name", ""),
-            quest.get("difficulty", ""),
-            quest.get("world", ""),
-        ])
+    for world in data.get(
+        "worlds",
+        [],
+    ):
 
-    cleaned = []
+        keywords.extend(
+            [
+                world.get("name", ""),
+                world.get("type", ""),
+            ]
+        )
+
+    for quest in data.get(
+        "quests",
+        [],
+    ):
+
+        keywords.extend(
+            [
+                quest.get("name", ""),
+                quest.get("difficulty", ""),
+                quest.get("world", ""),
+            ]
+        )
+
+    result = []
+
+    seen = set()
 
     for keyword in keywords:
-        keyword = str(keyword).strip()
 
-        if keyword and keyword.lower() not in {
-            item.lower()
-            for item in cleaned
-        }:
-            cleaned.append(keyword)
+        keyword = str(
+            keyword
+        ).strip()
 
-    return ", ".join(cleaned)
+        normalized = normalize_text(
+            keyword
+        )
+
+        if not normalized:
+            continue
+
+        if normalized in seen:
+            continue
+
+        seen.add(normalized)
+        result.append(keyword)
+
+    return ", ".join(result)
 
 
 # ============================================================
@@ -317,7 +667,10 @@ def build_stats_html(data):
 
     items = []
 
-    for label, value in data.get("stats", {}).items():
+    for label, value in data.get(
+        "stats",
+        {},
+    ).items():
 
         items.append(
             f"""
@@ -339,16 +692,32 @@ def build_category_html(data):
 
     cards = []
 
-    for category in data.get("categories", []):
+    for category in data.get(
+        "categories",
+        [],
+    ):
 
-        name = category.get("name", "")
-        icon = category.get("icon", "✦")
-        description = category.get("description", "")
+        name = category.get(
+            "name",
+            "",
+        )
+
+        icon = category.get(
+            "icon",
+            "✦",
+        )
+
+        description = category.get(
+            "description",
+            "",
+        )
 
         cards.append(
             f"""
             <article
                 class="category-card"
+                data-type="category"
+                data-name="{esc(name)}"
                 data-search="{esc(search_text(name, description))}"
             >
 
@@ -358,12 +727,17 @@ def build_category_html(data):
 
                 <div class="category-content">
 
-                    <h3>{esc(name)}</h3>
+                    <h3>
+                        {esc(name)}
+                    </h3>
 
-                    <p>{esc(description)}</p>
+                    <p>
+                        {esc(description)}
+                    </p>
 
                     <button
                         class="card-button"
+                        type="button"
                         onclick="showCategory({json_attr(name)})"
                     >
                         Explore →
@@ -386,13 +760,35 @@ def build_npc_html(data):
 
     cards = []
 
-    for npc in data.get("featured_npcs", []):
+    for npc in data.get(
+        "featured_npcs",
+        [],
+    ):
 
-        name = npc.get("name", "")
-        role = npc.get("role", "")
-        world = npc.get("world", "")
-        level = npc.get("level", "")
-        description = npc.get("description", "")
+        name = npc.get(
+            "name",
+            "",
+        )
+
+        role = npc.get(
+            "role",
+            "",
+        )
+
+        world = npc.get(
+            "world",
+            "",
+        )
+
+        level = npc.get(
+            "level",
+            "",
+        )
+
+        description = npc.get(
+            "description",
+            "",
+        )
 
         searchable = search_text(
             name,
@@ -431,7 +827,9 @@ def build_npc_html(data):
                         NPC
                     </div>
 
-                    <h3>{esc(name)}</h3>
+                    <h3>
+                        {esc(name)}
+                    </h3>
 
                     <div class="role">
                         {esc(role)}
@@ -447,6 +845,7 @@ def build_npc_html(data):
 
                     <button
                         class="card-button"
+                        type="button"
                         onclick="openNPC(
                             {json_attr(name)},
                             {json_attr(role)},
@@ -475,12 +874,30 @@ def build_world_html(data):
 
     cards = []
 
-    for world in data.get("worlds", []):
+    for world in data.get(
+        "worlds",
+        [],
+    ):
 
-        name = world.get("name", "")
-        world_type = world.get("type", "")
-        population = world.get("population", "")
-        description = world.get("description", "")
+        name = world.get(
+            "name",
+            "",
+        )
+
+        world_type = world.get(
+            "type",
+            "",
+        )
+
+        population = world.get(
+            "population",
+            "",
+        )
+
+        description = world.get(
+            "description",
+            "",
+        )
 
         searchable = search_text(
             name,
@@ -508,11 +925,20 @@ def build_world_html(data):
                         WORLD
                     </div>
 
-                    <h3>{esc(name)}</h3>
+                    <h3>
+                        {esc(name)}
+                    </h3>
 
                     <div class="world-meta">
-                        <span>{esc(world_type)}</span>
-                        <span>{esc(population)}</span>
+
+                        <span>
+                            {esc(world_type)}
+                        </span>
+
+                        <span>
+                            {esc(population)}
+                        </span>
+
                     </div>
 
                     <p>
@@ -521,6 +947,7 @@ def build_world_html(data):
 
                     <button
                         class="card-button"
+                        type="button"
                         onclick="openWorld(
                             {json_attr(name)},
                             {json_attr(world_type)},
@@ -548,13 +975,35 @@ def build_quest_html(data):
 
     cards = []
 
-    for quest in data.get("quests", []):
+    for quest in data.get(
+        "quests",
+        [],
+    ):
 
-        name = quest.get("name", "")
-        difficulty = quest.get("difficulty", "")
-        world = quest.get("world", "")
-        reward = quest.get("reward", "")
-        description = quest.get("description", "")
+        name = quest.get(
+            "name",
+            "",
+        )
+
+        difficulty = quest.get(
+            "difficulty",
+            "",
+        )
+
+        world = quest.get(
+            "world",
+            "",
+        )
+
+        reward = quest.get(
+            "reward",
+            "",
+        )
+
+        description = quest.get(
+            "description",
+            "",
+        )
 
         searchable = search_text(
             name,
@@ -583,11 +1032,20 @@ def build_quest_html(data):
                         QUEST
                     </div>
 
-                    <h3>{esc(name)}</h3>
+                    <h3>
+                        {esc(name)}
+                    </h3>
 
                     <div class="quest-meta">
-                        <span>{esc(difficulty)}</span>
-                        <span>{esc(world)}</span>
+
+                        <span>
+                            {esc(difficulty)}
+                        </span>
+
+                        <span>
+                            {esc(world)}
+                        </span>
+
                     </div>
 
                     <p>
@@ -595,11 +1053,13 @@ def build_quest_html(data):
                     </p>
 
                     <div class="reward">
-                        Reward: {esc(reward)}
+                        Reward:
+                        {esc(reward)}
                     </div>
 
                     <button
                         class="card-button"
+                        type="button"
                         onclick="openQuest(
                             {json_attr(name)},
                             {json_attr(difficulty)},
@@ -626,7 +1086,9 @@ def build_quest_html(data):
 
 def build_json_ld(data):
 
-    base_url = data["url"].rstrip("/")
+    base_url = data[
+        "url"
+    ].rstrip("/")
 
     graph = [
 
@@ -679,44 +1141,66 @@ def build_json_ld(data):
 
     ]
 
-    # --------------------------------------------------------
-    # NPC structured data
-    # --------------------------------------------------------
-
-    for npc in data.get("featured_npcs", []):
+    for npc in data.get(
+        "featured_npcs",
+        [],
+    ):
 
         graph.append(
             {
                 "@type": "Person",
-
-                "name": npc.get("name", ""),
-
-                "jobTitle": npc.get("role", ""),
-
-                "description": npc.get("description", ""),
-
+                "@id": (
+                    base_url
+                    + "/#"
+                    + npc.get("id", "")
+                ),
+                "name": npc.get(
+                    "name",
+                    "",
+                ),
+                "jobTitle": npc.get(
+                    "role",
+                    "",
+                ),
+                "description": npc.get(
+                    "description",
+                    "",
+                ),
                 "isPartOf": {
                     "@type": "CreativeWork",
-                    "name": npc.get("world", ""),
+                    "name": npc.get(
+                        "world",
+                        "",
+                    ),
                 },
             }
         )
 
-    # --------------------------------------------------------
-    # World structured data
-    # --------------------------------------------------------
-
-    for world in data.get("worlds", []):
+    for world in data.get(
+        "worlds",
+        [],
+    ):
 
         graph.append(
             {
                 "@type": "Place",
-
-                "name": world.get("name", ""),
-
-                "description": world.get("description", ""),
-
-                "additionalType": world.get("type", ""),
+                "@id": (
+                    base_url
+                    + "/#"
+                    + world.get("id", "")
+                ),
+                "name": world.get(
+                    "name",
+                    "",
+                ),
+                "description": world.get(
+                    "description",
+                    "",
+                ),
+                "additionalType": world.get(
+                    "type",
+                    "",
+                ),
             }
         )
 
@@ -738,19 +1222,49 @@ def build_json_ld(data):
 
 def build_html(data):
 
-    site_name = esc(data["name"])
-    tagline = esc(data["tagline"])
-    description = esc(data["description"])
-    canonical_url = esc(data["url"])
-    keywords = esc(generate_keywords(data))
+    site_name = esc(
+        data["name"]
+    )
 
-    stats_html = build_stats_html(data)
-    categories_html = build_category_html(data)
-    npc_html = build_npc_html(data)
-    worlds_html = build_world_html(data)
-    quests_html = build_quest_html(data)
+    tagline = esc(
+        data["tagline"]
+    )
 
-    json_ld = build_json_ld(data)
+    description = esc(
+        data["description"]
+    )
+
+    canonical_url = esc(
+        data["url"]
+    )
+
+    keywords = esc(
+        generate_keywords(data)
+    )
+
+    stats_html = build_stats_html(
+        data
+    )
+
+    categories_html = build_category_html(
+        data
+    )
+
+    npc_html = build_npc_html(
+        data
+    )
+
+    worlds_html = build_world_html(
+        data
+    )
+
+    quests_html = build_quest_html(
+        data
+    )
+
+    json_ld = build_json_ld(
+        data
+    )
 
     data_json = json.dumps(
         data,
@@ -762,118 +1276,106 @@ def build_html(data):
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <meta
-        name="theme-color"
-        content="#080b14"
-    >
+<meta
+    name="theme-color"
+    content="#080b14"
+>
 
-    <title>
-        NPC OMNIVERSE — Explore NPCs, Worlds, Quests & Stories
-    </title>
+<title>
+NPC OMNIVERSE — Explore NPCs, Worlds, Quests & Stories
+</title>
 
-    <meta
-        name="description"
-        content="{description}"
-    >
+<meta
+    name="description"
+    content="{description}"
+>
 
-    <meta
-        name="keywords"
-        content="{keywords}"
-    >
+<meta
+    name="keywords"
+    content="{keywords}"
+>
 
-    <meta
-        name="author"
-        content="{site_name}"
-    >
+<meta
+    name="author"
+    content="{site_name}"
+>
 
-    <meta
-        name="robots"
-        content="index, follow, max-image-preview:large"
-    >
+<meta
+    name="robots"
+    content="index, follow, max-image-preview:large"
+>
 
-    <link
-        rel="canonical"
-        href="{canonical_url}"
-    >
+<link
+    rel="canonical"
+    href="{canonical_url}"
+>
 
-    <!-- =====================================================
-         OPEN GRAPH
-    ====================================================== -->
 
-    <meta
-        property="og:type"
-        content="website"
-    >
+<meta
+    property="og:type"
+    content="website"
+>
 
-    <meta
-        property="og:title"
-        content="NPC OMNIVERSE — Explore the Omniverse"
-    >
+<meta
+    property="og:title"
+    content="NPC OMNIVERSE — Explore the Omniverse"
+>
 
-    <meta
-        property="og:description"
-        content="{description}"
-    >
+<meta
+    property="og:description"
+    content="{description}"
+>
 
-    <meta
-        property="og:url"
-        content="{canonical_url}"
-    >
+<meta
+    property="og:url"
+    content="{canonical_url}"
+>
 
-    <meta
-        property="og:site_name"
-        content="{site_name}"
-    >
+<meta
+    property="og:site_name"
+    content="{site_name}"
+>
 
-    <!-- =====================================================
-         TWITTER
-    ====================================================== -->
 
-    <meta
-        name="twitter:card"
-        content="summary_large_image"
-    >
+<meta
+    name="twitter:card"
+    content="summary_large_image"
+>
 
-    <meta
-        name="twitter:title"
-        content="NPC OMNIVERSE — Explore the Omniverse"
-    >
+<meta
+    name="twitter:title"
+    content="NPC OMNIVERSE — Explore the Omniverse"
+>
 
-    <meta
-        name="twitter:description"
-        content="{description}"
-    >
+<meta
+    name="twitter:description"
+    content="{description}"
+>
 
-    <!-- =====================================================
-         MANIFEST
-    ====================================================== -->
 
-    <link
-        rel="manifest"
-        href="/site.webmanifest"
-    >
+<link
+    rel="manifest"
+    href="/site.webmanifest"
+>
 
-    <!-- =====================================================
-         STRUCTURED DATA
-    ====================================================== -->
 
-    <script type="application/ld+json">
+<script type="application/ld+json">
 {json_ld}
-    </script>
+</script>
 
 
 <style>
 
-/* ==========================================================
+/* ============================================================
    RESET
-========================================================== */
+============================================================ */
 
 * {{
     box-sizing: border-box;
@@ -887,6 +1389,7 @@ html {{
 
 body {{
     min-height: 100vh;
+
     background:
         radial-gradient(
             circle at top,
@@ -895,7 +1398,9 @@ body {{
             #070910 75%,
             #05060a 100%
         );
+
     color: #f4f7ff;
+
     font-family:
         Inter,
         system-ui,
@@ -903,6 +1408,7 @@ body {{
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
+
     line-height: 1.6;
 }}
 
@@ -920,26 +1426,25 @@ a {{
     text-decoration: none;
 }}
 
-
-/* ==========================================================
-   BACKGROUND
-========================================================== */
-
 body::before {{
     content: "";
+
     position: fixed;
+
     inset: 0;
+
     pointer-events: none;
-    opacity: 0.15;
+
+    opacity: .15;
 
     background-image:
         linear-gradient(
-            rgba(255,255,255,0.025) 1px,
+            rgba(255,255,255,.025) 1px,
             transparent 1px
         ),
         linear-gradient(
             90deg,
-            rgba(255,255,255,0.025) 1px,
+            rgba(255,255,255,.025) 1px,
             transparent 1px
         );
 
@@ -949,43 +1454,55 @@ body::before {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    HEADER
-========================================================== */
+============================================================ */
 
 .site-header {{
     position: sticky;
+
     top: 0;
+
     z-index: 1000;
 
-    background: rgba(5, 7, 15, 0.90);
+    background:
+        rgba(5,7,15,.90);
 
-    backdrop-filter: blur(18px);
+    backdrop-filter:
+        blur(18px);
 
     border-bottom:
-        1px solid rgba(255,255,255,0.08);
+        1px solid
+        rgba(255,255,255,.08);
 }}
 
 .header-inner {{
-    width: min(1400px, 94%);
-    margin: auto;
+    width:
+        min(1400px,94%);
 
     min-height: 74px;
 
+    margin: auto;
+
     display: flex;
+
     align-items: center;
+
     gap: 22px;
 }}
 
 .logo {{
     display: flex;
+
     align-items: center;
+
     gap: 12px;
 
     font-size: 20px;
+
     font-weight: 900;
 
-    letter-spacing: 0.08em;
+    letter-spacing: .08em;
 
     white-space: nowrap;
 }}
@@ -995,6 +1512,7 @@ body::before {{
     height: 38px;
 
     display: grid;
+
     place-items: center;
 
     border-radius: 12px;
@@ -1007,27 +1525,29 @@ body::before {{
         );
 
     box-shadow:
-        0 0 30px rgba(79, 115, 255, 0.35);
+        0 0 30px
+        rgba(79,115,255,.35);
 }}
 
 .logo-text {{
     background:
         linear-gradient(
             90deg,
-            #ffffff,
+            #fff,
             #8ddcff
         );
 
     -webkit-background-clip: text;
+
     background-clip: text;
 
     color: transparent;
 }}
 
 
-/* ==========================================================
+/* ============================================================
    SEARCH
-========================================================== */
+============================================================ */
 
 .header-search {{
     flex: 1;
@@ -1051,7 +1571,8 @@ body::before {{
         0 46px;
 
     border:
-        1px solid rgba(255,255,255,0.12);
+        1px solid
+        rgba(255,255,255,.12);
 
     border-radius: 15px;
 
@@ -1060,12 +1581,7 @@ body::before {{
     color: #fff;
 
     background:
-        rgba(255,255,255,0.055);
-
-    transition:
-        border-color .2s,
-        background .2s,
-        box-shadow .2s;
+        rgba(255,255,255,.055);
 }}
 
 .search-input::placeholder {{
@@ -1074,14 +1590,14 @@ body::before {{
 
 .search-input:focus {{
     border-color:
-        rgba(96, 197, 255, 0.65);
+        rgba(96,197,255,.65);
 
     background:
-        rgba(255,255,255,0.08);
+        rgba(255,255,255,.08);
 
     box-shadow:
         0 0 0 4px
-        rgba(70, 170, 255, 0.08);
+        rgba(70,170,255,.08);
 }}
 
 .search-icon {{
@@ -1090,9 +1606,8 @@ body::before {{
     left: 15px;
     top: 50%;
 
-    transform: translateY(-50%);
-
-    font-size: 18px;
+    transform:
+        translateY(-50%);
 
     color: #8d96aa;
 
@@ -1108,28 +1623,21 @@ body::before {{
     transform:
         translateY(-50%);
 
-    border: none;
-
     width: 30px;
     height: 30px;
+
+    border: none;
 
     border-radius: 8px;
 
     background:
-        rgba(255,255,255,0.07);
+        rgba(255,255,255,.07);
 
     color: #b8c0d1;
 
     display: none;
 
     place-items: center;
-}}
-
-.clear-search:hover {{
-    background:
-        rgba(255,255,255,0.14);
-
-    color: white;
 }}
 
 .search-key {{
@@ -1141,28 +1649,28 @@ body::before {{
     transform:
         translateY(-50%);
 
-    border:
-        1px solid rgba(255,255,255,0.12);
-
-    border-radius: 6px;
-
     padding:
         2px 6px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.12);
+
+    border-radius: 6px;
 
     color: #7e879a;
 
     font-size: 11px;
-
-    pointer-events: none;
 }}
 
 
-/* ==========================================================
+/* ============================================================
    NAV
-========================================================== */
+============================================================ */
 
 .header-nav {{
     display: flex;
+
     gap: 6px;
 }}
 
@@ -1175,33 +1683,31 @@ body::before {{
     color: #aeb7c9;
 
     font-size: 14px;
-
-    transition:
-        background .2s,
-        color .2s;
 }}
 
 .header-nav a:hover {{
     background:
-        rgba(255,255,255,0.06);
+        rgba(255,255,255,.06);
 
     color: white;
 }}
 
 
-/* ==========================================================
+/* ============================================================
    CONTAINER
-========================================================== */
+============================================================ */
 
 .container {{
-    width: min(1400px, 94%);
+    width:
+        min(1400px,94%);
+
     margin: auto;
 }}
 
 
-/* ==========================================================
+/* ============================================================
    HERO
-========================================================== */
+============================================================ */
 
 .hero {{
     min-height: 590px;
@@ -1209,8 +1715,7 @@ body::before {{
     display: grid;
 
     grid-template-columns:
-        1.15fr
-        .85fr;
+        1.15fr .85fr;
 
     gap: 50px;
 
@@ -1220,27 +1725,20 @@ body::before {{
         90px 0 70px;
 }}
 
-.hero-content {{
-    position: relative;
-    z-index: 2;
-}}
-
 .eyebrow {{
     display: inline-flex;
-
-    align-items: center;
-    gap: 8px;
 
     padding:
         7px 12px;
 
     border:
-        1px solid rgba(120, 190, 255, 0.18);
+        1px solid
+        rgba(120,190,255,.18);
 
     border-radius: 999px;
 
     background:
-        rgba(100, 170, 255, 0.06);
+        rgba(100,170,255,.06);
 
     color: #8ddcff;
 
@@ -1250,21 +1748,17 @@ body::before {{
 
     letter-spacing: .12em;
 
-    text-transform: uppercase;
-
     margin-bottom: 22px;
 }}
 
 .hero h1 {{
     font-size:
-        clamp(48px, 7vw, 92px);
+        clamp(48px,7vw,92px);
 
     line-height: .95;
 
     letter-spacing:
         -.055em;
-
-    max-width: 900px;
 
     margin-bottom: 25px;
 }}
@@ -1273,12 +1767,13 @@ body::before {{
     background:
         linear-gradient(
             90deg,
-            #ffffff 0%,
-            #9ee8ff 42%,
-            #8d7dff 100%
+            #fff,
+            #9ee8ff,
+            #8d7dff
         );
 
     -webkit-background-clip: text;
+
     background-clip: text;
 
     color: transparent;
@@ -1290,13 +1785,14 @@ body::before {{
     color: #aab4c8;
 
     font-size:
-        clamp(16px, 2vw, 20px);
+        clamp(16px,2vw,20px);
 
     margin-bottom: 32px;
 }}
 
 .hero-actions {{
     display: flex;
+
     flex-wrap: wrap;
 
     gap: 12px;
@@ -1323,10 +1819,6 @@ body::before {{
             #6658ff,
             #328dff
         );
-
-    box-shadow:
-        0 12px 35px
-        rgba(72, 89, 255, .22);
 }}
 
 .secondary-button {{
@@ -1341,9 +1833,9 @@ body::before {{
 }}
 
 
-/* ==========================================================
-   HERO ORB
-========================================================== */
+/* ============================================================
+   ORB
+============================================================ */
 
 .hero-visual {{
     min-height: 430px;
@@ -1351,24 +1843,20 @@ body::before {{
     display: grid;
 
     place-items: center;
-
-    position: relative;
 }}
 
 .orb {{
     width:
-        min(390px, 75vw);
+        min(390px,75vw);
 
     aspect-ratio: 1;
 
     border-radius: 50%;
 
-    position: relative;
-
     background:
         radial-gradient(
             circle at 35% 30%,
-            #b9f5ff 0%,
+            #b9f5ff,
             #4d96ff 15%,
             #624eff 38%,
             #22134d 65%,
@@ -1377,65 +1865,31 @@ body::before {{
 
     box-shadow:
         0 0 90px
-        rgba(83, 92, 255, .32),
-
-        inset 0 0 80px
-        rgba(0, 0, 0, .45);
-}}
-
-.orb::before {{
-    content: "";
-
-    position: absolute;
-
-    inset: -25px;
-
-    border-radius: 50%;
-
-    border:
-        1px solid
-        rgba(126, 209, 255, .16);
-
-    animation:
-        spin 18s linear infinite;
+        rgba(83,92,255,.32);
 }}
 
 .orb::after {{
     content: "∞";
 
-    position: absolute;
-
-    inset: 0;
-
     display: grid;
 
     place-items: center;
 
-    color: rgba(255,255,255,.72);
+    width: 100%;
+    height: 100%;
+
+    color:
+        rgba(255,255,255,.72);
 
     font-size: 100px;
 
     font-weight: 900;
-
-    text-shadow:
-        0 0 35px
-        rgba(130, 220, 255, .55);
-}}
-
-@keyframes spin {{
-    from {{
-        transform: rotate(0deg);
-    }}
-
-    to {{
-        transform: rotate(360deg);
-    }}
 }}
 
 
-/* ==========================================================
-   SECTION
-========================================================== */
+/* ============================================================
+   SECTIONS
+============================================================ */
 
 section {{
     scroll-margin-top: 100px;
@@ -1453,14 +1907,12 @@ section {{
 
     align-items: end;
 
-    gap: 20px;
-
     margin-bottom: 30px;
 }}
 
 .section-title {{
     font-size:
-        clamp(30px, 4vw, 48px);
+        clamp(30px,4vw,48px);
 
     line-height: 1.05;
 
@@ -1476,15 +1928,15 @@ section {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    STATS
-========================================================== */
+============================================================ */
 
 .stats-grid {{
     display: grid;
 
     grid-template-columns:
-        repeat(4, 1fr);
+        repeat(4,1fr);
 
     gap: 14px;
 }}
@@ -1508,13 +1960,9 @@ section {{
     font-size: 32px;
 
     font-weight: 900;
-
-    letter-spacing: -.04em;
 }}
 
 .stat-label {{
-    margin-top: 3px;
-
     color: #8993a7;
 
     font-size: 13px;
@@ -1525,15 +1973,15 @@ section {{
 }}
 
 
-/* ==========================================================
-   CARD GRIDS
-========================================================== */
+/* ============================================================
+   GRIDS
+============================================================ */
 
 .card-grid {{
     display: grid;
 
     grid-template-columns:
-        repeat(4, minmax(0, 1fr));
+        repeat(4,minmax(0,1fr));
 
     gap: 18px;
 }}
@@ -1542,21 +1990,20 @@ section {{
     display: grid;
 
     grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+        repeat(3,minmax(0,1fr));
 
     gap: 18px;
 }}
 
 
-/* ==========================================================
-   COMMON CARD
-========================================================== */
+/* ============================================================
+   CARDS
+============================================================ */
 
 .npc-card,
 .world-card,
 .quest-card,
 .category-card {{
-
     position: relative;
 
     overflow: hidden;
@@ -1578,19 +2025,17 @@ section {{
         transform .25s,
         border-color .25s,
         box-shadow .25s;
-
 }}
 
 .npc-card:hover,
 .world-card:hover,
 .quest-card:hover,
 .category-card:hover {{
-
     transform:
         translateY(-5px);
 
     border-color:
-        rgba(115, 201, 255, .28);
+        rgba(115,201,255,.28);
 
     box-shadow:
         0 22px 60px
@@ -1631,9 +2076,9 @@ section {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    NPC
-========================================================== */
+============================================================ */
 
 .card-top {{
     min-height: 135px;
@@ -1649,7 +2094,7 @@ section {{
     background:
         radial-gradient(
             circle at 20% 20%,
-            rgba(91, 159, 255, .18),
+            rgba(91,159,255,.18),
             transparent 60%
         );
 }}
@@ -1659,6 +2104,7 @@ section {{
     height: 58px;
 
     display: grid;
+
     place-items: center;
 
     border-radius: 16px;
@@ -1673,10 +2119,6 @@ section {{
     font-size: 25px;
 
     font-weight: 900;
-
-    box-shadow:
-        0 12px 30px
-        rgba(60, 80, 255, .25);
 }}
 
 .level-badge {{
@@ -1712,11 +2154,12 @@ section {{
 }}
 
 
-/* ==========================================================
-   WORLD
-========================================================== */
+/* ============================================================
+   WORLD / QUEST
+============================================================ */
 
-.world-card {{
+.world-card,
+.quest-card {{
     min-height: 280px;
 }}
 
@@ -1733,7 +2176,7 @@ section {{
     background:
         radial-gradient(
             circle,
-            rgba(79, 163, 255, .2),
+            rgba(79,163,255,.2),
             transparent 68%
         );
 
@@ -1777,9 +2220,9 @@ section {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    CATEGORY
-========================================================== */
+============================================================ */
 
 .category-card {{
     display: flex;
@@ -1796,12 +2239,13 @@ section {{
     height: 56px;
 
     display: grid;
+
     place-items: center;
 
     border-radius: 15px;
 
     background:
-        rgba(105, 118, 255, .13);
+        rgba(105,118,255,.13);
 
     font-size: 25px;
 }}
@@ -1825,9 +2269,9 @@ section {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    BUTTON
-========================================================== */
+============================================================ */
 
 .card-button {{
     width: 100%;
@@ -1847,24 +2291,20 @@ section {{
     color: #dfe7f5;
 
     font-weight: 750;
-
-    transition:
-        background .2s,
-        border-color .2s;
 }}
 
 .card-button:hover {{
     background:
-        rgba(95, 181, 255, .11);
+        rgba(95,181,255,.11);
 
     border-color:
-        rgba(100, 200, 255, .25);
+        rgba(100,200,255,.25);
 }}
 
 
-/* ==========================================================
+/* ============================================================
    SEARCH RESULTS
-========================================================== */
+============================================================ */
 
 .search-results-section {{
     display: none;
@@ -1882,14 +2322,14 @@ section {{
 
     border:
         1px solid
-        rgba(100, 190, 255, .16);
+        rgba(100,190,255,.16);
 
     border-radius: 20px;
 
     background:
         linear-gradient(
             135deg,
-            rgba(80, 130, 255, .08),
+            rgba(80,130,255,.08),
             rgba(255,255,255,.025)
         );
 }}
@@ -1945,9 +2385,9 @@ section {{
     background:
         rgba(255,255,255,.035);
 
-    transition:
-        background .2s,
-        border-color .2s;
+    color: white;
+
+    text-align: left;
 }}
 
 .search-result:hover {{
@@ -1955,7 +2395,7 @@ section {{
         rgba(255,255,255,.06);
 
     border-color:
-        rgba(110, 200, 255, .2);
+        rgba(110,200,255,.2);
 }}
 
 .search-result-icon {{
@@ -1963,12 +2403,13 @@ section {{
     height: 44px;
 
     display: grid;
+
     place-items: center;
 
     border-radius: 12px;
 
     background:
-        rgba(105, 130, 255, .14);
+        rgba(105,130,255,.14);
 
     font-size: 20px;
 }}
@@ -1981,8 +2422,6 @@ section {{
     color: #8993a7;
 
     font-size: 12px;
-
-    margin-top: 2px;
 }}
 
 .search-result-type {{
@@ -2023,9 +2462,9 @@ section {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    MODAL
-========================================================== */
+============================================================ */
 
 .modal {{
     position: fixed;
@@ -2043,7 +2482,8 @@ section {{
     background:
         rgba(0,0,0,.72);
 
-    backdrop-filter: blur(12px);
+    backdrop-filter:
+        blur(12px);
 }}
 
 .modal.active {{
@@ -2052,13 +2492,11 @@ section {{
 
 .modal-box {{
     width:
-        min(650px, 100%);
+        min(650px,100%);
 
-    max-height:
-        90vh;
+    max-height: 90vh;
 
-    overflow:
-        auto;
+    overflow: auto;
 
     padding: 30px;
 
@@ -2068,12 +2506,7 @@ section {{
 
     border-radius: 24px;
 
-    background:
-        #0c1120;
-
-    box-shadow:
-        0 30px 100px
-        rgba(0,0,0,.5);
+    background: #0c1120;
 }}
 
 .modal-close {{
@@ -2129,9 +2562,9 @@ section {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    FOOTER
-========================================================== */
+============================================================ */
 
 .site-footer {{
     margin-top: 60px;
@@ -2163,25 +2596,20 @@ section {{
 }}
 
 
-/* ==========================================================
+/* ============================================================
    RESPONSIVE
-========================================================== */
+============================================================ */
 
-@media (max-width: 1150px) {{
+@media (max-width:1150px) {{
 
     .card-grid {{
         grid-template-columns:
-            repeat(3, minmax(0, 1fr));
-    }}
-
-    .hero {{
-        grid-template-columns:
-            1fr .75fr;
+            repeat(3,minmax(0,1fr));
     }}
 
 }}
 
-@media (max-width: 900px) {{
+@media (max-width:900px) {{
 
     .header-inner {{
         flex-wrap: wrap;
@@ -2222,42 +2650,34 @@ section {{
 
     .stats-grid {{
         grid-template-columns:
-            repeat(2, 1fr);
+            repeat(2,1fr);
     }}
 
     .card-grid {{
         grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+            repeat(2,minmax(0,1fr));
     }}
 
     .category-grid {{
         grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+            repeat(2,minmax(0,1fr));
     }}
 
 }}
 
-@media (max-width: 600px) {{
+@media (max-width:600px) {{
 
     .container {{
-        width: min(94%, 520px);
+        width:
+            min(94%,520px);
     }}
 
     .logo {{
         font-size: 15px;
     }}
 
-    .logo-mark {{
-        width: 34px;
-        height: 34px;
-    }}
-
     .header-nav {{
         display: none;
-    }}
-
-    .search-input {{
-        height: 46px;
     }}
 
     .hero {{
@@ -2269,11 +2689,7 @@ section {{
 
     .hero h1 {{
         font-size:
-            clamp(43px, 14vw, 65px);
-    }}
-
-    .hero-description {{
-        font-size: 16px;
+            clamp(43px,14vw,65px);
     }}
 
     .hero-visual {{
@@ -2285,15 +2701,8 @@ section {{
     }}
 
     .stats-grid {{
-        grid-template-columns: 1fr 1fr;
-    }}
-
-    .stat-card {{
-        padding: 18px 10px;
-    }}
-
-    .stat-number {{
-        font-size: 24px;
+        grid-template-columns:
+            1fr 1fr;
     }}
 
     .card-grid,
@@ -2337,27 +2746,6 @@ section {{
 
 }}
 
-
-/* ==========================================================
-   REDUCED MOTION
-========================================================== */
-
-@media (prefers-reduced-motion: reduce) {{
-
-    html {{
-        scroll-behavior: auto;
-    }}
-
-    *,
-    *::before,
-    *::after {{
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .01ms !important;
-    }}
-
-}}
-
 </style>
 
 </head>
@@ -2366,7 +2754,7 @@ section {{
 <body>
 
 
-<!-- ========================================================
+<!-- =========================================================
      HEADER
 ========================================================= -->
 
@@ -2447,17 +2835,12 @@ section {{
 </header>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      MAIN
 ========================================================= -->
 
 <main>
 
-
-<!-- ========================================================
-     HERO
-========================================================= -->
 
 <section
     id="home"
@@ -2511,8 +2894,7 @@ section {{
 </section>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      STATS
 ========================================================= -->
 
@@ -2531,8 +2913,7 @@ section {{
 </section>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      SEARCH RESULTS
 ========================================================= -->
 
@@ -2572,12 +2953,10 @@ section {{
 
             </div>
 
-
             <div
                 id="searchResultList"
                 class="search-result-list"
-            >
-            </div>
+            ></div>
 
         </div>
 
@@ -2586,8 +2965,7 @@ section {{
 </section>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      CATEGORIES
 ========================================================= -->
 
@@ -2615,7 +2993,6 @@ section {{
 
         </div>
 
-
         <div class="category-grid">
 
             {categories_html}
@@ -2627,8 +3004,7 @@ section {{
 </section>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      NPCS
 ========================================================= -->
 
@@ -2656,7 +3032,6 @@ section {{
 
         </div>
 
-
         <div
             id="npcGrid"
             class="card-grid"
@@ -2671,8 +3046,7 @@ section {{
 </section>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      WORLDS
 ========================================================= -->
 
@@ -2700,7 +3074,6 @@ section {{
 
         </div>
 
-
         <div
             id="worldGrid"
             class="card-grid"
@@ -2715,8 +3088,7 @@ section {{
 </section>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      QUESTS
 ========================================================= -->
 
@@ -2743,7 +3115,6 @@ section {{
 
         </div>
 
-
         <div
             id="questGrid"
             class="card-grid"
@@ -2761,8 +3132,7 @@ section {{
 </main>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      FOOTER
 ========================================================= -->
 
@@ -2795,8 +3165,7 @@ section {{
 </footer>
 
 
-
-<!-- ========================================================
+<!-- =========================================================
      MODAL
 ========================================================= -->
 
@@ -2826,9 +3195,8 @@ section {{
 </div>
 
 
-
-<!-- ========================================================
-     DATA
+<!-- =========================================================
+     JAVASCRIPT DATA
 ========================================================= -->
 
 <script>
@@ -2836,9 +3204,9 @@ section {{
 const SITE_DATA = {data_json};
 
 
-/* ==========================================================
+/* ============================================================
    ELEMENTS
-========================================================== */
+============================================================ */
 
 const searchInput =
     document.getElementById("searchInput");
@@ -2862,108 +3230,170 @@ const modalContent =
     document.getElementById("modalContent");
 
 
-/* ==========================================================
-   SEARCH DATA
-========================================================== */
+/* ============================================================
+   NORMALIZE
+============================================================ */
+
+function normalizeText(value) {{
+
+    return String(value ?? "")
+        .replace(/\\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+}}
+
+
+/* ============================================================
+   BUILD SEARCH ITEMS
+============================================================ */
 
 function buildSearchItems() {{
 
     const items = [];
 
+    const seen = new Set();
 
-    /* ------------------------------------------------------
+
+    function addItem(item) {{
+
+        const key =
+            item.type +
+            "::" +
+            normalizeText(item.name);
+
+        if (seen.has(key)) {{
+            return;
+        }}
+
+        seen.add(key);
+
+        items.push(item);
+
+    }}
+
+
+    /* ========================================================
        NPCS
-    ------------------------------------------------------ */
+    ======================================================== */
 
-    (SITE_DATA.featured_npcs || []).forEach(npc => {{
+    (SITE_DATA.featured_npcs || [])
+        .forEach(npc => {{
 
-        items.push({{
-            type: "npc",
-            icon: "👤",
-            name: npc.name || "",
-            meta:
-                (npc.role || "") +
-                " • " +
-                (npc.world || ""),
-            description: npc.description || "",
+            addItem({{
 
-            search:
-                [
-                    npc.name,
-                    npc.role,
-                    npc.world,
-                    npc.level,
-                    npc.description
-                ]
-                .join(" ")
-                .toLowerCase()
+                type: "npc",
+
+                icon: "👤",
+
+                name:
+                    npc.name || "",
+
+                meta:
+                    (npc.role || "") +
+                    " • " +
+                    (npc.world || ""),
+
+                description:
+                    npc.description || "",
+
+                search:
+                    [
+                        npc.name,
+                        npc.role,
+                        npc.world,
+                        npc.level,
+                        npc.description
+                    ]
+                    .join(" ")
+                    .toLowerCase()
+
+            }});
+
         }});
 
-    }});
 
-
-    /* ------------------------------------------------------
+    /* ========================================================
        WORLDS
-    ------------------------------------------------------ */
+    ======================================================== */
 
-    (SITE_DATA.worlds || []).forEach(world => {{
+    (SITE_DATA.worlds || [])
+        .forEach(world => {{
 
-        items.push({{
-            type: "world",
-            icon: "🌍",
-            name: world.name || "",
-            meta:
-                (world.type || "") +
-                " • Population: " +
-                (world.population || ""),
-            description: world.description || "",
+            addItem({{
 
-            search:
-                [
-                    world.name,
-                    world.type,
-                    world.population,
-                    world.description
-                ]
-                .join(" ")
-                .toLowerCase()
+                type: "world",
+
+                icon: "🌍",
+
+                name:
+                    world.name || "",
+
+                meta:
+                    (world.type || "") +
+                    " • Population: " +
+                    (world.population || ""),
+
+                description:
+                    world.description || "",
+
+                search:
+                    [
+                        world.name,
+                        world.type,
+                        world.population,
+                        world.description
+                    ]
+                    .join(" ")
+                    .toLowerCase()
+
+            }});
+
         }});
 
-    }});
 
-
-    /* ------------------------------------------------------
+    /* ========================================================
        QUESTS
-    ------------------------------------------------------ */
+    ======================================================== */
 
-    (SITE_DATA.quests || []).forEach(quest => {{
+    (SITE_DATA.quests || [])
+        .forEach(quest => {{
 
-        items.push({{
-            type: "quest",
-            icon: "⚔️",
-            name: quest.name || "",
-            meta:
-                (quest.difficulty || "") +
-                " • " +
-                (quest.world || ""),
-            description: quest.description || "",
+            addItem({{
 
-            search:
-                [
-                    quest.name,
-                    quest.difficulty,
-                    quest.world,
-                    quest.reward,
-                    quest.description
-                ]
-                .join(" ")
-                .toLowerCase()
+                type: "quest",
+
+                icon: "⚔️",
+
+                name:
+                    quest.name || "",
+
+                meta:
+                    (quest.difficulty || "") +
+                    " • " +
+                    (quest.world || ""),
+
+                description:
+                    quest.description || "",
+
+                search:
+                    [
+                        quest.name,
+                        quest.difficulty,
+                        quest.world,
+                        quest.reward,
+                        quest.description
+                    ]
+                    .join(" ")
+                    .toLowerCase()
+
+            }});
+
         }});
-
-    }});
 
 
     return items;
+
 }}
 
 
@@ -2971,9 +3401,9 @@ const SEARCH_ITEMS =
     buildSearchItems();
 
 
-/* ==========================================================
+/* ============================================================
    SEARCH SCORE
-========================================================== */
+============================================================ */
 
 function getSearchScore(item, query) {{
 
@@ -2992,11 +3422,7 @@ function getSearchScore(item, query) {{
     }}
 
 
-    /* ======================================================
-       NPC NAME MATCHES
-       NPC names are intentionally given very high priority.
-    ====================================================== */
-
+    /* NPC exact name */
     if (
         item.type === "npc" &&
         name === q
@@ -3005,6 +3431,7 @@ function getSearchScore(item, query) {{
     }}
 
 
+    /* NPC starts with */
     if (
         item.type === "npc" &&
         name.startsWith(q)
@@ -3013,6 +3440,7 @@ function getSearchScore(item, query) {{
     }}
 
 
+    /* NPC contains */
     if (
         item.type === "npc" &&
         name.includes(q)
@@ -3021,38 +3449,34 @@ function getSearchScore(item, query) {{
     }}
 
 
-    /* ======================================================
-       EXACT NAME MATCH FOR ANY TYPE
-    ====================================================== */
-
+    /* Exact name */
     if (name === q) {{
         return 70000;
     }}
 
 
+    /* Starts with */
     if (name.startsWith(q)) {{
         return 60000;
     }}
 
 
+    /* Contains */
     if (name.includes(q)) {{
         return 50000;
     }}
 
 
-    /* ======================================================
-       NPC ROLE / WORLD / DESCRIPTION
-    ====================================================== */
-
+    /* NPC metadata */
     if (item.type === "npc") {{
 
-        const parts = [
-            item.meta,
-            item.description
-        ];
-
         const combined =
-            parts.join(" ").toLowerCase();
+            [
+                item.meta,
+                item.description
+            ]
+            .join(" ")
+            .toLowerCase();
 
         if (combined.includes(q)) {{
             return 30000;
@@ -3061,10 +3485,7 @@ function getSearchScore(item, query) {{
     }}
 
 
-    /* ======================================================
-       OTHER CONTENT
-    ====================================================== */
-
+    /* Other content */
     if (search.includes(q)) {{
 
         if (item.type === "world") {{
@@ -3080,12 +3501,30 @@ function getSearchScore(item, query) {{
 
 
     return -1;
+
 }}
 
 
-/* ==========================================================
+/* ============================================================
+   ESCAPE HTML
+============================================================ */
+
+function escapeHTML(value) {{
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        String(value ?? "");
+
+    return div.innerHTML;
+
+}}
+
+
+/* ============================================================
    SEARCH
-========================================================== */
+============================================================ */
 
 function performSearch(
     query,
@@ -3098,7 +3537,9 @@ function performSearch(
 
     if (!q) {{
 
-        searchResultsSection.classList.remove("active");
+        searchResultsSection
+            .classList
+            .remove("active");
 
         searchResultList.innerHTML = "";
 
@@ -3121,35 +3562,48 @@ function performSearch(
 
             .map(item => ({{
                 item,
-                score: getSearchScore(item, q)
+                score:
+                    getSearchScore(
+                        item,
+                        q
+                    )
             }}))
 
-            .filter(result =>
-                result.score >= 0
+            .filter(
+                result =>
+                    result.score >= 0
             )
 
-            .sort((a, b) => {{
+            .sort((a,b) => {{
 
-                /* Score first. */
-                if (b.score !== a.score) {{
-                    return b.score - a.score;
+                if (
+                    b.score !== a.score
+                ) {{
+                    return (
+                        b.score -
+                        a.score
+                    );
                 }}
 
-                /* NPC before world before quest. */
+
                 const order = {{
                     npc: 0,
                     world: 1,
                     quest: 2
                 }};
 
+
                 return (
                     order[a.item.type] -
                     order[b.item.type]
                 );
+
             }});
 
 
-    searchResultsSection.classList.add("active");
+    searchResultsSection
+        .classList
+        .add("active");
 
 
     searchCount.textContent =
@@ -3166,7 +3620,8 @@ function performSearch(
         searchResultList.innerHTML = `
             <div class="no-results">
                 <strong>No results found</strong>
-                Try another NPC name, world, quest or keyword.
+                Try another NPC name, world,
+                quest or keyword.
             </div>
         `;
 
@@ -3196,6 +3651,7 @@ function performSearch(
                             </span>
 
                             <span>
+
                                 <span
                                     class="search-result-title"
                                 >
@@ -3207,6 +3663,7 @@ function performSearch(
                                 >
                                     ${{escapeHTML(item.meta)}}
                                 </span>
+
                             </span>
 
                             <span
@@ -3219,6 +3676,7 @@ function performSearch(
                     `;
 
                 }})
+
                 .join("");
 
     }}
@@ -3226,59 +3684,37 @@ function performSearch(
 
     if (shouldScroll) {{
 
-        searchResultsSection.scrollIntoView({{
-            behavior: "smooth",
-            block: "start"
-        }});
+        searchResultsSection
+            .scrollIntoView({{
+                behavior: "smooth",
+                block: "start"
+            }});
 
     }}
+
 }}
 
 
-/* ==========================================================
-   ESCAPE HTML
-========================================================== */
+/* ============================================================
+   SEARCH ITEM
+============================================================ */
 
-function escapeHTML(value) {{
-
-    const div =
-        document.createElement("div");
-
-    div.textContent =
-        String(value ?? "");
-
-    return div.innerHTML;
-}}
-
-
-/* ==========================================================
-   SEARCH ITEM OPEN
-========================================================== */
-
-function openSearchItem(name, type) {{
-
-    const item =
-        SEARCH_ITEMS.find(
-            entry =>
-                entry.name === name &&
-                entry.type === type
-        );
-
-
-    if (!item) {{
-        return;
-    }}
-
+function openSearchItem(
+    name,
+    type
+) {{
 
     if (type === "npc") {{
 
         const npc =
             SITE_DATA.featured_npcs.find(
                 entry =>
-                    entry.name === name
+                    normalizeText(entry.name) ===
+                    normalizeText(name)
             );
 
         if (npc) {{
+
             openNPC(
                 npc.name,
                 npc.role,
@@ -3286,6 +3722,7 @@ function openSearchItem(name, type) {{
                 String(npc.level),
                 npc.description
             );
+
         }}
 
         return;
@@ -3297,16 +3734,19 @@ function openSearchItem(name, type) {{
         const world =
             SITE_DATA.worlds.find(
                 entry =>
-                    entry.name === name
+                    normalizeText(entry.name) ===
+                    normalizeText(name)
             );
 
         if (world) {{
+
             openWorld(
                 world.name,
                 world.type,
                 world.population,
                 world.description
             );
+
         }}
 
         return;
@@ -3318,10 +3758,12 @@ function openSearchItem(name, type) {{
         const quest =
             SITE_DATA.quests.find(
                 entry =>
-                    entry.name === name
+                    normalizeText(entry.name) ===
+                    normalizeText(name)
             );
 
         if (quest) {{
+
             openQuest(
                 quest.name,
                 quest.difficulty,
@@ -3329,15 +3771,17 @@ function openSearchItem(name, type) {{
                 quest.reward,
                 quest.description
             );
+
         }}
 
     }}
+
 }}
 
 
-/* ==========================================================
+/* ============================================================
    SEARCH EVENTS
-========================================================== */
+============================================================ */
 
 let searchTimer = null;
 
@@ -3349,11 +3793,17 @@ searchInput.addEventListener(
         const value =
             this.value;
 
-        clearTimeout(searchTimer);
+        clearTimeout(
+            searchTimer
+        );
 
         searchTimer =
             setTimeout(
-                () => performSearch(value, false),
+                () =>
+                    performSearch(
+                        value,
+                        false
+                    ),
                 80
             );
 
@@ -3365,7 +3815,9 @@ searchInput.addEventListener(
     "keydown",
     function(event) {{
 
-        if (event.key === "Enter") {{
+        if (
+            event.key === "Enter"
+        ) {{
 
             event.preventDefault();
 
@@ -3376,7 +3828,10 @@ searchInput.addEventListener(
 
         }}
 
-        if (event.key === "Escape") {{
+
+        if (
+            event.key === "Escape"
+        ) {{
 
             clearSearch();
 
@@ -3392,9 +3847,9 @@ clearSearchButton.addEventListener(
 );
 
 
-/* ==========================================================
+/* ============================================================
    CLEAR SEARCH
-========================================================== */
+============================================================ */
 
 function clearSearch() {{
 
@@ -3403,12 +3858,13 @@ function clearSearch() {{
     performSearch("");
 
     searchInput.focus();
+
 }}
 
 
-/* ==========================================================
-   KEYBOARD SHORTCUTS
-========================================================== */
+/* ============================================================
+   KEYBOARD SHORTCUT
+============================================================ */
 
 document.addEventListener(
     "keydown",
@@ -3447,9 +3903,9 @@ document.addEventListener(
 );
 
 
-/* ==========================================================
+/* ============================================================
    NPC MODAL
-========================================================== */
+============================================================ */
 
 function openNPC(
     name,
@@ -3492,12 +3948,13 @@ function openNPC(
     `;
 
     openModal();
+
 }}
 
 
-/* ==========================================================
+/* ============================================================
    WORLD MODAL
-========================================================== */
+============================================================ */
 
 function openWorld(
     name,
@@ -3536,12 +3993,13 @@ function openWorld(
     `;
 
     openModal();
+
 }}
 
 
-/* ==========================================================
+/* ============================================================
    QUEST MODAL
-========================================================== */
+============================================================ */
 
 function openQuest(
     name,
@@ -3584,12 +4042,13 @@ function openQuest(
     `;
 
     openModal();
+
 }}
 
 
-/* ==========================================================
+/* ============================================================
    CATEGORY
-========================================================== */
+============================================================ */
 
 function showCategory(name) {{
 
@@ -3600,16 +4059,19 @@ function showCategory(name) {{
         name,
         true
     );
+
 }}
 
 
-/* ==========================================================
+/* ============================================================
    MODAL
-========================================================== */
+============================================================ */
 
 function openModal() {{
 
-    modal.classList.add("active");
+    modal
+        .classList
+        .add("active");
 
     modal.setAttribute(
         "aria-hidden",
@@ -3618,12 +4080,15 @@ function openModal() {{
 
     document.body.style.overflow =
         "hidden";
+
 }}
 
 
 function closeModal() {{
 
-    modal.classList.remove("active");
+    modal
+        .classList
+        .remove("active");
 
     modal.setAttribute(
         "aria-hidden",
@@ -3632,6 +4097,7 @@ function closeModal() {{
 
     document.body.style.overflow =
         "";
+
 }}
 
 
@@ -3651,15 +4117,14 @@ modal.addEventListener(
 );
 
 
-/* ==========================================================
+/* ============================================================
    INITIALIZATION
-========================================================== */
+============================================================ */
 
 document.addEventListener(
     "DOMContentLoaded",
     function() {{
 
-        /* Make sure search starts clean. */
         searchInput.value = "";
 
         searchResultsSection
@@ -3682,7 +4147,9 @@ document.addEventListener(
 
 def build_robots(data):
 
-    base_url = data["url"].rstrip("/")
+    base_url = data[
+        "url"
+    ].rstrip("/")
 
     return f"""User-agent: *
 Allow: /
@@ -3693,23 +4160,28 @@ Sitemap: {base_url}/sitemap.xml
 
 # ============================================================
 # SITEMAP
-#
-# IMPORTANT:
-# URL fragments such as #npcs are NOT separate crawlable URLs.
-# Therefore we only publish the actual page URL here.
 # ============================================================
 
 def build_sitemap(data):
 
-    base_url = data["url"].rstrip("/")
+    base_url = data[
+        "url"
+    ].rstrip("/")
 
     return f"""<?xml version="1.0" encoding="UTF-8"?>
+
 <urlset
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
 >
+
     <url>
-        <loc>{esc(base_url)}/</loc>
+
+        <loc>
+            {esc(base_url)}/
+        </loc>
+
     </url>
+
 </urlset>
 """
 
@@ -3721,14 +4193,31 @@ def build_sitemap(data):
 def build_manifest(data):
 
     manifest = {
-        "name": data["name"],
-        "short_name": "NPCBook",
-        "description": data["description"],
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#080b14",
-        "theme_color": "#080b14",
-        "lang": data["language"],
+
+        "name":
+            data["name"],
+
+        "short_name":
+            "NPCBook",
+
+        "description":
+            data["description"],
+
+        "start_url":
+            "/",
+
+        "display":
+            "standalone",
+
+        "background_color":
+            "#080b14",
+
+        "theme_color":
+            "#080b14",
+
+        "lang":
+            data["language"],
+
     }
 
     return json.dumps(
@@ -3749,22 +4238,50 @@ def main():
         exist_ok=True,
     )
 
-    html_content = build_html(
+
+    # ========================================================
+    # CLEAN CONTENT FIRST
+    # ========================================================
+
+    cleaned_data = clean_site_data(
         SITE_DATA
+    )
+
+
+    # ========================================================
+    # REPORT DUPLICATES
+    # ========================================================
+
+    print_duplicate_report(
+        SITE_DATA,
+        cleaned_data,
+    )
+
+
+    # ========================================================
+    # BUILD FILES
+    # ========================================================
+
+    html_content = build_html(
+        cleaned_data
     )
 
     robots_content = build_robots(
-        SITE_DATA
+        cleaned_data
     )
 
     sitemap_content = build_sitemap(
-        SITE_DATA
+        cleaned_data
     )
 
     manifest_content = build_manifest(
-        SITE_DATA
+        cleaned_data
     )
 
+
+    # ========================================================
+    # WRITE FILES
+    # ========================================================
 
     OUTPUT_FILE.write_text(
         html_content,
@@ -3787,17 +4304,70 @@ def main():
     )
 
 
+    # ========================================================
+    # BUILD COMPLETE
+    # ========================================================
+
     print()
+
     print("=" * 60)
-    print("NPC OMNIVERSE BUILD COMPLETE")
+
+    print(
+        "NPC OMNIVERSE BUILD COMPLETE"
+    )
+
     print("=" * 60)
+
     print()
-    print(f"Generated: {OUTPUT_FILE}")
-    print(f"Generated: {ROBOTS_FILE}")
-    print(f"Generated: {SITEMAP_FILE}")
-    print(f"Generated: {MANIFEST_FILE}")
+
+    print(
+        f"Generated: {OUTPUT_FILE}"
+    )
+
+    print(
+        f"Generated: {ROBOTS_FILE}"
+    )
+
+    print(
+        f"Generated: {SITEMAP_FILE}"
+    )
+
+    print(
+        f"Generated: {MANIFEST_FILE}"
+    )
+
     print()
-    print("Static site is ready for deployment.")
+
+    print(
+        "CONTENT COUNTS"
+    )
+
+    print(
+        f"Categories: "
+        f"{len(cleaned_data.get('categories', []))}"
+    )
+
+    print(
+        f"NPCs: "
+        f"{len(cleaned_data.get('featured_npcs', []))}"
+    )
+
+    print(
+        f"Worlds: "
+        f"{len(cleaned_data.get('worlds', []))}"
+    )
+
+    print(
+        f"Quests: "
+        f"{len(cleaned_data.get('quests', []))}"
+    )
+
+    print()
+
+    print(
+        "Static site is ready for deployment."
+    )
+
     print("=" * 60)
 
 
