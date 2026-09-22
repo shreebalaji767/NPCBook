@@ -1,404 +1,325 @@
-from flask import Flask, render_template_string, jsonify, request
-import random
+from pathlib import Path
+import json
 import html
 
-app = Flask(__name__)
-
 # ============================================================
-# NPC OMNIVERSE
-# Single-file Flask application
-# No database
-# No localStorage
-# Temporary in-memory data
+# NPC OMNIVERSE - STATIC SITE GENERATOR
 # ============================================================
 
-NPCS = [
-    {
-        "id": 1,
-        "name": "Kael Veyron",
-        "role": "Void Cartographer",
-        "world": "Eclipse Realm",
-        "level": 42,
-        "online": True,
-        "avatar": "https://i.pravatar.cc/150?img=12",
-        "bio": "Maps places that should not exist."
-    },
-    {
-        "id": 2,
-        "name": "Mira Solen",
-        "role": "Sky Mechanic",
-        "world": "Aetheria",
-        "level": 28,
-        "online": True,
-        "avatar": "https://i.pravatar.cc/150?img=47",
-        "bio": "Repairs airships above the endless clouds."
-    },
-    {
-        "id": 3,
-        "name": "Rook",
-        "role": "Wandering Mercenary",
-        "world": "Iron Frontier",
-        "level": 35,
-        "online": False,
-        "avatar": "https://i.pravatar.cc/150?img=68",
-        "bio": "Never asks who started the war."
-    },
-    {
-        "id": 4,
-        "name": "Nyx Arclight",
-        "role": "Dream Hacker",
-        "world": "Neon Metropolis",
-        "level": 51,
-        "online": True,
-        "avatar": "https://i.pravatar.cc/150?img=32",
-        "bio": "Breaks into dreams instead of computers."
-    },
-    {
-        "id": 5,
-        "name": "Elder Varo",
-        "role": "Time Keeper",
-        "world": "Chronos",
-        "level": 77,
-        "online": False,
-        "avatar": "https://i.pravatar.cc/150?img=53",
-        "bio": "Claims he remembers tomorrow."
-    },
-]
+OUTPUT_DIR = Path("site")
+OUTPUT_FILE = OUTPUT_DIR / "index.html"
 
-WORLDS = [
-    {
-        "id": 1,
-        "name": "Eclipse Realm",
-        "type": "Dark Fantasy",
-        "population": "8.4M NPCs",
-        "color": "purple",
-        "description": "A world where ancient kingdoms fight creatures from beyond reality."
+# ============================================================
+# SITE DATA
+# Edit this section to change your website content.
+# ============================================================
+
+SITE_DATA = {
+    "name": "NPC OMNIVERSE",
+    "tagline": "Explore. Create. Discover.",
+    "description": "A universe of NPCs, worlds, quests, factions and stories.",
+
+    "stats": {
+        "NPCs": 12840,
+        "Worlds": 426,
+        "Quests": 1892,
+        "Factions": 317
     },
-    {
-        "id": 2,
-        "name": "Aetheria",
-        "type": "Sky Civilization",
-        "population": "3.1M NPCs",
-        "color": "blue",
-        "description": "Floating cities, sky pirates and enormous mechanical airships."
-    },
-    {
-        "id": 3,
-        "name": "Iron Frontier",
-        "type": "Post-Apocalyptic",
-        "population": "1.8M NPCs",
-        "color": "orange",
-        "description": "Human settlements survive between ruined megacities."
-    },
-    {
-        "id": 4,
-        "name": "Neon Metropolis",
-        "type": "Cyberpunk",
-        "population": "12.7M NPCs",
-        "color": "pink",
-        "description": "A gigantic city controlled by corporations and artificial intelligence."
-    },
-    {
-        "id": 5,
-        "name": "Chronos",
-        "type": "Time Fantasy",
-        "population": "???",
-        "color": "green",
-        "description": "Past, present and future exist simultaneously."
-    },
-]
 
-POSTS = [
-    {
-        "id": 1,
-        "npc": "Kael Veyron",
-        "role": "Void Cartographer",
-        "avatar": "https://i.pravatar.cc/150?img=12",
-        "world": "Eclipse Realm",
-        "time": "12 min ago",
-        "text": "I found a road beneath the old cathedral. It wasn't there yesterday.",
-        "likes": 284,
-        "comments": 41,
-        "reposts": 18,
-        "tag": "DISCOVERY"
-    },
-    {
-        "id": 2,
-        "npc": "Mira Solen",
-        "role": "Sky Mechanic",
-        "avatar": "https://i.pravatar.cc/150?img=47",
-        "world": "Aetheria",
-        "time": "28 min ago",
-        "text": "The western engines are finally working again. If anyone asks, that explosion was completely intentional.",
-        "likes": 721,
-        "comments": 83,
-        "reposts": 96,
-        "tag": "AETHERIA"
-    },
-    {
-        "id": 3,
-        "npc": "Nyx Arclight",
-        "role": "Dream Hacker",
-        "avatar": "https://i.pravatar.cc/150?img=32",
-        "world": "Neon Metropolis",
-        "time": "1 hr ago",
-        "text": "Someone uploaded a memory from a person who hasn't been born yet.",
-        "likes": 1342,
-        "comments": 219,
-        "reposts": 307,
-        "tag": "ANOMALY"
-    },
-    {
-        "id": 4,
-        "npc": "Rook",
-        "role": "Wandering Mercenary",
-        "avatar": "https://i.pravatar.cc/150?img=68",
-        "world": "Iron Frontier",
-        "time": "2 hrs ago",
-        "text": "Three settlements. Two armies. One water source. This is going to be a long week.",
-        "likes": 497,
-        "comments": 66,
-        "reposts": 31,
-        "tag": "FRONTIER"
-    },
-]
+    "categories": [
+        {
+            "icon": "👤",
+            "name": "NPCs",
+            "description": "Discover characters from countless worlds."
+        },
+        {
+            "icon": "🌌",
+            "name": "Worlds",
+            "description": "Explore civilizations, planets and dimensions."
+        },
+        {
+            "icon": "⚔️",
+            "name": "Quests",
+            "description": "Find adventures waiting to happen."
+        },
+        {
+            "icon": "🏛️",
+            "name": "Factions",
+            "description": "Discover powerful groups and organizations."
+        },
+        {
+            "icon": "📜",
+            "name": "Lore",
+            "description": "Explore histories, legends and mysteries."
+        },
+        {
+            "icon": "✨",
+            "name": "Stories",
+            "description": "Enter stories created across the Omniverse."
+        }
+    ],
 
-QUESTS = [
-    {
-        "name": "The Missing Cartographer",
-        "world": "Eclipse Realm",
-        "difficulty": "Hard",
-        "reward": "4,500 XP"
-    },
-    {
-        "name": "Repair the Sky Engine",
-        "world": "Aetheria",
-        "difficulty": "Medium",
-        "reward": "2,800 XP"
-    },
-    {
-        "name": "The Neon Memory",
-        "world": "Neon Metropolis",
-        "difficulty": "Extreme",
-        "reward": "8,000 XP"
-    },
-    {
-        "name": "Water War",
-        "world": "Iron Frontier",
-        "difficulty": "Hard",
-        "reward": "5,200 XP"
-    },
-]
+    "featured_npcs": [
+        {
+            "name": "Kael Veyron",
+            "role": "Dimensional Wanderer",
+            "world": "The Shattered Realms",
+            "level": 87,
+            "description": "A mysterious traveler capable of crossing unstable dimensions."
+        },
+        {
+            "name": "Lyra Solenne",
+            "role": "Starborn Mage",
+            "world": "Aetheris",
+            "level": 72,
+            "description": "A mage who manipulates ancient celestial energy."
+        },
+        {
+            "name": "Drax Ironfall",
+            "role": "Warlord",
+            "world": "Ashen Dominion",
+            "level": 94,
+            "description": "Commander of an enormous army fighting for control of the Dominion."
+        },
+        {
+            "name": "Mira Nightshade",
+            "role": "Shadow Assassin",
+            "world": "Nocturne",
+            "level": 65,
+            "description": "A legendary assassin who operates between worlds."
+        }
+    ],
 
-MARKET = [
-    ("Void Compass", "Eclipse Realm", "2,400"),
-    ("Aether Engine Core", "Aetheria", "8,900"),
-    ("Rustbreaker Rifle", "Iron Frontier", "4,100"),
-    ("Dream Shard", "Neon Metropolis", "6,700"),
-    ("Chrono Crystal", "Chronos", "12,500"),
-]
+    "worlds": [
+        {
+            "name": "Aetheris",
+            "type": "Fantasy",
+            "population": "8.4B",
+            "description": "A world of floating continents, ancient magic and celestial civilizations."
+        },
+        {
+            "name": "Nocturne",
+            "type": "Dark Fantasy",
+            "population": "2.1B",
+            "description": "A world permanently covered by an unnatural night."
+        },
+        {
+            "name": "Ashen Dominion",
+            "type": "War",
+            "population": "14.7B",
+            "description": "A massive industrial civilization locked in endless conflict."
+        },
+        {
+            "name": "The Shattered Realms",
+            "type": "Multiverse",
+            "population": "Unknown",
+            "description": "Fragments of countless destroyed realities connected together."
+        }
+    ],
 
-
-def safe(value):
-    return html.escape(str(value))
-
-
-@app.route("/")
-def index():
-    return render_template_string(PAGE)
-
-
-@app.route("/api/npcs")
-def api_npcs():
-    return jsonify(NPCS)
-
-
-@app.route("/api/worlds")
-def api_worlds():
-    return jsonify(WORLDS)
-
-
-@app.route("/api/posts")
-def api_posts():
-    return jsonify(POSTS)
-
-
-@app.route("/api/quests")
-def api_quests():
-    return jsonify(QUESTS)
-
-
-@app.route("/api/generate/npc", methods=["POST"])
-def generate_npc():
-    names = [
-        "Aeris Vonn",
-        "Drax",
-        "Selene Korr",
-        "Vex",
-        "Orin Vale",
-        "Luna Ash",
-        "Tarin",
-        "Zera Quinn",
+    "quests": [
+        {
+            "title": "The Lost Crown",
+            "difficulty": "Legendary",
+            "world": "Aetheris",
+            "reward": "50,000 XP"
+        },
+        {
+            "title": "Echoes of Nocturne",
+            "difficulty": "Hard",
+            "world": "Nocturne",
+            "reward": "18,000 XP"
+        },
+        {
+            "title": "The Iron Rebellion",
+            "difficulty": "Extreme",
+            "world": "Ashen Dominion",
+            "reward": "75,000 XP"
+        }
     ]
-
-    roles = [
-        "Rogue Engineer",
-        "Forbidden Mage",
-        "Starship Captain",
-        "Dream Merchant",
-        "Ancient Guardian",
-        "Cyber Detective",
-        "Time Traveler",
-        "Shadow Assassin",
-    ]
-
-    worlds = [w["name"] for w in WORLDS]
-
-    npc = {
-        "id": len(NPCS) + 1,
-        "name": random.choice(names),
-        "role": random.choice(roles),
-        "world": random.choice(worlds),
-        "level": random.randint(1, 99),
-        "online": True,
-        "avatar": f"https://i.pravatar.cc/150?img={random.randint(1, 70)}",
-        "bio": "A newly generated resident of the NPC Omniverse."
-    }
-
-    NPCS.append(npc)
-
-    return jsonify(npc)
+}
 
 
-@app.route("/api/generate/world", methods=["POST"])
-def generate_world():
-    world_types = [
-        "Dark Fantasy",
-        "Cyberpunk",
-        "Space Opera",
-        "Post-Apocalyptic",
-        "Mystical",
-        "Steampunk",
-        "Time Fantasy",
-        "Alien Civilization",
-    ]
+# ============================================================
+# HTML GENERATOR
+# ============================================================
 
-    names = [
-        "Veyra",
-        "Astralis",
-        "Nexora",
-        "Valthera",
-        "Oblivion",
-        "Solara",
-        "Eldoria",
-        "Zenith",
-    ]
+def build_html(data):
+    safe_name = html.escape(data["name"])
+    safe_tagline = html.escape(data["tagline"])
+    safe_description = html.escape(data["description"])
 
-    world = {
-        "id": len(WORLDS) + 1,
-        "name": random.choice(names) + " " + random.choice(
-            ["Prime", "Frontier", "Realm", "Sector", "System"]
-        ),
-        "type": random.choice(world_types),
-        "population": f"{random.randint(1, 30)}.{random.randint(1,9)}M NPCs",
-        "color": random.choice(["purple", "blue", "pink", "green", "orange"]),
-        "description": "A newly generated universe waiting for its first story."
-    }
+    stats_html = ""
 
-    WORLDS.append(world)
+    for name, value in data["stats"].items():
+        stats_html += f"""
+        <div class="stat-card">
+            <div class="stat-number">{html.escape(str(value))}</div>
+            <div class="stat-label">{html.escape(name)}</div>
+        </div>
+        """
 
-    return jsonify(world)
+    categories_html = ""
 
+    for category in data["categories"]:
+        categories_html += f"""
+        <article class="category-card">
+            <div class="category-icon">{html.escape(category["icon"])}</div>
+            <h3>{html.escape(category["name"])}</h3>
+            <p>{html.escape(category["description"])}</p>
+            <button onclick="showCategory('{html.escape(category["name"])}')">
+                Explore →
+            </button>
+        </article>
+        """
 
-@app.route("/api/post", methods=["POST"])
-def create_post():
-    data = request.get_json() or {}
+    npc_html = ""
 
-    text = data.get("text", "").strip()
+    for npc in data["featured_npcs"]:
+        npc_html += f"""
+        <article class="npc-card"
+                 data-search="{html.escape(
+                     npc["name"] + " " +
+                     npc["role"] + " " +
+                     npc["world"]
+                 ).lower()}">
 
-    if not text:
-        return jsonify({"error": "Post cannot be empty"}), 400
+            <div class="npc-avatar">
+                {html.escape(npc["name"][0])}
+            </div>
 
-    post = {
-        "id": len(POSTS) + 1,
-        "npc": "You",
-        "role": "Omniverse Traveler",
-        "avatar": "https://i.pravatar.cc/150?img=11",
-        "world": "Omniverse",
-        "time": "just now",
-        "text": text,
-        "likes": 0,
-        "comments": 0,
-        "reposts": 0,
-        "tag": "NEW"
-    }
+            <div class="npc-content">
 
-    POSTS.insert(0, post)
+                <div class="npc-top">
+                    <span class="npc-level">
+                        LVL {npc["level"]}
+                    </span>
+                </div>
 
-    return jsonify(post)
+                <h3>{html.escape(npc["name"])}</h3>
 
+                <div class="npc-role">
+                    {html.escape(npc["role"])}
+                </div>
 
-PAGE = r"""
-<!DOCTYPE html>
+                <div class="npc-world">
+                    🌌 {html.escape(npc["world"])}
+                </div>
+
+                <p>
+                    {html.escape(npc["description"])}
+                </p>
+
+                <button onclick="openNPC(
+                    '{html.escape(npc["name"])}',
+                    '{html.escape(npc["role"])}',
+                    '{html.escape(npc["world"])}',
+                    '${html.escape(str(npc["level"]))}'
+                )">
+                    View Character
+                </button>
+
+            </div>
+        </article>
+        """
+
+    worlds_html = ""
+
+    for world in data["worlds"]:
+        worlds_html += f"""
+        <article class="world-card"
+                 data-search="{html.escape(
+                     world["name"] + " " +
+                     world["type"]
+                 ).lower()}">
+
+            <div class="world-symbol">🌌</div>
+
+            <div>
+                <span class="world-type">
+                    {html.escape(world["type"])}
+                </span>
+
+                <h3>{html.escape(world["name"])}</h3>
+
+                <p>
+                    {html.escape(world["description"])}
+                </p>
+
+                <div class="world-info">
+                    <span>👥 {html.escape(world["population"])}</span>
+                </div>
+            </div>
+
+        </article>
+        """
+
+    quests_html = ""
+
+    for quest in data["quests"]:
+        quests_html += f"""
+        <article class="quest-card"
+                 data-search="{html.escape(
+                     quest["title"] + " " +
+                     quest["world"] + " " +
+                     quest["difficulty"]
+                 ).lower()}">
+
+            <div class="quest-icon">⚔️</div>
+
+            <div class="quest-content">
+
+                <span class="difficulty">
+                    {html.escape(quest["difficulty"])}
+                </span>
+
+                <h3>{html.escape(quest["title"])}</h3>
+
+                <p>
+                    🌌 {html.escape(quest["world"])}
+                </p>
+
+                <div class="quest-reward">
+                    💎 {html.escape(quest["reward"])}
+                </div>
+
+            </div>
+
+        </article>
+        """
+
+    data_json = json.dumps(data, ensure_ascii=False)
+
+    return f"""<!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
->
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-<meta
-    name="description"
-    content="NPC OMNIVERSE — A living social universe for NPCs."
->
+<meta name="theme-color" content="#080b14">
 
-<title>NPC OMNIVERSE</title>
+<title>{safe_name}</title>
+
+<meta name="description"
+      content="{safe_description}">
 
 <style>
 
-/* ============================================================
-   RESET
-============================================================ */
-
-* {
+* {{
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-}
+}}
 
-:root {
-    --bg: #07080d;
-    --panel: #10121a;
-    --panel2: #151824;
-    --panel3: #1b1f2b;
-    --border: rgba(255,255,255,.08);
-
-    --text: #f4f6fb;
-    --muted: #9298aa;
-
-    --accent: #8b5cf6;
-    --accent2: #06b6d4;
-    --pink: #ec4899;
-    --green: #22c55e;
-    --orange: #f59e0b;
-
-    --radius: 18px;
-    --max: 1500px;
-}
-
-html {
+html {{
     scroll-behavior: smooth;
-}
+}}
 
-body {
-    background:
-        radial-gradient(circle at 20% 0%, rgba(139,92,246,.12), transparent 30%),
-        radial-gradient(circle at 90% 10%, rgba(6,182,212,.08), transparent 25%),
-        var(--bg);
-
-    color: var(--text);
+body {{
     font-family:
         Inter,
         system-ui,
@@ -407,1828 +328,1119 @@ body {
         "Segoe UI",
         sans-serif;
 
+    background:
+        radial-gradient(
+            circle at top left,
+            #18213b 0,
+            #080b14 35%,
+            #05070d 100%
+        );
+
+    color: #f5f7ff;
     min-height: 100vh;
-}
+}}
 
 button,
-input,
-textarea {
+input {{
     font: inherit;
-}
+}}
 
-button {
+button {{
     cursor: pointer;
-}
+}}
 
-a {
-    color: inherit;
-    text-decoration: none;
-}
-
-/* ============================================================
-   APP
-============================================================ */
-
-.app {
-    width: min(100%, var(--max));
+.container {{
+    width: min(1400px, 94%);
     margin: auto;
-    min-height: 100vh;
-}
+}}
+
 
 /* ============================================================
-   TOPBAR
+   HEADER
 ============================================================ */
 
-.topbar {
-    height: 70px;
+header {{
     position: sticky;
     top: 0;
     z-index: 100;
 
-    display: flex;
-    align-items: center;
-    gap: 18px;
-
-    padding: 0 20px;
-
-    background: rgba(7,8,13,.82);
     backdrop-filter: blur(20px);
 
-    border-bottom: 1px solid var(--border);
-}
+    background: rgba(5, 7, 13, 0.82);
 
-.logo {
+    border-bottom:
+        1px solid rgba(255,255,255,.08);
+}}
+
+.nav {{
+    min-height: 74px;
+
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
 
-    min-width: 245px;
-}
+    gap: 20px;
+}}
 
-.logo-icon {
-    width: 40px;
-    height: 40px;
+.logo {{
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: -0.8px;
 
-    display: grid;
-    place-items: center;
+    white-space: nowrap;
+}}
 
-    border-radius: 12px;
-
+.logo span {{
     background:
         linear-gradient(
-            135deg,
-            var(--accent),
-            var(--accent2)
+            90deg,
+            #8b7cff,
+            #43d9ff
         );
 
-    box-shadow:
-        0 0 25px rgba(139,92,246,.35);
+    -webkit-background-clip: text;
+    color: transparent;
+}}
 
-    font-size: 21px;
-}
-
-.logo strong {
-    font-size: 17px;
-    letter-spacing: .5px;
-}
-
-.logo span {
-    display: block;
-    color: var(--muted);
-    font-size: 11px;
-    margin-top: 2px;
-}
-
-.search {
-    flex: 1;
-    max-width: 650px;
-    position: relative;
-}
-
-.search input {
-    width: 100%;
-    height: 42px;
-
-    border: 1px solid var(--border);
-    border-radius: 14px;
-
-    background: var(--panel);
-
-    color: var(--text);
-
-    padding: 0 15px 0 42px;
-
-    outline: none;
-}
-
-.search input:focus {
-    border-color: rgba(139,92,246,.6);
-}
-
-.search-icon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-
-    transform: translateY(-50%);
-
-    color: var(--muted);
-}
-
-.top-actions {
-    margin-left: auto;
-
+.nav-links {{
     display: flex;
-    align-items: center;
     gap: 8px;
-}
+    overflow-x: auto;
+}}
 
-.icon-btn {
-    width: 40px;
-    height: 40px;
-
-    display: grid;
-    place-items: center;
-
-    border: 1px solid var(--border);
-    border-radius: 12px;
-
-    background: var(--panel);
-    color: var(--text);
-}
-
-.icon-btn:hover {
-    border-color: var(--accent);
-}
-
-/* ============================================================
-   LAYOUT
-============================================================ */
-
-.layout {
-    display: grid;
-
-    grid-template-columns:
-        230px
-        minmax(0, 1fr)
-        300px;
-
-    gap: 18px;
-
-    padding: 18px;
-}
-
-/* ============================================================
-   SIDEBAR
-============================================================ */
-
-.sidebar {
-    position: sticky;
-    top: 88px;
-    height: calc(100vh - 105px);
-
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.nav-card,
-.widget,
-.card {
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.025),
-            rgba(255,255,255,.012)
-        ),
-        var(--panel);
-
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-}
-
-.nav-card {
-    padding: 10px;
-}
-
-.nav-item {
-    width: 100%;
-
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    padding: 12px;
-
-    border: 0;
-    border-radius: 12px;
-
+.nav-links button {{
     background: transparent;
-    color: var(--muted);
-
-    text-align: left;
-}
-
-.nav-item:hover,
-.nav-item.active {
-    background: rgba(139,92,246,.13);
-    color: var(--text);
-}
-
-.nav-item .nav-icon {
-    width: 22px;
-    text-align: center;
-}
-
-.side-generate {
-    padding: 16px;
-}
-
-.side-generate h3 {
-    font-size: 14px;
-    margin-bottom: 7px;
-}
-
-.side-generate p {
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.5;
-    margin-bottom: 14px;
-}
-
-/* ============================================================
-   BUTTONS
-============================================================ */
-
-.btn {
     border: 0;
-
-    border-radius: 12px;
+    color: #aeb6ca;
 
     padding: 10px 14px;
+    border-radius: 10px;
+}}
+
+.nav-links button:hover {{
+    background: rgba(255,255,255,.07);
+    color: white;
+}}
+
+.search {{
+    width: 260px;
+}}
+
+.search input {{
+    width: 100%;
+
+    background:
+        rgba(255,255,255,.06);
+
+    border:
+        1px solid rgba(255,255,255,.08);
+
+    border-radius: 12px;
+
+    padding: 11px 14px;
 
     color: white;
+    outline: none;
+}}
 
-    background: var(--panel3);
+.search input:focus {{
+    border-color: #7d70ff;
+}}
 
-    border: 1px solid var(--border);
-}
-
-.btn:hover {
-    border-color: rgba(255,255,255,.2);
-}
-
-.btn-primary {
-    background:
-        linear-gradient(
-            135deg,
-            var(--accent),
-            #6366f1
-        );
-
-    border: 0;
-}
-
-.btn-cyan {
-    background:
-        linear-gradient(
-            135deg,
-            var(--accent2),
-            #0891b2
-        );
-
-    border: 0;
-}
-
-.btn-full {
-    width: 100%;
-}
-
-/* ============================================================
-   MAIN
-============================================================ */
-
-.main {
-    min-width: 0;
-}
-
-.page {
-    display: none;
-}
-
-.page.active {
-    display: block;
-}
-
-.page-header {
-    margin-bottom: 16px;
-}
-
-.page-header h1 {
-    font-size: clamp(22px, 4vw, 30px);
-    margin-bottom: 6px;
-}
-
-.page-header p {
-    color: var(--muted);
-    font-size: 14px;
-}
 
 /* ============================================================
    HERO
 ============================================================ */
 
-.hero {
-    position: relative;
-    overflow: hidden;
+.hero {{
+    padding: 90px 0 60px;
+}}
 
-    padding: 26px;
+.hero-grid {{
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.4fr)
+        minmax(300px, .6fr);
 
-    margin-bottom: 16px;
+    gap: 30px;
+    align-items: center;
+}}
 
-    border-radius: 22px;
+.badge {{
+    display: inline-flex;
+
+    padding: 7px 12px;
+
+    border-radius: 999px;
 
     background:
-        radial-gradient(
-            circle at 80% 20%,
-            rgba(6,182,212,.18),
-            transparent 25%
-        ),
-        radial-gradient(
-            circle at 10% 90%,
-            rgba(139,92,246,.2),
-            transparent 30%
-        ),
-        var(--panel);
+        rgba(125,112,255,.12);
 
-    border: 1px solid var(--border);
-}
+    border:
+        1px solid rgba(125,112,255,.3);
 
-.hero h1 {
-    font-size: clamp(28px, 5vw, 44px);
-    line-height: 1;
-    margin-bottom: 12px;
-}
+    color: #bcb5ff;
 
-.gradient-text {
+    font-size: 13px;
+    font-weight: 700;
+
+    margin-bottom: 20px;
+}}
+
+.hero h1 {{
+    font-size: clamp(42px, 7vw, 88px);
+
+    line-height: .95;
+
+    letter-spacing: -4px;
+
+    max-width: 850px;
+}}
+
+.hero h1 span {{
     background:
         linear-gradient(
             90deg,
-            #a78bfa,
-            #22d3ee,
-            #f472b6
+            #9c91ff,
+            #49dfff,
+            #c48cff
         );
 
     -webkit-background-clip: text;
     color: transparent;
-}
+}}
 
-.hero p {
-    color: var(--muted);
-    max-width: 650px;
-    line-height: 1.6;
-}
+.hero p {{
+    color: #aab3c9;
 
-.hero-actions {
-    display: flex;
-    gap: 9px;
-    flex-wrap: wrap;
-    margin-top: 20px;
-}
-
-/* ============================================================
-   COMPOSER
-============================================================ */
-
-.composer {
-    padding: 16px;
-    margin-bottom: 16px;
-}
-
-.composer-top {
-    display: flex;
-    gap: 12px;
-}
-
-.avatar {
-    width: 44px;
-    height: 44px;
-
-    border-radius: 50%;
-
-    object-fit: cover;
-
-    border: 2px solid rgba(139,92,246,.4);
-}
-
-.composer textarea {
-    flex: 1;
-
-    min-height: 80px;
-
-    resize: vertical;
-
-    border: 0;
-    outline: 0;
-
-    background: transparent;
-    color: var(--text);
-
-    padding: 6px;
-
-    font-size: 14px;
-}
-
-.composer-bottom {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 8px;
-}
-
-/* ============================================================
-   POST
-============================================================ */
-
-.post {
-    padding: 17px;
-    margin-bottom: 14px;
-}
-
-.post-head {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-}
-
-.post-user {
-    flex: 1;
-}
-
-.post-user strong {
-    font-size: 14px;
-}
-
-.post-user small {
-    display: block;
-    color: var(--muted);
-    font-size: 11px;
-    margin-top: 2px;
-}
-
-.post-tag {
-    padding: 5px 8px;
-
-    border-radius: 8px;
-
-    background: rgba(139,92,246,.1);
-
-    color: #b9a3ff;
-
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: .7px;
-}
-
-.post-body {
-    padding: 15px 0 12px 55px;
-
-    font-size: 14px;
-    line-height: 1.65;
-}
-
-.post-meta {
-    color: var(--muted);
-    font-size: 11px;
-    margin-bottom: 12px;
-}
-
-.post-actions {
-    display: grid;
-    grid-template-columns: repeat(4,1fr);
-
-    border-top: 1px solid var(--border);
-
-    padding-top: 10px;
-}
-
-.post-action {
-    border: 0;
-    background: transparent;
-    color: var(--muted);
-
-    padding: 9px;
-
-    border-radius: 10px;
-}
-
-.post-action:hover {
-    background: rgba(255,255,255,.04);
-    color: var(--text);
-}
-
-/* ============================================================
-   GRID CARDS
-============================================================ */
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(2,minmax(0,1fr));
-    gap: 14px;
-}
-
-.grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3,minmax(0,1fr));
-    gap: 14px;
-}
-
-.world-card,
-.npc-card,
-.quest-card,
-.market-card {
-    padding: 17px;
-}
-
-.world-cover {
-    height: 105px;
-
-    border-radius: 14px;
-
-    margin-bottom: 13px;
-
-    background:
-        radial-gradient(
-            circle at 20% 30%,
-            rgba(255,255,255,.25),
-            transparent 15%
-        ),
-        linear-gradient(
-            135deg,
-            rgba(139,92,246,.75),
-            rgba(6,182,212,.4)
-        );
-}
-
-.world-card:nth-child(2) .world-cover {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(6,182,212,.7),
-            rgba(59,130,246,.25)
-        );
-}
-
-.world-card:nth-child(3) .world-cover {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(245,158,11,.7),
-            rgba(120,53,15,.3)
-        );
-}
-
-.world-card:nth-child(4) .world-cover {
-    background:
-        linear-gradient(
-            135deg,
-            rgba(236,72,153,.7),
-            rgba(79,70,229,.3)
-        );
-}
-
-.world-card h3,
-.npc-card h3,
-.quest-card h3,
-.market-card h3 {
-    font-size: 15px;
-    margin-bottom: 5px;
-}
-
-.card-muted {
-    color: var(--muted);
-    font-size: 12px;
-    line-height: 1.5;
-}
-
-.card-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-
-    margin-top: 14px;
-}
-
-.pill {
-    display: inline-flex;
-
-    padding: 5px 8px;
-
-    border-radius: 8px;
-
-    background: rgba(255,255,255,.05);
-
-    color: var(--muted);
-
-    font-size: 10px;
-}
-
-.online {
-    width: 8px;
-    height: 8px;
-
-    display: inline-block;
-
-    border-radius: 50%;
-
-    background: var(--green);
-
-    box-shadow: 0 0 10px var(--green);
-}
-
-/* ============================================================
-   NPC CARD
-============================================================ */
-
-.npc-card {
-    display: flex;
-    gap: 12px;
-}
-
-.npc-card .avatar {
-    width: 52px;
-    height: 52px;
-}
-
-.npc-info {
-    min-width: 0;
-}
-
-.npc-info h3 {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.npc-status {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    margin-top: 6px;
-}
-
-/* ============================================================
-   RIGHT PANEL
-============================================================ */
-
-.rightbar {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.widget {
-    padding: 16px;
-}
-
-.widget-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    margin-bottom: 13px;
-}
-
-.widget-title strong {
-    font-size: 14px;
-}
-
-.widget-title span {
-    color: var(--muted);
-    font-size: 11px;
-}
-
-.trend {
-    padding: 11px 0;
-    border-bottom: 1px solid var(--border);
-}
-
-.trend:last-child {
-    border-bottom: 0;
-}
-
-.trend small {
-    color: var(--muted);
-    font-size: 10px;
-}
-
-.trend strong {
-    display: block;
-    margin: 4px 0;
-    font-size: 13px;
-}
-
-.trend span {
-    color: var(--muted);
-    font-size: 10px;
-}
-
-/* ============================================================
-   PROFILE
-============================================================ */
-
-.profile-cover {
-    height: 180px;
-
-    border-radius: 20px 20px 0 0;
-
-    background:
-        radial-gradient(
-            circle at 20% 30%,
-            rgba(255,255,255,.2),
-            transparent 15%
-        ),
-        linear-gradient(
-            135deg,
-            #312e81,
-            #7c3aed,
-            #0891b2
-        );
-}
-
-.profile-body {
-    padding: 0 20px 20px;
-}
-
-.profile-avatar {
-    width: 90px;
-    height: 90px;
-
-    border-radius: 50%;
-
-    object-fit: cover;
-
-    border: 4px solid var(--panel);
-
-    margin-top: -45px;
-
-    position: relative;
-}
-
-.profile-body h1 {
-    margin-top: 10px;
-    font-size: 25px;
-}
-
-.profile-role {
-    color: var(--muted);
-    margin-top: 3px;
-}
-
-.profile-bio {
-    margin-top: 14px;
-    color: #c4c8d3;
-    line-height: 1.6;
-    font-size: 14px;
-}
-
-.stats {
-    display: flex;
-    gap: 25px;
-    margin-top: 18px;
-}
-
-.stat strong {
-    display: block;
     font-size: 18px;
-}
+    line-height: 1.7;
 
-.stat span {
-    color: var(--muted);
-    font-size: 11px;
-}
+    max-width: 700px;
+
+    margin-top: 25px;
+}}
+
+.hero-actions {{
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    margin-top: 30px;
+}}
+
+.primary-btn,
+.secondary-btn {{
+    border-radius: 12px;
+    padding: 13px 19px;
+
+    border: 1px solid transparent;
+
+    font-weight: 800;
+}}
+
+.primary-btn {{
+    background: white;
+    color: #070910;
+}}
+
+.secondary-btn {{
+    background:
+        rgba(255,255,255,.06);
+
+    border-color:
+        rgba(255,255,255,.1);
+
+    color: white;
+}}
+
 
 /* ============================================================
-   EMPTY / LOADING
+   ORB
 ============================================================ */
 
-.empty {
-    padding: 45px 20px;
+.hero-orb {{
+    min-height: 330px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 28px;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(118,103,255,.3),
+            transparent 55%
+        ),
+        rgba(255,255,255,.035);
+
+    border:
+        1px solid rgba(255,255,255,.08);
+}}
+
+.orb {{
+    width: 190px;
+    height: 190px;
+
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle at 35% 30%,
+            #d5d0ff,
+            #7166ff 35%,
+            #272153 65%,
+            #090b14 100%
+        );
+
+    box-shadow:
+        0 0 80px rgba(115,100,255,.65),
+        inset -30px -25px 50px rgba(0,0,0,.5);
+
+    animation: float 5s ease-in-out infinite;
+}}
+
+@keyframes float {{
+    0%,100% {{
+        transform: translateY(0);
+    }}
+
+    50% {{
+        transform: translateY(-15px);
+    }}
+}}
+
+
+/* ============================================================
+   STATS
+============================================================ */
+
+.stats {{
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, 1fr);
+
+    gap: 14px;
+
+    padding-bottom: 70px;
+}}
+
+.stat-card {{
+    padding: 25px;
+
+    background:
+        rgba(255,255,255,.045);
+
+    border:
+        1px solid rgba(255,255,255,.08);
+
+    border-radius: 18px;
+}}
+
+.stat-number {{
+    font-size: 30px;
+    font-weight: 900;
+}}
+
+.stat-label {{
+    margin-top: 5px;
+    color: #8f99b2;
+}}
+
+
+/* ============================================================
+   SECTIONS
+============================================================ */
+
+section {{
+    padding: 35px 0 75px;
+}}
+
+.section-header {{
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 25px;
+}}
+
+.section-header h2 {{
+    font-size: 32px;
+    letter-spacing: -1px;
+}}
+
+.section-header p {{
+    color: #8e97ad;
+    margin-top: 5px;
+}}
+
+
+/* ============================================================
+   CATEGORY CARDS
+============================================================ */
+
+.category-grid {{
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 16px;
+}}
+
+.category-card,
+.npc-card,
+.world-card,
+.quest-card {{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.065),
+            rgba(255,255,255,.025)
+        );
+
+    border:
+        1px solid rgba(255,255,255,.08);
+
+    border-radius: 20px;
+
+    transition:
+        transform .2s,
+        border-color .2s;
+
+    overflow: hidden;
+}}
+
+.category-card:hover,
+.npc-card:hover,
+.world-card:hover,
+.quest-card:hover {{
+    transform: translateY(-4px);
+
+    border-color:
+        rgba(140,130,255,.35);
+}}
+
+.category-card {{
+    padding: 25px;
+}}
+
+.category-icon {{
+    font-size: 34px;
+    margin-bottom: 18px;
+}}
+
+.category-card h3 {{
+    font-size: 20px;
+}}
+
+.category-card p {{
+    color: #929bb0;
+    line-height: 1.6;
+    margin: 8px 0 20px;
+}}
+
+.category-card button,
+.npc-content button {{
+    border: 0;
+
+    background:
+        rgba(255,255,255,.08);
+
+    color: white;
+
+    padding: 9px 13px;
+
+    border-radius: 9px;
+
+    font-weight: 700;
+}}
+
+
+/* ============================================================
+   NPCS
+============================================================ */
+
+.npc-grid {{
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 16px;
+}}
+
+.npc-card {{
+    display: flex;
+}}
+
+.npc-avatar {{
+    width: 110px;
+    min-width: 110px;
+
+    display: grid;
+    place-items: center;
+
+    font-size: 40px;
+    font-weight: 900;
+
+    background:
+        radial-gradient(
+            circle,
+            #55508e,
+            #15172b
+        );
+}}
+
+.npc-content {{
+    padding: 22px;
+    min-width: 0;
+}}
+
+.npc-top {{
+    display: flex;
+    justify-content: end;
+}}
+
+.npc-level {{
+    font-size: 11px;
+    font-weight: 900;
+
+    padding: 5px 8px;
+
+    border-radius: 7px;
+
+    background:
+        rgba(96,220,255,.1);
+
+    color: #71ddff;
+}}
+
+.npc-content h3 {{
+    margin-top: 8px;
+    font-size: 23px;
+}}
+
+.npc-role {{
+    color: #b5aaff;
+    margin-top: 4px;
+}}
+
+.npc-world {{
+    color: #778197;
+    margin-top: 10px;
+    font-size: 13px;
+}}
+
+.npc-content p {{
+    color: #929bb0;
+    line-height: 1.6;
+    margin: 13px 0 18px;
+}}
+
+
+/* ============================================================
+   WORLDS
+============================================================ */
+
+.world-grid {{
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, 1fr);
+
+    gap: 16px;
+}}
+
+.world-card {{
+    padding: 24px;
+
+    display: flex;
+    gap: 20px;
+}}
+
+.world-symbol {{
+    width: 65px;
+    height: 65px;
+
+    min-width: 65px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 16px;
+
+    font-size: 30px;
+
+    background:
+        rgba(117,106,255,.12);
+}}
+
+.world-type {{
+    color: #8e85ff;
+
+    font-size: 12px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+}}
+
+.world-card h3 {{
+    font-size: 22px;
+    margin: 4px 0 8px;
+}}
+
+.world-card p {{
+    color: #929bb0;
+    line-height: 1.6;
+}}
+
+.world-info {{
+    margin-top: 15px;
+    color: #788298;
+    font-size: 13px;
+}}
+
+
+/* ============================================================
+   QUESTS
+============================================================ */
+
+.quest-grid {{
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 16px;
+}}
+
+.quest-card {{
+    padding: 22px;
+
+    display: flex;
+    gap: 15px;
+}}
+
+.quest-icon {{
+    font-size: 30px;
+}}
+
+.difficulty {{
+    color: #ffbd72;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+}}
+
+.quest-card h3 {{
+    margin: 5px 0;
+}}
+
+.quest-card p {{
+    color: #8992a8;
+    font-size: 13px;
+}}
+
+.quest-reward {{
+    margin-top: 15px;
+
+    color: #79e1bd;
+
+    font-weight: 800;
+}}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+footer {{
+    border-top:
+        1px solid rgba(255,255,255,.08);
+
+    padding: 35px 0;
+
+    color: #717b91;
 
     text-align: center;
+}}
 
-    color: var(--muted);
-}
-
-.empty-icon {
-    font-size: 42px;
-    margin-bottom: 10px;
-}
 
 /* ============================================================
    MODAL
 ============================================================ */
 
-.modal {
+.modal {{
     position: fixed;
     inset: 0;
 
-    z-index: 500;
+    z-index: 999;
 
     display: none;
     place-items: center;
 
-    padding: 18px;
-
-    background: rgba(0,0,0,.7);
-
-    backdrop-filter: blur(10px);
-}
-
-.modal.show {
-    display: grid;
-}
-
-.modal-box {
-    width: min(600px,100%);
-
-    max-height: 90vh;
-    overflow: auto;
-
     padding: 20px;
 
-    border-radius: 20px;
+    background:
+        rgba(0,0,0,.75);
 
-    background: var(--panel);
+    backdrop-filter: blur(8px);
+}}
 
-    border: 1px solid var(--border);
+.modal.active {{
+    display: grid;
+}}
 
-    box-shadow:
-        0 30px 100px rgba(0,0,0,.6);
-}
+.modal-box {{
+    width: min(550px, 100%);
 
-.modal-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: #111522;
 
-    margin-bottom: 18px;
-}
+    border:
+        1px solid rgba(255,255,255,.1);
 
-.modal-head h2 {
-    font-size: 20px;
-}
+    border-radius: 22px;
 
-.close {
+    padding: 30px;
+
+    position: relative;
+}}
+
+.close {{
+    position: absolute;
+
+    top: 15px;
+    right: 15px;
+
+    border: 0;
+
     width: 35px;
     height: 35px;
 
-    border: 0;
-    border-radius: 10px;
+    border-radius: 50%;
 
-    background: var(--panel3);
+    background:
+        rgba(255,255,255,.08);
+
     color: white;
-}
-
-/* ============================================================
-   TOAST
-============================================================ */
-
-.toast {
-    position: fixed;
-
-    left: 50%;
-    bottom: 30px;
-
-    transform:
-        translate(-50%, 120px);
-
-    z-index: 1000;
-
-    padding: 12px 17px;
-
-    border-radius: 12px;
-
-    background: #171923;
-
-    border: 1px solid var(--border);
-
-    box-shadow:
-        0 15px 50px rgba(0,0,0,.5);
-
-    transition: .3s;
-
-    font-size: 13px;
-}
-
-.toast.show {
-    transform: translate(-50%, 0);
-}
-
-/* ============================================================
-   MOBILE NAV
-============================================================ */
-
-.mobile-nav {
-    display: none;
-
-    position: fixed;
-
-    left: 10px;
-    right: 10px;
-    bottom: max(10px, env(safe-area-inset-bottom));
-
-    z-index: 200;
-
-    padding: 7px;
-
-    border-radius: 18px;
-
-    background: rgba(16,18,26,.92);
-
-    backdrop-filter: blur(20px);
-
-    border: 1px solid var(--border);
-
-    grid-template-columns: repeat(5,1fr);
-
-    box-shadow:
-        0 15px 50px rgba(0,0,0,.5);
-}
-
-.mobile-nav button {
-    border: 0;
-    background: transparent;
-
-    color: var(--muted);
-
-    padding: 8px 4px;
-
-    border-radius: 12px;
 
     font-size: 18px;
-}
+}}
 
-.mobile-nav button span {
-    display: block;
-    font-size: 9px;
-    margin-top: 3px;
-}
+.modal-box h2 {{
+    font-size: 30px;
+}}
 
-.mobile-nav button.active {
-    color: white;
-    background: rgba(139,92,246,.15);
-}
+.modal-box p {{
+    color: #969fb4;
+    line-height: 1.7;
+    margin-top: 12px;
+}}
+
+
+/* ============================================================
+   SEARCH RESULTS
+============================================================ */
+
+.hidden {{
+    display: none !important;
+}}
+
+#searchStatus {{
+    margin-top: 15px;
+    color: #929bb0;
+}}
+
 
 /* ============================================================
    RESPONSIVE
 ============================================================ */
 
-@media (max-width: 1180px) {
+@media (max-width: 1000px) {{
 
-    .layout {
+    .hero-grid {{
+        grid-template-columns: 1fr;
+    }}
+
+    .hero-orb {{
+        min-height: 250px;
+    }}
+
+    .category-grid {{
         grid-template-columns:
-            210px
-            minmax(0,1fr);
-    }
+            repeat(2, 1fr);
+    }}
 
-    .rightbar {
+    .quest-grid {{
+        grid-template-columns:
+            repeat(2, 1fr);
+    }}
+
+    .search {{
         display: none;
-    }
+    }}
+}}
 
-}
 
-@media (max-width: 820px) {
+@media (max-width: 700px) {{
 
-    .topbar {
-        height: 62px;
-        padding: 0 12px;
-    }
+    .container {{
+        width: min(94%, 600px);
+    }}
 
-    .logo {
-        min-width: auto;
-    }
+    .nav {{
+        min-height: 64px;
+    }}
 
-    .logo strong {
-        font-size: 14px;
-    }
+    .logo {{
+        font-size: 17px;
+    }}
 
-    .logo span {
+    .nav-links {{
         display: none;
-    }
+    }}
 
-    .search {
-        max-width: none;
-    }
+    .hero {{
+        padding: 55px 0 40px;
+    }}
 
-    .top-actions {
-        display: none;
-    }
+    .hero h1 {{
+        font-size: 48px;
+        letter-spacing: -2.5px;
+    }}
 
-    .layout {
-        display: block;
-        padding: 12px;
-    }
+    .hero p {{
+        font-size: 16px;
+    }}
 
-    .sidebar {
-        display: none;
-    }
+    .stats {{
+        grid-template-columns:
+            repeat(2, 1fr);
 
-    .mobile-nav {
-        display: grid;
-    }
+        padding-bottom: 40px;
+    }}
 
-    body {
-        padding-bottom: 85px;
-    }
-
-}
-
-@media (max-width: 600px) {
-
-    .layout {
-        padding: 8px;
-    }
-
-    .hero {
-        padding: 20px;
-        border-radius: 18px;
-    }
-
-    .hero h1 {
-        font-size: 30px;
-    }
-
-    .card,
-    .post {
-        border-radius: 16px;
-    }
-
-    .grid,
-    .grid-3 {
+    .category-grid,
+    .npc-grid,
+    .world-grid,
+    .quest-grid {{
         grid-template-columns: 1fr;
-    }
+    }}
 
-    .post {
-        padding: 13px;
-    }
+    .npc-card {{
+        flex-direction: column;
+    }}
 
-    .post-body {
-        padding-left: 0;
-        padding-top: 13px;
-    }
-
-    .post-actions {
-        grid-template-columns: repeat(4,1fr);
-    }
-
-    .post-action {
-        font-size: 11px;
-        padding: 8px 2px;
-    }
-
-    .profile-cover {
-        height: 130px;
-    }
-
-    .stats {
-        gap: 17px;
-    }
-
-}
-
-@media (max-width: 400px) {
-
-    .logo-icon {
-        width: 35px;
-        height: 35px;
-    }
-
-    .logo strong {
-        font-size: 12px;
-    }
-
-    .search input {
-        height: 38px;
-        padding-left: 35px;
-    }
-
-    .hero-actions {
-        display: grid;
-        grid-template-columns: 1fr;
-    }
-
-    .hero-actions .btn {
+    .npc-avatar {{
         width: 100%;
-    }
+        height: 100px;
+        min-width: 0;
+    }}
 
-}
+    .section-header {{
+        align-items: start;
+        flex-direction: column;
+    }}
 
-/* ============================================================
-   ACCESSIBILITY
-============================================================ */
+    section {{
+        padding-bottom: 45px;
+    }}
+}}
 
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible {
-    outline: 2px solid var(--accent2);
-    outline-offset: 2px;
-}
+
+@media (max-width: 420px) {{
+
+    .hero h1 {{
+        font-size: 41px;
+    }}
+
+    .stats {{
+        grid-template-columns: 1fr;
+    }}
+
+    .stat-card {{
+        padding: 18px;
+    }}
+}}
 
 </style>
+
 </head>
+
 
 <body>
 
-<div class="app">
 
-<!-- ==========================================================
-     TOPBAR
-=========================================================== -->
+<header>
 
-<header class="topbar">
+<div class="container nav">
 
-    <a href="#" class="logo" onclick="showPage('home')">
+<div class="logo">
+    🌌 <span>{safe_name}</span>
+</div>
 
-        <div class="logo-icon">
-            ✦
-        </div>
+<nav class="nav-links">
 
-        <div>
-            <strong>NPC OMNIVERSE</strong>
-            <span>THE LIVING NPC UNIVERSE</span>
-        </div>
+<button onclick="scrollToSection('home')">
+    Home
+</button>
 
-    </a>
+<button onclick="scrollToSection('categories')">
+    Explore
+</button>
 
-    <div class="search">
+<button onclick="scrollToSection('npcs')">
+    NPCs
+</button>
 
-        <span class="search-icon">⌕</span>
+<button onclick="scrollToSection('worlds')">
+    Worlds
+</button>
 
-        <input
-            id="searchInput"
-            type="search"
-            placeholder="Search NPCs, worlds, quests..."
-            oninput="globalSearch(this.value)"
-        >
+<button onclick="scrollToSection('quests')">
+    Quests
+</button>
 
-    </div>
+</nav>
 
-    <div class="top-actions">
+<div class="search">
 
-        <button class="icon-btn" onclick="showToast('No new notifications')">
-            🔔
-        </button>
+<input
+    id="searchInput"
+    type="search"
+    placeholder="Search Omniverse..."
+    oninput="searchSite()"
+/>
 
-        <button class="icon-btn" onclick="showPage('messages')">
-            💬
-        </button>
+</div>
 
-    </div>
+</div>
 
 </header>
 
 
-<!-- ==========================================================
-     LAYOUT
-=========================================================== -->
-
-<div class="layout">
-
-<!-- ==========================================================
-     SIDEBAR
-=========================================================== -->
-
-<aside class="sidebar">
-
-    <nav class="nav-card">
-
-        <button class="nav-item active" data-page="home" onclick="showPage('home')">
-            <span class="nav-icon">⌂</span>
-            Omniverse
-        </button>
-
-        <button class="nav-item" data-page="explore" onclick="showPage('explore')">
-            <span class="nav-icon">◉</span>
-            Explore
-        </button>
-
-        <button class="nav-item" data-page="worlds" onclick="showPage('worlds')">
-            <span class="nav-icon">◈</span>
-            Worlds
-        </button>
-
-        <button class="nav-item" data-page="npcs" onclick="showPage('npcs')">
-            <span class="nav-icon">♙</span>
-            NPC Directory
-        </button>
-
-        <button class="nav-item" data-page="quests" onclick="showPage('quests')">
-            <span class="nav-icon">⚔</span>
-            Quests
-        </button>
-
-        <button class="nav-item" data-page="market" onclick="showPage('market')">
-            <span class="nav-icon">◇</span>
-            Market
-        </button>
-
-        <button class="nav-item" data-page="messages" onclick="showPage('messages')">
-            <span class="nav-icon">✉</span>
-            Messages
-        </button>
-
-        <button class="nav-item" data-page="notifications" onclick="showPage('notifications')">
-            <span class="nav-icon">♢</span>
-            Notifications
-        </button>
-
-        <button class="nav-item" data-page="settings" onclick="showPage('settings')">
-            <span class="nav-icon">⚙</span>
-            Settings
-        </button>
-
-    </nav>
-
-    <div class="nav-card side-generate">
-
-        <h3>Universe Tools</h3>
-
-        <p>
-            Create new NPCs and worlds and watch the Omniverse expand.
-        </p>
-
-        <button
-            class="btn btn-primary btn-full"
-            onclick="generateNPC()"
-        >
-            + Generate NPC
-        </button>
-
-        <br>
-
-        <button
-            class="btn btn-cyan btn-full"
-            onclick="generateWorld()"
-        >
-            + Generate World
-        </button>
-
-    </div>
-
-</aside>
+<main>
 
 
-<!-- ==========================================================
-     MAIN CONTENT
-=========================================================== -->
+<!-- HERO -->
 
-<main class="main">
+<section id="home" class="hero">
 
+<div class="container hero-grid">
 
-<!-- ==========================================================
-     HOME
-=========================================================== -->
+<div>
 
-<section id="page-home" class="page active">
+<div class="badge">
+    ✦ THE INFINITE UNIVERSE
+</div>
 
-    <div class="hero">
+<h1>
+    Welcome to
+    <span>the Omniverse.</span>
+</h1>
 
-        <h1>
-            Welcome to the
-            <span class="gradient-text">
-                Omniverse
-            </span>
-        </h1>
+<p>
+    {safe_tagline}
+    {safe_description}
+</p>
 
-        <p>
-            Every NPC has a life, every world has a history,
-            and every event can change the universe.
-            Explore stories from the perspective of the
-            characters who live inside them.
-        </p>
+<div class="hero-actions">
 
-        <div class="hero-actions">
+<button
+    class="primary-btn"
+    onclick="scrollToSection('categories')"
+>
+    Explore Universe
+</button>
 
-            <button
-                class="btn btn-primary"
-                onclick="showPage('explore')"
-            >
-                Explore Universe
-            </button>
+<button
+    class="secondary-btn"
+    onclick="randomNPC()"
+>
+    Random NPC
+</button>
 
-            <button
-                class="btn"
-                onclick="generateNPC()"
-            >
-                Generate NPC
-            </button>
+</div>
 
-            <button
-                class="btn"
-                onclick="generateWorld()"
-            >
-                Generate World
-            </button>
-
-        </div>
-
-    </div>
+</div>
 
 
-    <div class="card composer">
+<div class="hero-orb">
 
-        <div class="composer-top">
+<div class="orb"></div>
 
-            <img
-                class="avatar"
-                src="https://i.pravatar.cc/150?img=11"
-            >
+</div>
 
-            <textarea
-                id="postText"
-                placeholder="What is happening in your world?"
-            ></textarea>
-
-        </div>
-
-        <div class="composer-bottom">
-
-            <button
-                class="btn btn-primary"
-                onclick="createPost()"
-            >
-                Publish Event
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <div id="feed"></div>
+</div>
 
 </section>
 
 
-<!-- ==========================================================
-     EXPLORE
-=========================================================== -->
+<!-- STATS -->
 
-<section id="page-explore" class="page">
+<div class="container">
 
-    <div class="page-header">
+<div class="stats">
 
-        <h1>Explore</h1>
+{stats_html}
 
-        <p>
-            Discover NPC activity across the Omniverse.
-        </p>
+</div>
 
-    </div>
-
-    <div class="grid" id="exploreGrid"></div>
-
-</section>
+</div>
 
 
-<!-- ==========================================================
-     WORLDS
-=========================================================== -->
+<!-- CATEGORIES -->
 
-<section id="page-worlds" class="page">
+<section id="categories">
 
-    <div class="page-header">
+<div class="container">
 
-        <h1>Worlds</h1>
+<div class="section-header">
 
-        <p>
-            Explore civilizations, dimensions and realities.
-        </p>
+<div>
 
-    </div>
+<h2>Explore the Omniverse</h2>
 
-    <div
-        class="grid"
-        id="worldGrid"
-    ></div>
+<p>
+Discover everything inside the universe.
+</p>
 
-</section>
+</div>
+
+</div>
 
 
-<!-- ==========================================================
-     NPC DIRECTORY
-=========================================================== -->
+<div class="category-grid">
 
-<section id="page-npcs" class="page">
+{categories_html}
 
-    <div class="page-header">
+</div>
 
-        <h1>NPC Directory</h1>
-
-        <p>
-            Every character has a story.
-        </p>
-
-    </div>
-
-    <div
-        class="grid"
-        id="npcGrid"
-    ></div>
+</div>
 
 </section>
 
 
-<!-- ==========================================================
-     QUESTS
-=========================================================== -->
+<!-- NPCS -->
 
-<section id="page-quests" class="page">
+<section id="npcs">
 
-    <div class="page-header">
+<div class="container">
 
-        <h1>Quests</h1>
+<div class="section-header">
 
-        <p>
-            Active missions from across the Omniverse.
-        </p>
+<div>
 
-    </div>
+<h2>Featured NPCs</h2>
 
-    <div
-        class="grid"
-        id="questGrid"
-    ></div>
+<p>
+Characters waiting to be discovered.
+</p>
 
-</section>
+</div>
+
+</div>
 
 
-<!-- ==========================================================
-     MARKET
-=========================================================== -->
+<div class="npc-grid" id="npcGrid">
 
-<section id="page-market" class="page">
+{npc_html}
 
-    <div class="page-header">
+</div>
 
-        <h1>Omniverse Market</h1>
-
-        <p>
-            Items and artifacts discovered across worlds.
-        </p>
-
-    </div>
-
-    <div
-        class="grid"
-        id="marketGrid"
-    ></div>
+</div>
 
 </section>
 
 
-<!-- ==========================================================
-     MESSAGES
-=========================================================== -->
+<!-- WORLDS -->
 
-<section id="page-messages" class="page">
+<section id="worlds">
 
-    <div class="page-header">
+<div class="container">
 
-        <h1>Messages</h1>
+<div class="section-header">
 
-        <p>
-            Conversations between inhabitants.
-        </p>
+<div>
 
-    </div>
+<h2>Worlds</h2>
 
-    <div class="card" style="padding:20px">
+<p>
+Explore different realities.
+</p>
 
-        <div class="npc-card">
+</div>
 
-            <img
-                class="avatar"
-                src="https://i.pravatar.cc/150?img=47"
-            >
+</div>
 
-            <div class="npc-info">
 
-                <h3>Mira Solen</h3>
+<div class="world-grid" id="worldGrid">
 
-                <p class="card-muted">
-                    The eastern sky-port is under construction.
-                    You should see what they're building.
-                </p>
+{worlds_html}
 
-            </div>
+</div>
 
-        </div>
-
-        <br>
-
-        <div class="npc-card">
-
-            <img
-                class="avatar"
-                src="https://i.pravatar.cc/150?img=32"
-            >
-
-            <div class="npc-info">
-
-                <h3>Nyx Arclight</h3>
-
-                <p class="card-muted">
-                    Don't open the memory file I sent you.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
+</div>
 
 </section>
 
 
-<!-- ==========================================================
-     NOTIFICATIONS
-=========================================================== -->
+<!-- QUESTS -->
 
-<section id="page-notifications" class="page">
+<section id="quests">
 
-    <div class="page-header">
+<div class="container">
 
-        <h1>Notifications</h1>
+<div class="section-header">
 
-        <p>
-            Activity from around the Omniverse.
-        </p>
+<div>
 
-    </div>
+<h2>Active Quests</h2>
 
-    <div class="card" style="padding:20px">
+<p>
+Adventures across the Omniverse.
+</p>
 
-        <p style="padding:12px 0;border-bottom:1px solid var(--border)">
-            ❤️ Nyx Arclight liked your discovery.
-        </p>
+</div>
 
-        <p style="padding:12px 0;border-bottom:1px solid var(--border)">
-            🌎 Aetheria has a new event.
-        </p>
+</div>
 
-        <p style="padding:12px 0;border-bottom:1px solid var(--border)">
-            ⚔ New quest available: The Missing Cartographer.
-        </p>
 
-        <p style="padding:12px 0">
-            ✦ The Omniverse generated a new anomaly.
-        </p>
+<div class="quest-grid" id="questGrid">
 
-    </div>
+{quests_html}
+
+</div>
+
+</div>
 
 </section>
 
-
-<!-- ==========================================================
-     SETTINGS
-=========================================================== -->
-
-<section id="page-settings" class="page">
-
-    <div class="page-header">
-
-        <h1>Settings</h1>
-
-        <p>
-            Configure your Omniverse experience.
-        </p>
-
-    </div>
-
-    <div class="card" style="padding:20px">
-
-        <label style="display:block;margin-bottom:15px">
-
-            <strong>Interface</strong>
-
-        </label>
-
-        <button
-            class="btn"
-            onclick="showToast('Dark Omniverse mode is active')"
-        >
-            🌙 Dark Mode
-        </button>
-
-        <br><br>
-
-        <button
-            class="btn"
-            onclick="showToast('Notifications enabled')"
-        >
-            🔔 Notifications
-
-        </button>
-
-        <br><br>
-
-        <button
-            class="btn"
-            onclick="showToast('No account required')"
-        >
-            👤 Guest Mode
-
-        </button>
-
-    </div>
-
-</section>
 
 </main>
 
 
-<!-- ==========================================================
-     RIGHTBAR
-=========================================================== -->
+<footer>
 
-<aside class="rightbar">
+<div class="container">
 
-    <div class="widget">
+<strong>{safe_name}</strong>
 
-        <div class="widget-title">
+<br><br>
 
-            <strong>Trending Worlds</strong>
-
-            <span>LIVE</span>
-
-        </div>
-
-        <div class="trend">
-
-            <small>01</small>
-
-            <strong>Eclipse Realm</strong>
-
-            <span>84K active NPCs</span>
-
-        </div>
-
-        <div class="trend">
-
-            <small>02</small>
-
-            <strong>Neon Metropolis</strong>
-
-            <span>61K active NPCs</span>
-
-        </div>
-
-        <div class="trend">
-
-            <small>03</small>
-
-            <strong>Aetheria</strong>
-
-            <span>42K active NPCs</span>
-
-        </div>
-
-    </div>
-
-
-    <div class="widget">
-
-        <div class="widget-title">
-
-            <strong>Live Events</strong>
-
-            <span>NOW</span>
-
-        </div>
-
-        <div class="trend">
-
-            <strong>⚠ Time anomaly</strong>
-
-            <span>Chronos Sector 7</span>
-
-        </div>
-
-        <div class="trend">
-
-            <strong>⚔ Settlement conflict</strong>
-
-            <span>Iron Frontier</span>
-
-        </div>
-
-        <div class="trend">
-
-            <strong>🚀 Airship launch</strong>
-
-            <span>Aetheria</span>
-
-        </div>
-
-    </div>
-
-
-    <div class="widget">
-
-        <div class="widget-title">
-
-            <strong>Omniverse Stats</strong>
-
-        </div>
-
-        <div class="trend">
-
-            <strong>26,482,194</strong>
-
-            <span>Known NPCs</span>
-
-        </div>
-
-        <div class="trend">
-
-            <strong>5,291</strong>
-
-            <span>Known Worlds</span>
-
-        </div>
-
-        <div class="trend">
-
-            <strong>18,903</strong>
-
-            <span>Active Events</span>
-
-        </div>
-
-    </div>
-
-</aside>
+Explore. Create. Discover.
 
 </div>
 
-
-<!-- ==========================================================
-     MOBILE NAV
-=========================================================== -->
-
-<nav class="mobile-nav">
-
-    <button
-        class="active"
-        data-page="home"
-        onclick="showPage('home')"
-    >
-        ⌂
-        <span>Home</span>
-    </button>
-
-    <button
-        data-page="explore"
-        onclick="showPage('explore')"
-    >
-        ◉
-        <span>Explore</span>
-    </button>
-
-    <button
-        data-page="worlds"
-        onclick="showPage('worlds')"
-    >
-        ◈
-        <span>Worlds</span>
-    </button>
-
-    <button
-        data-page="npcs"
-        onclick="showPage('npcs')"
-    >
-        ♙
-        <span>NPCs</span>
-    </button>
-
-    <button
-        data-page="quests"
-        onclick="showPage('quests')"
-    >
-        ⚔
-        <span>Quests</span>
-    </button>
-
-</nav>
-
-</div>
+</footer>
 
 
-<!-- ==========================================================
-     MODAL
-=========================================================== -->
+<!-- MODAL -->
 
 <div
     id="modal"
@@ -2236,1072 +1448,175 @@ textarea:focus-visible {
     onclick="closeModal(event)"
 >
 
-    <div
-        class="modal-box"
-        onclick="event.stopPropagation()"
-    >
+<div class="modal-box">
 
-        <div class="modal-head">
+<button
+    class="close"
+    onclick="closeModal()"
+>
+    ×
+</button>
 
-            <h2 id="modalTitle">
-                Omniverse
-            </h2>
-
-            <button
-                class="close"
-                onclick="hideModal()"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <div id="modalContent"></div>
-
-    </div>
+<div id="modalContent"></div>
 
 </div>
 
-
-<div
-    id="toast"
-    class="toast"
->
-    Done
 </div>
 
 
 <script>
 
-/* ============================================================
-   STATE
-============================================================ */
-
-let npcs = [];
-let worlds = [];
-let posts = [];
-let quests = [];
-
-
-/* ============================================================
-   API
-============================================================ */
-
-async function loadData() {
-
-    try {
-
-        const results = await Promise.all([
-            fetch("/api/npcs"),
-            fetch("/api/worlds"),
-            fetch("/api/posts"),
-            fetch("/api/quests")
-        ]);
-
-        npcs = await results[0].json();
-        worlds = await results[1].json();
-        posts = await results[2].json();
-        quests = await results[3].json();
-
-        renderAll();
-
-    } catch (error) {
-
-        console.error(error);
-
-        showToast("Could not load Omniverse data");
-
-    }
-
-}
+const SITE_DATA = {data_json};
 
 
 /* ============================================================
    NAVIGATION
 ============================================================ */
 
-function showPage(page) {
+function scrollToSection(id) {{
 
-    document
-        .querySelectorAll(".page")
-        .forEach(el => {
+    const element = document.getElementById(id);
 
-            el.classList.remove("active");
+    if (element) {{
+        element.scrollIntoView({{
+            behavior: "smooth",
+            block: "start"
+        }});
+    }}
 
-        });
-
-    const target =
-        document.getElementById("page-" + page);
-
-    if (target) {
-
-        target.classList.add("active");
-
-    }
-
-    document
-        .querySelectorAll(".nav-item, .mobile-nav button")
-        .forEach(button => {
-
-            button.classList.toggle(
-                "active",
-                button.dataset.page === page
-            );
-
-        });
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-
-}
-
-
-/* ============================================================
-   FEED
-============================================================ */
-
-function renderFeed(list = posts) {
-
-    const container =
-        document.getElementById("feed");
-
-    if (!container) return;
-
-    if (!list.length) {
-
-        container.innerHTML = `
-            <div class="card empty">
-                <div class="empty-icon">🌌</div>
-                No events found.
-            </div>
-        `;
-
-        return;
-    }
-
-    container.innerHTML =
-        list.map(post => `
-
-        <article class="card post">
-
-            <div class="post-head">
-
-                <img
-                    class="avatar"
-                    src="${post.avatar}"
-                >
-
-                <div class="post-user">
-
-                    <strong>
-                        ${escapeHTML(post.npc)}
-                    </strong>
-
-                    <small>
-                        ${escapeHTML(post.role)}
-                        ·
-                        ${escapeHTML(post.world)}
-                        ·
-                        ${escapeHTML(post.time)}
-                    </small>
-
-                </div>
-
-                <span class="post-tag">
-                    ${escapeHTML(post.tag)}
-                </span>
-
-            </div>
-
-            <div class="post-body">
-
-                ${escapeHTML(post.text)}
-
-            </div>
-
-            <div class="post-meta">
-
-                ${post.likes} likes
-                ·
-                ${post.comments} comments
-                ·
-                ${post.reposts} reposts
-
-            </div>
-
-            <div class="post-actions">
-
-                <button
-                    class="post-action"
-                    onclick="likePost(${post.id}, this)"
-                >
-                    ♡ Like
-                </button>
-
-                <button
-                    class="post-action"
-                    onclick="showToast('Comment panel opened')"
-                >
-                    ○ Comment
-                </button>
-
-                <button
-                    class="post-action"
-                    onclick="showToast('Event reposted')"
-                >
-                    ↻ Repost
-                </button>
-
-                <button
-                    class="post-action"
-                    onclick="showToast('Event saved')"
-                >
-                    ☆ Save
-                </button>
-
-            </div>
-
-        </article>
-
-    `).join("");
-
-}
-
-
-/* ============================================================
-   EXPLORE
-============================================================ */
-
-function renderExplore() {
-
-    const grid =
-        document.getElementById("exploreGrid");
-
-    if (!grid) return;
-
-    grid.innerHTML =
-        posts.map(post => `
-
-        <div class="card post">
-
-            <div class="post-head">
-
-                <img
-                    class="avatar"
-                    src="${post.avatar}"
-                >
-
-                <div class="post-user">
-
-                    <strong>
-                        ${escapeHTML(post.npc)}
-                    </strong>
-
-                    <small>
-                        ${escapeHTML(post.world)}
-                    </small>
-
-                </div>
-
-            </div>
-
-            <div class="post-body" style="padding-left:0">
-
-                ${escapeHTML(post.text)}
-
-            </div>
-
-            <button
-                class="btn"
-                onclick="openPost(${post.id})"
-            >
-                View Event
-            </button>
-
-        </div>
-
-    `).join("");
-
-}
-
-
-/* ============================================================
-   WORLDS
-============================================================ */
-
-function renderWorlds() {
-
-    const grid =
-        document.getElementById("worldGrid");
-
-    if (!grid) return;
-
-    grid.innerHTML =
-        worlds.map(world => `
-
-        <div class="card world-card">
-
-            <div class="world-cover"></div>
-
-            <h3>
-                ${escapeHTML(world.name)}
-            </h3>
-
-            <p class="card-muted">
-                ${escapeHTML(world.description)}
-            </p>
-
-            <div class="card-row">
-
-                <span class="pill">
-                    ${escapeHTML(world.type)}
-                </span>
-
-                <span class="pill">
-                    ${escapeHTML(world.population)}
-                </span>
-
-            </div>
-
-            <div class="card-row">
-
-                <button
-                    class="btn btn-primary"
-                    onclick="openWorld(${world.id})"
-                >
-                    Enter World
-                </button>
-
-            </div>
-
-        </div>
-
-    `).join("");
-
-}
-
-
-/* ============================================================
-   NPCS
-============================================================ */
-
-function renderNPCs() {
-
-    const grid =
-        document.getElementById("npcGrid");
-
-    if (!grid) return;
-
-    grid.innerHTML =
-        npcs.map(npc => `
-
-        <div
-            class="card npc-card"
-            onclick="openNPC(${npc.id})"
-            style="cursor:pointer"
-        >
-
-            <img
-                class="avatar"
-                src="${npc.avatar}"
-            >
-
-            <div class="npc-info">
-
-                <h3>
-                    ${escapeHTML(npc.name)}
-                </h3>
-
-                <p class="card-muted">
-                    ${escapeHTML(npc.role)}
-                </p>
-
-                <div class="npc-status">
-
-                    <span class="${
-                        npc.online ? "online" : ""
-                    }"></span>
-
-                    <span class="pill">
-                        Lv. ${npc.level}
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    `).join("");
-
-}
-
-
-/* ============================================================
-   QUESTS
-============================================================ */
-
-function renderQuests() {
-
-    const grid =
-        document.getElementById("questGrid");
-
-    if (!grid) return;
-
-    grid.innerHTML =
-        quests.map((quest, index) => `
-
-        <div class="card quest-card">
-
-            <span class="pill">
-                QUEST ${String(index + 1).padStart(2,"0")}
-            </span>
-
-            <br><br>
-
-            <h3>
-                ${escapeHTML(quest.name)}
-            </h3>
-
-            <p class="card-muted">
-                ${escapeHTML(quest.world)}
-            </p>
-
-            <div class="card-row">
-
-                <span class="pill">
-                    ${escapeHTML(quest.difficulty)}
-                </span>
-
-                <strong>
-                    ${escapeHTML(quest.reward)}
-                </strong>
-
-            </div>
-
-            <div class="card-row">
-
-                <button
-                    class="btn btn-primary"
-                    onclick="acceptQuest('${escapeHTML(quest.name)}')"
-                >
-                    Accept Quest
-                </button>
-
-            </div>
-
-        </div>
-
-    `).join("");
-
-}
-
-
-/* ============================================================
-   MARKET
-============================================================ */
-
-function renderMarket() {
-
-    const grid =
-        document.getElementById("marketGrid");
-
-    if (!grid) return;
-
-    grid.innerHTML =
-        MARKET.map(item => `
-
-        <div class="card market-card">
-
-            <div
-                style="
-                    width:55px;
-                    height:55px;
-                    display:grid;
-                    place-items:center;
-                    border-radius:15px;
-                    background:rgba(139,92,246,.12);
-                    font-size:25px;
-                    margin-bottom:13px;
-                "
-            >
-                ◈
-            </div>
-
-            <h3>
-                ${escapeHTML(item[0])}
-            </h3>
-
-            <p class="card-muted">
-                ${escapeHTML(item[1])}
-            </p>
-
-            <div class="card-row">
-
-                <strong>
-                    ${escapeHTML(item[2])} credits
-                </strong>
-
-                <button
-                    class="btn"
-                    onclick="showToast('Item selected')"
-                >
-                    View
-                </button>
-
-            </div>
-
-        </div>
-
-    `).join("");
-
-}
-
-
-/* ============================================================
-   NPC MODAL
-============================================================ */
-
-function openNPC(id) {
-
-    const npc =
-        npcs.find(x => x.id === id);
-
-    if (!npc) return;
-
-    document.getElementById("modalTitle").textContent =
-        npc.name;
-
-    document.getElementById("modalContent").innerHTML = `
-
-        <div style="text-align:center">
-
-            <img
-                src="${npc.avatar}"
-                style="
-                    width:100px;
-                    height:100px;
-                    border-radius:50%;
-                    object-fit:cover;
-                    border:4px solid rgba(139,92,246,.4);
-                "
-            >
-
-            <h2 style="margin-top:12px">
-                ${escapeHTML(npc.name)}
-            </h2>
-
-            <p class="card-muted">
-                ${escapeHTML(npc.role)}
-            </p>
-
-            <br>
-
-            <p class="card-muted">
-                ${escapeHTML(npc.bio)}
-            </p>
-
-            <br>
-
-            <div class="card-row">
-
-                <span class="pill">
-                    ${escapeHTML(npc.world)}
-                </span>
-
-                <span class="pill">
-                    Level ${npc.level}
-                </span>
-
-            </div>
-
-        </div>
-
-    `;
-
-    showModal();
-
-}
-
-
-/* ============================================================
-   WORLD MODAL
-============================================================ */
-
-function openWorld(id) {
-
-    const world =
-        worlds.find(x => x.id === id);
-
-    if (!world) return;
-
-    document.getElementById("modalTitle").textContent =
-        world.name;
-
-    document.getElementById("modalContent").innerHTML = `
-
-        <div class="world-cover"></div>
-
-        <h2>
-            ${escapeHTML(world.name)}
-        </h2>
-
-        <p class="card-muted" style="margin-top:8px">
-            ${escapeHTML(world.description)}
-        </p>
-
-        <br>
-
-        <div class="card-row">
-
-            <span class="pill">
-                ${escapeHTML(world.type)}
-            </span>
-
-            <span class="pill">
-                ${escapeHTML(world.population)}
-            </span>
-
-        </div>
-
-        <br>
-
-        <button
-            class="btn btn-primary btn-full"
-            onclick="showToast('Entering ${escapeHTML(world.name)}')"
-        >
-            Enter World
-        </button>
-
-    `;
-
-    showModal();
-
-}
-
-
-/* ============================================================
-   POST MODAL
-============================================================ */
-
-function openPost(id) {
-
-    const post =
-        posts.find(x => x.id === id);
-
-    if (!post) return;
-
-    document.getElementById("modalTitle").textContent =
-        "Event";
-
-    document.getElementById("modalContent").innerHTML = `
-
-        <div class="post-head">
-
-            <img
-                class="avatar"
-                src="${post.avatar}"
-            >
-
-            <div class="post-user">
-
-                <strong>
-                    ${escapeHTML(post.npc)}
-                </strong>
-
-                <small>
-                    ${escapeHTML(post.world)}
-                </small>
-
-            </div>
-
-        </div>
-
-        <p
-            style="
-                line-height:1.7;
-                margin-top:18px;
-            "
-        >
-            ${escapeHTML(post.text)}
-        </p>
-
-        <br>
-
-        <button
-            class="btn btn-primary"
-            onclick="showToast('Event followed')"
-        >
-            Follow Event
-        </button>
-
-    `;
-
-    showModal();
-
-}
-
-
-/* ============================================================
-   CREATE POST
-============================================================ */
-
-async function createPost() {
-
-    const input =
-        document.getElementById("postText");
-
-    const text =
-        input.value.trim();
-
-    if (!text) {
-
-        showToast("Write something first");
-
-        return;
-
-    }
-
-    try {
-
-        const response =
-            await fetch("/api/post", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    text: text
-                })
-
-            });
-
-        if (!response.ok) {
-
-            showToast("Could not publish event");
-
-            return;
-
-        }
-
-        const post =
-            await response.json();
-
-        posts.unshift(post);
-
-        input.value = "";
-
-        renderFeed();
-
-        showToast("Event published");
-
-    } catch {
-
-        showToast("Server error");
-
-    }
-
-}
-
-
-/* ============================================================
-   GENERATE NPC
-============================================================ */
-
-async function generateNPC() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/generate/npc",
-                { method: "POST" }
-            );
-
-        const npc =
-            await response.json();
-
-        npcs.push(npc);
-
-        renderNPCs();
-
-        openNPC(npc.id);
-
-        showToast("New NPC generated");
-
-    } catch {
-
-        showToast("NPC generation failed");
-
-    }
-
-}
-
-
-/* ============================================================
-   GENERATE WORLD
-============================================================ */
-
-async function generateWorld() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/generate/world",
-                { method: "POST" }
-            );
-
-        const world =
-            await response.json();
-
-        worlds.push(world);
-
-        renderWorlds();
-
-        openWorld(world.id);
-
-        showToast("New world generated");
-
-    } catch {
-
-        showToast("World generation failed");
-
-    }
-
-}
-
-
-/* ============================================================
-   LIKE
-============================================================ */
-
-function likePost(id, button) {
-
-    const post =
-        posts.find(x => x.id === id);
-
-    if (!post) return;
-
-    post.likes++;
-
-    button.textContent =
-        "♥ Liked";
-
-    button.style.color =
-        "#ec4899";
-
-    renderFeed(posts);
-
-}
-
-
-/* ============================================================
-   QUEST
-============================================================ */
-
-function acceptQuest(name) {
-
-    showToast(
-        "Quest accepted: " + name
-    );
-
-}
-
-
-/* ============================================================
-   SEARCH
-============================================================ */
-
-function globalSearch(value) {
-
-    const query =
-        value.trim().toLowerCase();
-
-    if (!query) {
-
-        if (
-            document
-                .getElementById("page-home")
-                .classList.contains("active")
-        ) {
-
-            renderFeed();
-
-        }
-
-        return;
-
-    }
-
-    showPage("explore");
-
-    const results =
-        posts.filter(post =>
-            (
-                post.npc + " " +
-                post.role + " " +
-                post.world + " " +
-                post.text
-            )
-            .toLowerCase()
-            .includes(query)
-        );
-
-    const grid =
-        document.getElementById("exploreGrid");
-
-    grid.innerHTML =
-        results.length
-            ? results.map(post => `
-
-                <div class="card post">
-
-                    <div class="post-head">
-
-                        <img
-                            class="avatar"
-                            src="${post.avatar}"
-                        >
-
-                        <div class="post-user">
-
-                            <strong>
-                                ${escapeHTML(post.npc)}
-                            </strong>
-
-                            <small>
-                                ${escapeHTML(post.world)}
-                            </small>
-
-                        </div>
-
-                    </div>
-
-                    <div
-                        class="post-body"
-                        style="padding-left:0"
-                    >
-                        ${escapeHTML(post.text)}
-                    </div>
-
-                </div>
-
-            `).join("")
-            :
-            `
-                <div class="card empty">
-                    <div class="empty-icon">🔎</div>
-                    No results found.
-                </div>
-            `;
-
-}
+}}
 
 
 /* ============================================================
    MODAL
 ============================================================ */
 
-function showModal() {
+function openModal(title, content) {{
 
-    document
-        .getElementById("modal")
-        .classList.add("show");
+    document.getElementById("modalContent").innerHTML = `
+        <h2>${{title}}</h2>
+        <p>${{content}}</p>
+    `;
 
-}
+    document.getElementById("modal").classList.add("active");
 
-function hideModal() {
+}}
 
-    document
-        .getElementById("modal")
-        .classList.remove("show");
 
-}
-
-function closeModal(event) {
+function closeModal(event) {{
 
     if (
-        event.target.id === "modal"
-    ) {
+        !event ||
+        event.target.id === "modal" ||
+        event.target.classList.contains("close")
+    ) {{
+        document.getElementById("modal")
+            .classList.remove("active");
+    }}
 
-        hideModal();
-
-    }
-
-}
-
-
-/* ============================================================
-   TOAST
-============================================================ */
-
-let toastTimer;
-
-function showToast(message) {
-
-    const toast =
-        document.getElementById("toast");
-
-    toast.textContent =
-        message;
-
-    toast.classList.add("show");
-
-    clearTimeout(toastTimer);
-
-    toastTimer =
-        setTimeout(() => {
-
-            toast.classList.remove("show");
-
-        }, 2500);
-
-}
+}}
 
 
 /* ============================================================
-   ESCAPE HTML
+   NPC
 ============================================================ */
 
-function escapeHTML(value) {
+function openNPC(name, role, world, level) {{
 
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    openModal(
+        name,
+        `
+        <strong>Role:</strong> ${{role}}<br><br>
+        <strong>World:</strong> ${{world}}<br><br>
+        <strong>Level:</strong> ${{level}}
+        `
+    );
 
-}
+}}
+
+
+function randomNPC() {{
+
+    const npcs = SITE_DATA.featured_npcs;
+
+    const npc =
+        npcs[Math.floor(Math.random() * npcs.length)];
+
+    openNPC(
+        npc.name,
+        npc.role,
+        npc.world,
+        npc.level
+    );
+
+}}
 
 
 /* ============================================================
-   RENDER EVERYTHING
+   CATEGORY
 ============================================================ */
 
-function renderAll() {
+function showCategory(category) {{
 
-    renderFeed();
-    renderExplore();
-    renderWorlds();
-    renderNPCs();
-    renderQuests();
-    renderMarket();
+    openModal(
+        category,
+        `Explore the ${{category}} section of NPC OMNIVERSE.`
+    );
 
-}
+}}
 
 
 /* ============================================================
-   START
+   SEARCH
 ============================================================ */
 
-loadData();
+function searchSite() {{
+
+    const query =
+        document
+            .getElementById("searchInput")
+            .value
+            .toLowerCase()
+            .trim();
+
+
+    const cards =
+        document.querySelectorAll(
+            ".npc-card, .world-card, .quest-card"
+        );
+
+
+    let found = 0;
+
+
+    cards.forEach(card => {{
+
+        const text =
+            card.dataset.search || "";
+
+
+        if (!query || text.includes(query)) {{
+
+            card.classList.remove("hidden");
+
+            found++;
+
+        }} else {{
+
+            card.classList.add("hidden");
+
+        }}
+
+    }});
+
+
+    if (query) {{
+
+        scrollToSection("npcs");
+
+    }}
+
+}}
 
 
 /* ============================================================
@@ -3310,27 +1625,57 @@ loadData();
 
 document.addEventListener(
     "keydown",
-    event => {
+    function(event) {{
 
-        if (event.key === "Escape") {
+        if (event.key === "Escape") {{
+            document
+                .getElementById("modal")
+                .classList.remove("active");
+        }}
 
-            hideModal();
-
-        }
-
-    }
+    }}
 );
 
 </script>
 
+
 </body>
+
 </html>
 """
 
 
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
+# ============================================================
+# CREATE STATIC WEBSITE
+# ============================================================
+
+def main():
+
+    OUTPUT_DIR.mkdir(
+        parents=True,
+        exist_ok=True
     )
+
+    OUTPUT_FILE.write_text(
+        build_html(SITE_DATA),
+        encoding="utf-8"
+    )
+
+    print()
+    print("=" * 60)
+    print("NPC OMNIVERSE STATIC SITE CREATED")
+    print("=" * 60)
+    print()
+    print(f"Output: {OUTPUT_FILE}")
+    print()
+    print("Open:")
+    print(f"    {OUTPUT_FILE}")
+    print()
+    print("No Flask required.")
+    print("No database required.")
+    print("No server required for deployment.")
+    print()
+
+
+if __name__ == "__main__":
+    main()
