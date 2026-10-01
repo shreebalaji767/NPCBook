@@ -59,7 +59,7 @@ def card(item,collection):
     return f'''<article class="card" data-type="{esc(collection)}" data-search="{esc(" ".join(str(v) for v in item.values()))}" data-item="{esc(json.dumps(item,ensure_ascii=False))}">
 <div class="card-top"><span class="eyebrow">{icon} {esc(label)}</span><button class="icon-btn" aria-label="Share" onclick="shareItem(this.closest('.card'))">↗</button></div>
 <h3>{esc(item["name"])}</h3><p>{esc(item.get("description",""))}</p><div class="meta">{"".join("<span>"+esc(x)+"</span>" for x in meta)}</div><div class="tags">{tags}</div>
-<div class="card-actions"><button class="btn small" onclick="openItem(this.closest('.card'))">View</button><button class="btn small ghost" onclick="screenshotCard(this.closest('.card'))">Screenshot</button></div></article>'''
+<div class="card-actions"><button class="btn small x-view" onclick="openItem(this.closest('.card'))">View</button><button class="btn small ghost x-screenshot" onclick="screenshotCard(this.closest('.card'))">Screenshot</button></div></article>'''
 
 def build_html():
     cards=[]
