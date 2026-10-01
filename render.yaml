@@ -2,7 +2,7 @@ services:
   - type: web
     name: npcbook
     runtime: static
-    buildCommand: python app.py
+    buildCommand: python app.py && python feed_upgrade.py
     staticPublishPath: .
     autoDeployTrigger: commit
     headers:
