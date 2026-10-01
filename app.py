@@ -5,7 +5,8 @@ OUTPUT_DIR = Path("site")
 SITE_URL = "https://npcbook.onrender.com"
 BRAND = "BLSSNVJ21"
 LOGO_URL = f"{SITE_URL}/logo.svg"
-FAVICON_URL = f"{SITE_URL}/favicon.svg?v=7"
+FAVICON_URL = f"{SITE_URL}/favicon.svg?v=8"
+FAVICON_ICO_BASE64 = "AAABAAEAICAAAAEAIABoAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAgAAAAIAgGAAAAc3p69AAAAC9JREFUeNrtzqEBAAAIAyCrwe7/j+oZKwQ61bOXVAICAgICAgICAgICAgICAunAA66ptD3mbRNKAAAAAElFTkSuQmCC"
 
 SITE = {
     "name": "NPCBook — NPC OMNIVERSE",
@@ -79,7 +80,7 @@ def build_html():
 <meta property="og:title" content="{esc(SITE["name"])}"><meta property="og:description" content="{esc(SITE["description"])}"><meta property="og:url" content="{SITE_URL}/"><meta property="og:image" content="{LOGO_URL}"><meta property="og:image:alt" content="NPCBook — BLSSNVJ21 logo"><meta property="og:image:type" content="image/svg+xml">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{esc(SITE["name"])}"><meta name="twitter:description" content="{esc(SITE["description"])}"><meta name="twitter:image" content="{LOGO_URL}"><meta name="twitter:image:alt" content="NPCBook — BLSSNVJ21 logo">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="NPCBook"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="format-detection" content="telephone=no"><meta name="mobile-web-app-title" content="NPCBook"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="color-scheme" content="dark light"><meta name="generator" content="NPCBook / BLSSNVJ21">\n<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="{FAVICON_URL}" type="image/svg+xml" sizes="any"><link rel="shortcut icon" href="{FAVICON_URL}" type="image/svg+xml"><link rel="apple-touch-icon" href="{LOGO_URL}?v=6"><meta name="msapplication-TileColor" content="#090d18">
+<meta name="format-detection" content="telephone=no"><meta name="mobile-web-app-title" content="NPCBook"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="color-scheme" content="dark light"><meta name="generator" content="NPCBook / BLSSNVJ21">\n<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/favicon.ico?v=8" sizes="32x32" type="image/x-icon"><link rel="icon" href="{FAVICON_URL}" type="image/svg+xml" sizes="any"><link rel="shortcut icon" href="/favicon.ico?v=8" type="image/x-icon"><link rel="apple-touch-icon" href="{LOGO_URL}?v=6"><meta name="msapplication-TileColor" content="#090d18">
 <script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":SITE["name"],"alternateName":["NPCBook","NPC OMNIVERSE",BRAND],"url":SITE_URL+"/","description":SITE["description"],"keywords":SITE["keywords"],"inLanguage":"en"},{"@type":"Organization","name":"BLSSNVJ21","url":SITE_URL+"/","logo":LOGO_URL},{"@type":"WebApplication","name":"NPCBook","applicationCategory":"EntertainmentApplication","operatingSystem":"Web","url":SITE_URL+"/","description":SITE["description"],"browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"ItemList","name":"NPCBook collections","numberOfItems":4,"itemListElement":[{"@type":"ListItem","position":1,"name":"NPCs"},{"@type":"ListItem","position":2,"name":"Worlds"},{"@type":"ListItem","position":3,"name":"Quests"},{"@type":"ListItem","position":4,"name":"Lore"}]}]},ensure_ascii=False)}</script>
 <title>{esc(SITE["name"])} | Fictional NPCs, Worlds, Quests & Lore</title>
 <style>
@@ -129,10 +130,10 @@ window.addEventListener('online',()=>toast('Back online'));window.addEventListen
 </script></body></html>'''
 
 def build_manifest():
-    return json.dumps({"name":SITE["name"],"short_name":"NPCBook","id":"/","description":SITE["description"],"start_url":"/","scope":"/","display":"standalone","orientation":"any","background_color":"#070a12","theme_color":"#090d18","categories":["entertainment","books","games"],"lang":"en","shortcuts":[{"name":"Explore NPCs","short_name":"NPCs","url":"/#explore"},{"name":"Random discovery","short_name":"Random","url":"/#explore"}],"icons":[{"src":"/favicon.svg?v=7","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]},indent=2)
+    return json.dumps({"name":SITE["name"],"short_name":"NPCBook","id":"/","description":SITE["description"],"start_url":"/","scope":"/","display":"standalone","orientation":"any","background_color":"#070a12","theme_color":"#090d18","categories":["entertainment","books","games"],"lang":"en","shortcuts":[{"name":"Explore NPCs","short_name":"NPCs","url":"/#explore"},{"name":"Random discovery","short_name":"Random","url":"/#explore"}],"icons":[{"src":"/favicon.svg?v=8","sizes":"any","type":"image/svg+xml","purpose":"any maskable"},{"src":"/favicon.ico?v=8","sizes":"32x32","type":"image/x-icon","purpose":"any"}]},indent=2)
 
 def build_sw():
-    return """const CACHE='npcbook-v8';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/logo.svg','/robots.txt','/sitemap.xml','/404.html'];
+    return """const CACHE='npcbook-v8';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/favicon.ico','/logo.svg','/robots.txt','/sitemap.xml','/404.html'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/404.html'))))});
@@ -140,12 +141,12 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWi
 def build_favicon():
     return '''<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#7c6cff"/><stop offset="1" stop-color="#31d8ff"/></linearGradient></defs><rect width="128" height="128" rx="30" fill="#090d18"/><rect x="12" y="12" width="104" height="104" rx="26" fill="url(#g)"/><path d="M34 48c0-10 8-18 18-18h24c10 0 18 8 18 18v20c0 10-8 18-18 18H58l-14 12V86c-6-3-10-9-10-18V48Z" fill="#fff"/><circle cx="58" cy="58" r="6" fill="#111827"/><circle cx="78" cy="58" r="6" fill="#111827"/><path d="M55 73c7 5 15 5 22 0" fill="none" stroke="#111827" stroke-width="5" stroke-linecap="round"/></svg>'''
 def build_404():
-    return '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>NPCBook — Page not found</title><link rel="icon" href="/favicon.svg?v=7" type="image/svg+xml"><style>body{margin:0;background:#070a12;color:#fff;font-family:system-ui;display:grid;place-items:center;min-height:100vh;text-align:center}main{max-width:520px;padding:30px}a{display:inline-block;padding:11px 16px;border-radius:12px;background:#7c6cff;color:#fff;text-decoration:none;font-weight:800}</style><main><div style="font-size:80px">🤖</div><h1>NPC not found.</h1><p>This page probably walked into another dimension.</p><a href="/">Return to NPCBook</a></main>'''
+    return '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>NPCBook — Page not found</title><link rel="icon" href="/favicon.ico?v=8" type="image/x-icon"><link rel="icon" href="/favicon.svg?v=8" type="image/svg+xml"><style>body{margin:0;background:#070a12;color:#fff;font-family:system-ui;display:grid;place-items:center;min-height:100vh;text-align:center}main{max-width:520px;padding:30px}a{display:inline-block;padding:11px 16px;border-radius:12px;background:#7c6cff;color:#fff;text-decoration:none;font-weight:800}</style><main><div style="font-size:80px">🤖</div><h1>NPC not found.</h1><p>This page probably walked into another dimension.</p><a href="/">Return to NPCBook</a></main>'''
 def build_robots(): return f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n"
 def build_sitemap(): return f'''<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>{SITE_URL}/</loc></url></urlset>'''
 def build():
     OUTPUT_DIR.mkdir(parents=True,exist_ok=True)
-    files={"index.html":build_html(),"404.html":build_404(),"favicon.svg":build_favicon(),"logo.svg":build_favicon(),"manifest.webmanifest":build_manifest(),"sw.js":build_sw(),"robots.txt":build_robots(),"sitemap.xml":build_sitemap()}
-    for name,data in files.items():(OUTPUT_DIR/name).write_text(data,encoding="utf-8")
+    files={"index.html":build_html(),"404.html":build_404(),"favicon.svg":build_favicon(),"logo.svg":build_favicon(),"favicon.ico":__import__("base64").b64decode(FAVICON_ICO_BASE64),"manifest.webmanifest":build_manifest(),"sw.js":build_sw(),"robots.txt":build_robots(),"sitemap.xml":build_sitemap()}
+    for name,data in files.items():(OUTPUT_DIR/name).write_bytes(data) if isinstance(data,bytes) else (OUTPUT_DIR/name).write_text(data,encoding="utf-8")
     print("NPCBook build complete:",OUTPUT_DIR.resolve())
 if __name__=="__main__": build()
