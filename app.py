@@ -4,6 +4,7 @@ import html, json, re
 OUTPUT_DIR = Path("site")
 SITE_URL = "https://npcbook.onrender.com"
 BRAND = "BLSSNVJ21"
+LOGO_URL = f"{SITE_URL}/logo.svg"
 
 SITE = {
     "name": "NPCBook — NPC OMNIVERSE",
@@ -74,11 +75,11 @@ def build_html():
 <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
 <link rel="canonical" href="{SITE_URL}/"><link rel="alternate" hreflang="en" href="{SITE_URL}/">
 <meta property="og:locale" content="en_US"><meta property="og:type" content="website"><meta property="og:site_name" content="NPCBook">
-<meta property="og:title" content="{esc(SITE["name"])}"><meta property="og:description" content="{esc(SITE["description"])}"><meta property="og:url" content="{SITE_URL}/"><meta property="og:image" content="{SITE_URL}/favicon.svg"><meta property="og:image:alt" content="NPCBook logo">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{esc(SITE["name"])}"><meta name="twitter:description" content="{esc(SITE["description"])}"><meta name="twitter:image" content="{SITE_URL}/favicon.svg">
+<meta property="og:title" content="{esc(SITE["name"])}"><meta property="og:description" content="{esc(SITE["description"])}"><meta property="og:url" content="{SITE_URL}/"><meta property="og:image" content="{LOGO_URL}"><meta property="og:image:alt" content="NPCBook — BLSSNVJ21 logo"><meta property="og:image:type" content="image/svg+xml">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{esc(SITE["name"])}"><meta name="twitter:description" content="{esc(SITE["description"])}"><meta name="twitter:image" content="{LOGO_URL}">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="NPCBook"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="format-detection" content="telephone=no"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="color-scheme" content="dark light">\n<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/favicon.svg">
-<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":SITE["name"],"alternateName":["NPCBook","NPC OMNIVERSE",BRAND],"url":SITE_URL+"/","description":SITE["description"],"keywords":SITE["keywords"],"inLanguage":"en"},{"@type":"WebApplication","name":"NPCBook","applicationCategory":"EntertainmentApplication","operatingSystem":"Web","url":SITE_URL+"/","description":SITE["description"],"browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"ItemList","name":"NPCBook collections","numberOfItems":4,"itemListElement":[{"@type":"ListItem","position":1,"name":"NPCs"},{"@type":"ListItem","position":2,"name":"Worlds"},{"@type":"ListItem","position":3,"name":"Quests"},{"@type":"ListItem","position":4,"name":"Lore"}]}]},ensure_ascii=False)}</script>
+<meta name="format-detection" content="telephone=no"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="color-scheme" content="dark light">\n<link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="shortcut icon" href="/favicon.svg"><link rel="apple-touch-icon" href="/logo.svg"><meta name="msapplication-TileColor" content="#090d18">
+<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":[{"@type":"WebSite","name":SITE["name"],"alternateName":["NPCBook","NPC OMNIVERSE",BRAND],"url":SITE_URL+"/","description":SITE["description"],"keywords":SITE["keywords"],"inLanguage":"en"},{"@type":"Organization","name":"BLSSNVJ21","url":SITE_URL+"/","logo":LOGO_URL},{"@type":"WebApplication","name":"NPCBook","applicationCategory":"EntertainmentApplication","operatingSystem":"Web","url":SITE_URL+"/","description":SITE["description"],"browserRequirements":"Requires JavaScript","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}},{"@type":"ItemList","name":"NPCBook collections","numberOfItems":4,"itemListElement":[{"@type":"ListItem","position":1,"name":"NPCs"},{"@type":"ListItem","position":2,"name":"Worlds"},{"@type":"ListItem","position":3,"name":"Quests"},{"@type":"ListItem","position":4,"name":"Lore"}]}]},ensure_ascii=False)}</script>
 <title>{esc(SITE["name"])} | Fictional NPCs, Worlds, Quests & Lore</title>
 <style>
 :root{{--bg:#070a12;--text:#f5f7ff;--muted:#8e9ab1;--line:#202b40;--accent:#7c6cff;--accent2:#31d8ff}}*{{box-sizing:border-box}}html{{scroll-behavior:smooth}}body{{margin:0;background:radial-gradient(circle at 15% -10%,#30277755,transparent 32rem),radial-gradient(circle at 90% 5%,#087a9850,transparent 28rem),var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text)}}button,input{{font:inherit}}button{{cursor:pointer}}a{{color:inherit;text-decoration:none}}
@@ -143,7 +144,7 @@ def build_robots(): return f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitema
 def build_sitemap(): return f'''<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>{SITE_URL}/</loc></url></urlset>'''
 def build():
     OUTPUT_DIR.mkdir(parents=True,exist_ok=True)
-    files={"index.html":build_html(),"404.html":build_404(),"favicon.svg":build_favicon(),"manifest.webmanifest":build_manifest(),"sw.js":build_sw(),"robots.txt":build_robots(),"sitemap.xml":build_sitemap()}
+    files={"index.html":build_html(),"404.html":build_404(),"favicon.svg":build_favicon(),"logo.svg":build_favicon(),"manifest.webmanifest":build_manifest(),"sw.js":build_sw(),"robots.txt":build_robots(),"sitemap.xml":build_sitemap()}
     for name,data in files.items():(OUTPUT_DIR/name).write_text(data,encoding="utf-8")
     print("NPCBook build complete:",OUTPUT_DIR.resolve())
 if __name__=="__main__": build()
