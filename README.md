@@ -80,3 +80,4 @@ NPCBook is intentionally stateless. No user account or persistent application da
 A fictional/social-media/worldbuilding experiment. Add characters, invent worlds, create quests, and make the NPCs increasingly unnecessary.
 
 **NPCBook — the internet's least important important people.** 🤖
+\n\n## Branding & SEO\n\nNPCBook now uses **BLSSNVJ21** as its project/brand identifier, with a generated logo/favicon, canonical metadata, Open Graph and Twitter metadata, JSON-LD WebSite structured data, robots.txt and sitemap.xml. The generated site also includes an **Install App** PWA button where the browser supports the install prompt and responsive layouts for phone, tablet and desktop screens.\n
