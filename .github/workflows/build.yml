@@ -19,4 +19,15 @@ jobs:
       - name: Build static site
         run: python app.py
       - name: Validate generated files
-        run: test -f site/index.html && test -f site/manifest.webmanifest && test -f site/sw.js && test -f site/favicon.svg && test -f site/robots.txt && test -f site/sitemap.xml
+        run: >-
+          test -f site/index.html &&
+          test -f site/manifest.webmanifest &&
+          test -f site/sw.js &&
+          test -f site/favicon.svg &&
+          test -f site/robots.txt &&
+          test -f site/sitemap.xml &&
+          grep -q 'BLSSNVJ21' site/index.html &&
+          grep -q 'application/ld+json' site/index.html &&
+          grep -q 'rel="canonical"' site/index.html &&
+          grep -q 'id="installBtn"' site/index.html &&
+          grep -q 'Skip to explorer' site/index.html
