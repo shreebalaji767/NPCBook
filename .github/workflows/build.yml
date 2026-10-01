@@ -1,0 +1,22 @@
+name: Build NPCBook
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Validate generator
+        run: python -m py_compile app.py
+      - name: Build static site
+        run: python app.py
+      - name: Validate generated files
+        run: test -f site/index.html && test -f site/manifest.webmanifest && test -f site/sw.js && test -f site/favicon.svg && test -f site/robots.txt && test -f site/sitemap.xml
