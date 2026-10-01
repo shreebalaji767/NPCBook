@@ -96,34 +96,34 @@ def build_html():
 <footer>NPCBook · NPC OMNIVERSE · {BRAND}<br>Fictional characters, worlds, quests and lore.</footer>
 <div class="modal" id="modal" role="dialog" aria-modal="true" onclick="if(event.target===this)closeModal()"><div class="dialog"><div class="dialog-head"><div><div class="eyebrow" id="modalType"></div><h2 id="modalTitle"></h2></div><button class="icon-btn" onclick="closeModal()" aria-label="Close">×</button></div><p id="modalDescription"></p><div class="detail-row" id="modalDetails"></div><div class="tags" id="modalTags"></div><br><button class="btn primary" onclick="shareModal()">↗ Share</button></div></div><div class="toast" id="toast"></div>
 <script>
-const state={filter:'all',query:'',selected:null},search=document.getElementById('search'),cards=[...document.querySelectorAll('.card')];
-function apply(){let n=0;for(const c of cards){const ok=(state.filter==='all'||c.dataset.type===state.filter)&&(!state.query||c.dataset.search.toLowerCase().includes(state.query));c.classList.toggle('hidden',!ok);if(ok)n++}document.getElementById('resultCount').textContent=n+' result'+(n===1?'':'s');document.getElementById('empty').classList.toggle('show',n===0)}
-function setFilter(f){state.filter=f;document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));apply()}
-search.addEventListener('input',e=>{state.query=e.target.value.trim().toLowerCase();apply()});
-document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==search){e.preventDefault();search.focus()}if(e.key==='Escape')closeModal()});
-function clearSearch(){search.value='';state.query='';setFilter('all')}
-function openItem(card){const i=JSON.parse(card.dataset.item);state.selected=i;document.getElementById('modalType').textContent=card.dataset.type.toUpperCase();document.getElementById('modalTitle').textContent=i.name;document.getElementById('modalDescription').textContent=i.description||'';document.getElementById('modalDetails').innerHTML=Object.entries(i).filter(([k,v])=>!['id','name','description','tags'].includes(k)&&v).map(([k,v])=>'<div class="detail"><small>'+k+'</small><strong>'+String(Array.isArray(v)?v.join(', '):v)+'</strong></div>').join('');document.getElementById('modalTags').innerHTML=(i.tags||[]).map(t=>'<span class="tag">#'+t+'</span>').join('');document.getElementById('modal').classList.add('open');document.body.style.overflow='hidden'}
-function closeModal(){document.getElementById('modal').classList.remove('open');document.body.style.overflow=''}
-async function shareModal(){if(state.selected)shareData(state.selected.name,state.selected.description||location.href)}
-async function shareItem(c){const i=JSON.parse(c.dataset.item);shareData(i.name,i.description||location.href)}
-async function shareData(title,text){try{if(navigator.share)await navigator.share({title,text,url:location.href});else{await navigator.clipboard.writeText(location.href);toast('Link copied')}}catch(_){}}
-function randomDiscovery(){const p=cards.filter(c=>!c.classList.contains('hidden')),pool=p.length?p:cards,t=pool[Math.floor(Math.random()*pool.length)];t.scrollIntoView({behavior:'smooth',block:'center'});openItem(t)}
-function screenshotCard(card){const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+slug(i.name)+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}},'image/png')}
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+const state={{filter:'all',query:'',selected:null}},search=document.getElementById('search'),cards=[...document.querySelectorAll('.card')];
+function apply(){{let n=0;for(const c of cards){{const ok=(state.filter==='all'||c.dataset.type===state.filter)&&(!state.query||c.dataset.search.toLowerCase().includes(state.query));c.classList.toggle('hidden',!ok);if(ok)n++}}document.getElementById('resultCount').textContent=n+' result'+(n===1?'':'s');document.getElementById('empty').classList.toggle('show',n===0)}}
+function setFilter(f){{state.filter=f;document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));apply()}}
+search.addEventListener('input',e=>{{state.query=e.target.value.trim().toLowerCase();apply()}});
+document.addEventListener('keydown',e=>{{if(e.key==='/'&&document.activeElement!==search){{e.preventDefault();search.focus()}}if(e.key==='Escape')closeModal()}});
+function clearSearch(){{search.value='';state.query='';setFilter('all')}}
+function openItem(card){{const i=JSON.parse(card.dataset.item);state.selected=i;document.getElementById('modalType').textContent=card.dataset.type.toUpperCase();document.getElementById('modalTitle').textContent=i.name;document.getElementById('modalDescription').textContent=i.description||'';document.getElementById('modalDetails').innerHTML=Object.entries(i).filter(([k,v])=>!['id','name','description','tags'].includes(k)&&v).map(([k,v])=>'<div class="detail"><small>'+k+'</small><strong>'+String(Array.isArray(v)?v.join(', '):v)+'</strong></div>').join('');document.getElementById('modalTags').innerHTML=(i.tags||[]).map(t=>'<span class="tag">#'+t+'</span>').join('');document.getElementById('modal').classList.add('open');document.body.style.overflow='hidden'}}
+function closeModal(){{document.getElementById('modal').classList.remove('open');document.body.style.overflow=''}}
+async function shareModal(){{if(state.selected)shareData(state.selected.name,state.selected.description||location.href)}}
+async function shareItem(c){{const i=JSON.parse(c.dataset.item);shareData(i.name,i.description||location.href)}}
+async function shareData(title,text){{try{{if(navigator.share)await navigator.share({{title,text,url:location.href}});else{{await navigator.clipboard.writeText(location.href);toast('Link copied')}}}}catch(_){{}}}}
+function randomDiscovery(){{const p=cards.filter(c=>!c.classList.contains('hidden')),pool=p.length?p:cards,t=pool[Math.floor(Math.random()*pool.length)];t.scrollIntoView({{behavior:'smooth',block:'center'}});openItem(t)}}
+function screenshotCard(card){{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {{BRAND}}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+slug(i.name)+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}}}},'image/png')}}
+function toast(m){{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
 let themeMode='dark';
-function toggleTheme(){
+function toggleTheme(){{
   themeMode=themeMode==='dark'?'light':'dark';
   const root=document.documentElement,btn=document.getElementById('themeBtn');
-  if(themeMode==='light'){
+  if(themeMode==='light'){{
     root.style.setProperty('--bg','#f5f7fb');root.style.setProperty('--text','#111827');root.style.setProperty('--muted','#5f6b80');root.style.setProperty('--line','#dbe1ec');
     btn.textContent='☾';btn.setAttribute('aria-label','Switch to dark theme');btn.title='Switch to dark theme';
-  }else{
+  }}else{{
     root.style.setProperty('--bg','#070a12');root.style.setProperty('--text','#f5f7ff');root.style.setProperty('--muted','#8e9ab1');root.style.setProperty('--line','#202b40');
     btn.textContent='☼';btn.setAttribute('aria-label','Switch to light theme');btn.title='Switch to light theme';
-  }
-}
-let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;document.getElementById('installBtn').classList.add('show')});document.getElementById('installBtn').addEventListener('click',async()=>{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;document.getElementById('installBtn').classList.remove('show')});
-window.addEventListener('online',()=>toast('Back online'));window.addEventListener('offline',()=>toast('Offline mode: cached content available'));\nif('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));apply();
+  }}
+}}
+let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{{e.preventDefault();deferredInstall=e;document.getElementById('installBtn').classList.add('show')}});document.getElementById('installBtn').addEventListener('click',async()=>{{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;document.getElementById('installBtn').classList.remove('show')}});
+window.addEventListener('online',()=>toast('Back online'));window.addEventListener('offline',()=>toast('Offline mode: cached content available'));\nif('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{{}}));apply();
 </script></body></html>'''
 
 def build_manifest():
