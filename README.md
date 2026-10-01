@@ -70,6 +70,11 @@ GitHub Actions automatically:
 1. Runs Python syntax validation.
 2. Builds the static site.
 3. Verifies the generated PWA/SEO assets exist.
+4. Checks core SEO, PWA and accessibility hooks in the generated HTML.
+
+## ♿ Accessibility & UX
+
+The explorer includes a skip link, labeled search control, keyboard shortcuts, Escape-to-close dialogs, live result updates, reduced-motion support, responsive layouts, offline/online feedback and a reversible light/dark theme.
 
 ## 🔐 Privacy
 
