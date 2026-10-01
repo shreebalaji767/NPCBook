@@ -39,7 +39,7 @@ s=s.replace('<style id="npcbook-feed-vnext">.feed-banner{align-items:center}.fee
 
 js=r'''
 <script id="npcbook-feed-engine">
-(()=>{window.addEventListener("error",e=>{if(e.error)console.error("NPCBook runtime error:",e.error);});window.addEventListener("unhandledrejection",e=>{console.error("NPCBook promise error:",e.reason);e.preventDefault();});const K="npcbook-feed-v15",grid=document.getElementById("resultsGrid"),search=document.getElementById("search"),cards=[...document.querySelectorAll(".card")];if(!grid||!cards.length)return;
+(()=>{window.addEventListener("error",e=>{if(e.error)console.error("NPCBook runtime error:",e.error);});window.addEventListener("unhandledrejection",e=>{console.error("NPCBook promise error:",e.reason);});const K="npcbook-feed-v15",grid=document.getElementById("resultsGrid"),search=document.getElementById("search"),cards=[...document.querySelectorAll(".card")];if(!grid||!cards.length)return;
 const read=k=>{try{return JSON.parse(localStorage.getItem(K+"-"+k)||"null")}catch(_){return null}},write=(k,v)=>localStorage.setItem(K+"-"+k,JSON.stringify(v));
 let seen=new Set(read("seen")||[]),filter=read("filter")||"all",query=read("query")||"",mode=read("mode")||"for-you";
 const id=c=>{try{return JSON.parse(c.dataset.item).id}catch(_){return c.dataset.item}};
