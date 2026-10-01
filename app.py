@@ -1,7 +1,7 @@
 from pathlib import Path
 import html, json, re
 
-OUTPUT_DIR = Path("site")
+OUTPUT_DIR = Path(".")
 SITE_URL = "https://npcbook.onrender.com"
 BRAND = "BLSSNVJ21"
 LOGO_URL = f"{SITE_URL}/logo.svg"
