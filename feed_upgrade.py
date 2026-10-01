@@ -39,7 +39,7 @@ s=s.replace('</head>',css+'</head>',1)
 
 js=r'''
 <script id="npcbook-feed-engine">
-(()=>{const K="npcbook-feed-v12",grid=document.getElementById("resultsGrid"),search=document.getElementById("search"),cards=[...document.querySelectorAll(".card")];if(!grid||!cards.length)return;
+(()=>{window.addEventListener("error",e=>{if(e.error)console.error("NPCBook runtime error:",e.error);});window.addEventListener("unhandledrejection",e=>{console.error("NPCBook promise error:",e.reason);e.preventDefault();});const K="npcbook-feed-v14",grid=document.getElementById("resultsGrid"),search=document.getElementById("search"),cards=[...document.querySelectorAll(".card")];if(!grid||!cards.length)return;
 const read=k=>{try{return JSON.parse(localStorage.getItem(K+"-"+k)||"null")}catch(_){return null}},write=(k,v)=>localStorage.setItem(K+"-"+k,JSON.stringify(v));
 let seen=new Set(read("seen")||[]),filter=read("filter")||"all",query=read("query")||"";
 const id=c=>{try{return JSON.parse(c.dataset.item).id}catch(_){return c.dataset.item}};
