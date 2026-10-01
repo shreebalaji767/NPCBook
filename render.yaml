@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: npcbook
+    runtime: static
+    buildCommand: python app.py
+    staticPublishPath: ./site
