@@ -131,7 +131,7 @@ def build_manifest():
     return json.dumps({"name":SITE["name"],"short_name":"NPCBook","description":SITE["description"],"start_url":"/","scope":"/","display":"standalone","orientation":"any","background_color":"#070a12","theme_color":"#090d18","categories":["entertainment","books","games"],"lang":"en","icons":[{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]},indent=2)
 
 def build_sw():
-    return """const CACHE='npcbook-v4';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/robots.txt','/sitemap.xml','/404.html'];
+    return """const CACHE='npcbook-v4';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/logo.svg','/robots.txt','/sitemap.xml','/404.html'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/404.html'))))});
