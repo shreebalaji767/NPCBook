@@ -3,7 +3,7 @@ services:
     name: npcbook
     runtime: static
     buildCommand: python app.py
-    staticPublishPath: ./site
+    staticPublishPath: .
     autoDeployTrigger: commit
     headers:
       - path: /*
