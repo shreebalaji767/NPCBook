@@ -13,7 +13,7 @@ jobs:
         with:
           python-version: "3.x"
       - name: Build site
-        run: python app.py
+        run: python app.py && python feed_upgrade.py
       - name: Check generated JavaScript
         run: |
           python - <<'PY'
