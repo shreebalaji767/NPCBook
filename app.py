@@ -93,7 +93,7 @@ def build_html():
 @media(max-width:900px){{.hero{{grid-template-columns:1fr}}.orb{{min-height:220px}}.grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}.stats{{grid-template-columns:repeat(2,1fr)}}}}@media(max-width:620px){{.nav{{padding:10px 13px;gap:8px}}.brand span:last-child{{display:none}}.actions .btn{{min-height:40px}}.search{{order:3;flex-basis:100%;max-width:none}}.hero{{padding:48px 16px 25px}}.hero h1{{font-size:47px;letter-spacing:-2.5px}}.main,.stats{{padding-left:16px;padding-right:16px}}.grid{{grid-template-columns:1fr}}.stats{{gap:8px}}.stat{{padding:13px}}.detail-row{{grid-template-columns:1fr}}}}@media(prefers-reduced-motion:reduce){{*{{scroll-behavior:auto!important;animation:none!important;transition:none!important}}}}
 </style></head><body>
 <a class="sr-only skip-link" href="#explore">Skip to content</a><header class="topbar"><nav class="nav"><a class="brand" href="/" aria-label="NPCBook home"><span class="logo">🤖</span><span>NPC OMNIVERSE · {BRAND}</span></a><div class="search"><label class="sr-only" for="search">Search NPCBook</label><input id="search" type="search" placeholder="Search NPCs, worlds, quests, lore…" autocomplete="off" enterkeyhint="search" spellcheck="false" aria-controls="resultsGrid" aria-describedby="resultCount"><span class="kbd">/</span></div><div class="actions"><button class="btn" type="button" onclick="openHistory()">🗃️ Library</button><button class="btn primary install show" id="installBtn" type="button">📲 Install App</button><button class="icon-btn" id="themeBtn" type="button" onclick="toggleTheme()" aria-label="Switch to light theme" title="Switch theme">☼</button></div></nav></header>
-<section class="hero"><div><div class="eyebrow">NPCBOOK · {BRAND}</div><h1>The fictional<br><span class="gradient">NPC universe.</span></h1><p>{esc(SITE["tagline"])} Discover characters, worlds, quests and lore in a fast, mobile-first encyclopedia that works across phones, tablets and desktops.</p><div class="hero-buttons"><a class="btn primary" href="#explore">Explore NPCBook</a><button class="btn" onclick="randomDiscovery()">🎲 Random discovery</button><button class="btn" onclick="newUniverse()">🌌 New Universe</button><button class="btn ghost" onclick="exportUniverse()">⬇ Export Universe</button><label class="btn ghost" for="importUniverse" style="display:inline-flex;align-items:center">⬆ Import Universe</label><input class="sr-only" id="importUniverse" type="file" accept="application/json"></div></div><div class="orb"><div class="orb-core">🤖</div></div></section>
+<section class="hero"><div><div class="eyebrow">NPCBOOK · {BRAND}</div><h1>The fictional<br><span class="gradient">NPC universe.</span></h1><p>{esc(SITE["tagline"])} Discover characters, worlds, quests and lore in a fast, mobile-first encyclopedia that works across phones, tablets and desktops.</p><div class="hero-buttons"><a class="btn primary" href="#explore">Explore NPCBook</a><button class="btn" onclick="randomDiscovery()">🎲 Random discovery</button><button class="btn" onclick="newUniverse()">🌌 New Universe</button><button class="btn primary" onclick="saveUniverse()">💾 Save Universe</button><button class="btn ghost" onclick="exportUniverse()">⬇ Export Universe</button><label class="btn ghost" for="importUniverse" style="display:inline-flex;align-items:center">⬆ Import Universe</label><input class="sr-only" id="importUniverse" type="file" accept="application/json"></div></div><div class="orb"><div class="orb-core">🤖</div></div></section>
 <section class="stats" aria-label="NPCBook collection statistics">{stat_html}</section>
 <noscript><div style="max-width:1250px;margin:20px auto;padding:16px;border:1px solid #202b40;border-radius:14px">JavaScript is required for interactive NPCBook search, filters, sharing and PWA installation.</div></noscript><main class="main" id="explore"><div class="toolbar"><div class="filters"><button class="filter active" data-filter="all" onclick="setFilter('all')">✨ All</button>{categories}</div><span class="result-count" id="resultCount"></span></div><section class="grid" id="resultsGrid" aria-live="polite">{"".join(cards)}</section><div class="empty" role="status" id="empty"><h2>Nothing found.</h2><p>Even the mysterious pigeon council has no record of that search.</p><button class="btn" onclick="clearSearch()">Clear search</button></div></main>
 <footer><strong>NPCBook</strong> · NPC OMNIVERSE · {BRAND}<br>Fictional characters, worlds, quests and lore.<br><span>Fast • Responsive • Installable • Offline-ready</span></footer>
@@ -134,7 +134,7 @@ function makeUniverse(){{
     signature=JSON.stringify({{worldName,worldType,faction,biome,npcs:npcs.map(x=>x.name),quests:quests.map(x=>x.name+x.description),posts:posts.map(x=>x.description)}});
     u={{worldName,worldType,faction,biome,npcs,worlds,quests,posts}}; tries++;
   }}while(history.includes(signature)&&tries<100);
-  rememberUniverse(signature); return u;
+  return u;
 }}
 function makeCard(item,type,icon,label){{
   const card=document.createElement('article');card.className='card';card.dataset.type=type;card.dataset.search=Object.values(item).join(' ').toLowerCase();card.dataset.item=JSON.stringify(item);
@@ -149,8 +149,8 @@ function renderUniverse(provided,archiveIt=false){{
   for(const [type,icon,label,list] of data)for(const item of list){{const c=makeCard(item,type,icon,label);grid.appendChild(c);cards.push(c)}}
   const hero=document.querySelector('.hero .eyebrow');if(hero)hero.textContent=`NPCBOOK · ${{u.worldName}} · NEW UNIVERSE`;
   const title=document.querySelector('.hero h1');if(title)title.innerHTML=`The fictional<br><span class="gradient">${{esc(u.worldName)}}.</span>`;
-  saveCurrent(u);if(archiveIt)saveArchive(u);syncSaveButtons();
-  const desc=document.querySelector('.hero p');if(desc)desc.textContent=`${{u.worldType}} · ${{u.faction}} · ${{u.biome}}. Every refresh creates a different universe; previously generated universes are remembered locally so they are not repeated.`;
+  syncSaveButtons();
+  const desc=document.querySelector('.hero p');if(desc)desc.textContent=`${{u.worldType}} · ${{u.faction}} · ${{u.biome}}. This universe stays in memory until you explicitly save it.`;
 }}
 search.addEventListener('input',e=>{{state.query=e.target.value.trim().toLowerCase();apply()}});
 document.addEventListener('keydown',e=>{{if(e.key==='/'&&document.activeElement!==search){{e.preventDefault();search.focus()}}if(e.key==='Escape')closeModal()}});
@@ -166,16 +166,28 @@ const ARCHIVE_KEY='npcbook-universe-archive-v1',SAVED_KEY='npcbook-saved-items-v
 function readStore(key,fallback){{try{{const v=JSON.parse(localStorage.getItem(key)||'null');return v===null?fallback:v}}catch(_){{return fallback}}}}
 function writeStore(key,value){{try{{localStorage.setItem(key,JSON.stringify(value));return true}}catch(_){{toast('Local storage is full');return false}}}}
 function saveArchive(u){{const archive=readStore(ARCHIVE_KEY,[]);archive.unshift({{id:Date.now().toString(36),name:u.worldName,type:u.worldType,faction:u.faction,universe:u}});writeStore(ARCHIVE_KEY,archive.slice(0,12))}}
-function saveCurrent(u){{writeStore(CURRENT_KEY,u)}}
+function saveCurrent(u){{return u}}
 function savedItems(){{return readStore(SAVED_KEY,[])}}
 function isSaved(item){{return savedItems().some(x=>x.id===item.id&&x.name===item.name)}}
 function toggleSaved(card){{const item=JSON.parse(card.dataset.item),list=savedItems(),idx=list.findIndex(x=>x.id===item.id&&x.name===item.name);if(idx>=0){{list.splice(idx,1);toast('Removed from saved')}}else{{list.unshift(item);toast('Saved to your library')}}writeStore(SAVED_KEY,list.slice(0,100));syncSaveButtons()}}
 function saveSelected(){{if(!state.selected)return;const fake=document.createElement('article');fake.dataset.item=JSON.stringify(state.selected);toggleSaved(fake)}}
+function saveUniverse(){{
+  const cardsNow=[...document.querySelectorAll('#resultsGrid .card')];
+  if(!cardsNow.length){{toast('Nothing to save');return}}
+  const u={{worldName:'Universe',worldType:'',faction:'',biome:'',npcs:[],worlds:[],quests:[],posts:[]}};
+  const title=document.querySelector('.hero h1 .gradient')?.textContent||'Universe';
+  u.worldName=title.replace(/\.$/,'');
+  const heroText=document.querySelector('.hero p')?.textContent||'';
+  const parts=heroText.split(' · ');
+  u.worldType=parts[0]||'';u.faction=parts[1]||'';u.biome=(parts[2]||'').replace(/\.$/,'');
+  for(const c of cardsNow){{const type=c.dataset.type;if(u[type])u[type].push(JSON.parse(c.dataset.item))}}
+  writeStore(CURRENT_KEY,u);saveArchive(u);toast('Universe saved to your Library');
+}}
 function syncSaveButtons(){{cards.forEach(c=>{{const b=c.querySelector('.x-save');if(!b)return;const i=JSON.parse(c.dataset.item);b.textContent=isSaved(i)?'★':'☆';b.title=isSaved(i)?'Remove saved item':'Save item'}})}}
 function openHistory(){{const archive=readStore(ARCHIVE_KEY,[]),saved=savedItems();const items=archive.map((a,i)=>'<div class="detail"><small>Universe '+(i+1)+'</small><strong>'+esc(a.name)+'</strong><span style="display:block;color:var(--muted);margin-top:5px">'+esc(a.type)+' · '+esc(a.faction)+'</span><button class="btn small x-load-archive" data-archive-id="'+esc(a.id)+'" style="margin-top:8px">Load</button></div>').join('');document.getElementById('modalType').textContent='LOCAL LIBRARY';document.getElementById('modalTitle').textContent=archive.length+' universes · '+saved.length+' saved items';document.getElementById('modalDescription').textContent='Your generated universes and saved discoveries live only in this browser.';document.getElementById('modalDetails').innerHTML=items||'<div class="detail"><strong>No archived universes yet.</strong><span style="display:block;color:var(--muted);margin-top:5px">Generate a universe and it will appear here.</span></div>';document.getElementById('modalTags').innerHTML='<button class="btn small ghost" onclick="clearLibrary()">Clear local library</button>';document.getElementById('modal').classList.add('open');document.body.style.overflow='hidden'}}
 document.getElementById('modalDetails').addEventListener('click',e=>{{const b=e.target.closest('.x-load-archive');if(b)loadArchived(b.dataset.archiveId)}})
 function loadArchived(id){{const a=readStore(ARCHIVE_KEY,[]).find(x=>x.id===id);if(!a)return;renderUniverse(a.universe);closeModal();toast('Loaded '+a.name)}}
-function clearLibrary(){{if(confirm('Clear saved items and universe history from this browser?')){{localStorage.removeItem(ARCHIVE_KEY);localStorage.removeItem(SAVED_KEY);localStorage.removeItem(WORLD_HISTORY_KEY);toast('Local library cleared');closeModal()}}}}
+function clearLibrary(){{if(confirm('Clear saved items and universe history from this browser?')){{localStorage.removeItem(ARCHIVE_KEY);localStorage.removeItem(SAVED_KEY);toast('Local library cleared');closeModal()}}}}
 function exportUniverse(){{const u=readStore(CURRENT_KEY,null);if(!u){{toast('Generate a universe first');return}}const blob=new Blob([JSON.stringify(u,null,2)],{{type:'application/json'}}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='npcbook-'+slugify(u.worldName)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Universe exported')}}
 function slugify(v){{return String(v||'universe').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}}
 document.getElementById('importUniverse').addEventListener('change',function(e){{
@@ -185,7 +197,7 @@ document.getElementById('importUniverse').addEventListener('change',function(e){
     try{{
       const u=JSON.parse(reader.result);
       if(!u.worldName||!Array.isArray(u.npcs)||!Array.isArray(u.quests))throw new Error('invalid');
-      writeStore(CURRENT_KEY,u);renderUniverse(u,true);apply();toast('Universe imported');
+      renderUniverse(u,false);apply();toast('Universe imported — not saved');
     }}catch(_){{
       toast('Invalid NPCBook universe file');
     }}
@@ -228,7 +240,7 @@ document.addEventListener('keydown',e=>{{
 applyTheme();
 let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{{e.preventDefault();deferredInstall=e;document.getElementById('installBtn').classList.add('show')}});document.getElementById('installBtn').addEventListener('click',async()=>{{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;document.getElementById('installBtn').classList.remove('show')}});
 window.addEventListener('online',()=>toast('Back online'));window.addEventListener('offline',()=>toast('Offline mode: cached content available'));window.addEventListener('appinstalled',()=>toast('NPCBook installed successfully'));
-renderUniverse(null,true);apply();
+renderUniverse(null,false);apply();
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').then(reg=>{{if(reg.waiting)toast('A newer NPCBook version is ready');reg.addEventListener('updatefound',()=>{{const w=reg.installing;if(w)w.addEventListener('statechange',()=>{{if(w.state==='installed'&&navigator.serviceWorker.controller)toast('NPCBook updated — refresh for the latest version')}})}})}}).catch(()=>{{}}));</script></body></html>'''
 
 def build_manifest():
