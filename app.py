@@ -176,7 +176,21 @@ function loadArchived(id){{const a=readStore(ARCHIVE_KEY,[]).find(x=>x.id===id);
 function clearLibrary(){{if(confirm('Clear saved items and universe history from this browser?')){{localStorage.removeItem(ARCHIVE_KEY);localStorage.removeItem(SAVED_KEY);localStorage.removeItem(WORLD_HISTORY_KEY);toast('Local library cleared');closeModal()}}}}
 function exportUniverse(){{const u=readStore(CURRENT_KEY,null);if(!u){{toast('Generate a universe first');return}}const blob=new Blob([JSON.stringify(u,null,2)],{{type:'application/json'}}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='npcbook-'+slugify(u.worldName)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);toast('Universe exported')}}
 function slugify(v){{return String(v||'universe').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}}
-document.getElementById('importUniverse').addEventListener('change',e=>{{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{{try{{const u=JSON.parse(reader.result);if(!u.worldName||!Array.isArray(u.npcs)||!Array.isArray(u.quests))throw new Error();writeStore(CURRENT_KEY,u);saveArchive(u);renderUniverse(u);apply();toast('Universe imported')}}catch(_){{toast('Invalid NPCBook universe file')}}e.target.value=''}};reader.readAsText(file)}});
+document.getElementById('importUniverse').addEventListener('change',function(e){{
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){{
+    try{{
+      const u=JSON.parse(reader.result);
+      if(!u.worldName||!Array.isArray(u.npcs)||!Array.isArray(u.quests))throw new Error('invalid');
+      writeStore(CURRENT_KEY,u);saveArchive(u);renderUniverse(u);apply();toast('Universe imported');
+    }}catch(_){{
+      toast('Invalid NPCBook universe file');
+    }}
+    e.target.value='';
+  }};
+  reader.readAsText(file);
+}});
 
 function screenshotCard(card){{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+String(i.name||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}},'image/png')}}
 function toast(m){{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
@@ -201,7 +215,7 @@ def build_manifest():
     return json.dumps({"name":SITE["name"],"short_name":"NPCBook","id":"/","description":SITE["description"],"start_url":"/","scope":"/","display":"standalone","display_override":["window-controls-overlay","standalone","minimal-ui"],"orientation":"any","background_color":"#070a12","theme_color":"#090d18","categories":["entertainment","books","games"],"lang":"en","shortcuts":[{"name":"Explore NPCs","short_name":"NPCs","url":"/#explore"},{"name":"Random discovery","short_name":"Random","url":"/#explore"}],"icons":[{"src":"/favicon.svg?v=10","sizes":"any","type":"image/svg+xml","purpose":"any maskable"},{"src":"/favicon.ico?v=10","sizes":"32x32","type":"image/x-icon","purpose":"any"}]},indent=2)
 
 def build_sw():
-    return """const CACHE='npcbook-v15';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/favicon.ico','/logo.svg','/robots.txt','/sitemap.xml','/404.html'];
+    return """const CACHE='npcbook-v16';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/favicon.ico','/logo.svg','/robots.txt','/sitemap.xml','/404.html'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;let u;try{u=new URL(e.request.url)}catch(_){return}if(u.protocol!=='http:'&&u.protocol!=='https:')return;if(u.origin!==self.location.origin)return;e.respondWith(fetch(e.request).then(r=>{if(r.ok&&e.request.cache!=='no-store'){return caches.open(CACHE).then(c=>c.put(e.request,r.clone()).then(()=>r).catch(()=>r))}return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/404.html'))))});
