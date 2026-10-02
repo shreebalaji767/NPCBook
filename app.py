@@ -197,8 +197,18 @@ document.getElementById('importUniverse').addEventListener('change',function(e){
 function screenshotCard(card){{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+String(i.name||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}},'image/png')}}
 function toast(m){{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
 let themeMode=localStorage.getItem(THEME_KEY)==='light'?'light':'dark';
+function applyTheme(){{
+  const root=document.documentElement,btn=document.getElementById('themeBtn');
+  if(themeMode==='light'){{
+    root.style.setProperty('--bg','#f5f7fb');root.style.setProperty('--text','#111827');root.style.setProperty('--muted','#5f6b80');root.style.setProperty('--line','#dbe1ec');
+    btn.textContent='☾';btn.setAttribute('aria-label','Switch to dark theme');btn.title='Switch to dark theme';
+  }}else{{
+    root.style.setProperty('--bg','#070a12');root.style.setProperty('--text','#f5f7ff');root.style.setProperty('--muted','#8e9ab1');root.style.setProperty('--line','#202b40');
+    btn.textContent='☼';btn.setAttribute('aria-label','Switch to light theme');btn.title='Switch to light theme';
+  }}
+}}
 function toggleTheme(){{
-  themeMode=themeMode==='dark'?'light':'dark';localStorage.setItem(THEME_KEY,themeMode);
+  themeMode=themeMode==='dark'?'light':'dark';localStorage.setItem(THEME_KEY,themeMode);applyTheme();
   const root=document.documentElement,btn=document.getElementById('themeBtn');
   if(themeMode==='light'){{
     root.style.setProperty('--bg','#f5f7fb');root.style.setProperty('--text','#111827');root.style.setProperty('--muted','#5f6b80');root.style.setProperty('--line','#dbe1ec');
@@ -211,7 +221,7 @@ function toggleTheme(){{
 document.querySelector('.filters').insertAdjacentHTML('beforeend','<button class="filter" data-filter="saved" onclick="setFilter(\'saved\')">⭐ Saved</button>');
 function cycleFilter(){{const fs=['all','npcs','worlds','quests','posts','saved'],i=fs.indexOf(state.filter);setFilter(fs[(i+1)%fs.length])}}
 document.addEventListener('keydown',e=>{{if(e.key.toLowerCase()==='n'&&!e.ctrlKey&&!e.metaKey){{e.preventDefault();newUniverse()}}if(e.key.toLowerCase()==='s'&&!e.ctrlKey&&!e.metaKey&&document.activeElement!==search){{e.preventDefault();setFilter('saved')}}if(e.key.toLowerCase()==='f'&&!e.ctrlKey&&!e.metaKey&&document.activeElement!==search){{e.preventDefault();search.focus()}}if(e.key.toLowerCase()==='c'&&!e.ctrlKey&&!e.metaKey&&document.activeElement!==search){{e.preventDefault();cycleFilter()}}}});
-if(themeMode==='light')toggleTheme();
+applyTheme();
 let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{{e.preventDefault();deferredInstall=e;document.getElementById('installBtn').classList.add('show')}});document.getElementById('installBtn').addEventListener('click',async()=>{{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;document.getElementById('installBtn').classList.remove('show')}});
 window.addEventListener('online',()=>toast('Back online'));window.addEventListener('offline',()=>toast('Offline mode: cached content available'));window.addEventListener('appinstalled',()=>toast('NPCBook installed successfully'));
 renderUniverse(null,true);apply();
