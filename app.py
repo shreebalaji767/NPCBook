@@ -162,7 +162,7 @@ async function shareItem(c){{const i=JSON.parse(c.dataset.item);shareData(i.name
 async function shareData(title,text){{try{{if(navigator.share)await navigator.share({{title,text,url:location.href}});else{{await navigator.clipboard.writeText(location.href);toast('Link copied')}}}}catch(_){{}}}}
 function randomDiscovery(){{const p=cards.filter(c=>!c.classList.contains('hidden')),pool=p.length?p:cards,t=pool[Math.floor(Math.random()*pool.length)];t.scrollIntoView({{behavior:'smooth',block:'center'}});openItem(t)}}
 function newUniverse(){{location.reload()}}
-const ARCHIVE_KEY='npcbook-universe-archive-v1',SAVED_KEY='npcbook-saved-items-v1',CURRENT_KEY='npcbook-current-universe-v1',THEME_KEY='npcbook-theme-v1';
+const ARCHIVE_KEY='npcbook-universe-archive-v1',SAVED_KEY='npcbook-saved-items-v1',CURRENT_KEY='npcbook-current-universe-v1';
 function readStore(key,fallback){{try{{const v=JSON.parse(localStorage.getItem(key)||'null');return v===null?fallback:v}}catch(_){{return fallback}}}}
 function writeStore(key,value){{try{{localStorage.setItem(key,JSON.stringify(value));return true}}catch(_){{toast('Local storage is full');return false}}}}
 function saveArchive(u){{const archive=readStore(ARCHIVE_KEY,[]);archive.unshift({{id:Date.now().toString(36),name:u.worldName,type:u.worldType,faction:u.faction,universe:u}});writeStore(ARCHIVE_KEY,archive.slice(0,12))}}
