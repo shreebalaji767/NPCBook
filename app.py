@@ -117,8 +117,8 @@ const LORE_HOOKS=['A door appeared where no wall exists.','Every shadow in the c
 const FACTIONS=['The Glass Parliament','The Ember Choir','The Null Cartographers','The Midnight Guild','The Seven Lanterns','The Copper Covenant','The Quiet Legion','The Astral Market','The Hollow Court','The Last Navigators'];
 function esc(v){{return String(v??'').replace(/[&<>\"']/g,m=>({{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}}[m]))}}\nfunction pick(a){{return a[Math.floor(Math.random()*a.length)]}}
 function sample(a,n){{return [...a].sort(()=>Math.random()-.5).slice(0,n)}}
-function safeHistory(){{try{{const x=JSON.parse(localStorage.getItem(WORLD_HISTORY_KEY)||'[]');return Array.isArray(x)?x:[]}}catch(_){{return[]}}}
-function rememberUniverse(signature){{try{{const h=safeHistory();h.push(signature);localStorage.setItem(WORLD_HISTORY_KEY,JSON.stringify(h));return h.length}}catch(_){{return 0}}}
+function safeHistory(){{try{{const x=JSON.parse(localStorage.getItem(WORLD_HISTORY_KEY)||'[]');return Array.isArray(x)?x:[]}}catch(_){{return[]}}
+function rememberUniverse(signature){{try{{const h=safeHistory();h.push(signature);localStorage.setItem(WORLD_HISTORY_KEY,JSON.stringify(h));return h.length}}catch(_){{return 0}}
 function makeUniverse(){{
   const history=safeHistory(); let u,signature,tries=0;
   do{{
@@ -150,18 +150,18 @@ function renderUniverse(){{
   const title=document.querySelector('.hero h1');if(title)title.innerHTML=`The fictional<br><span class="gradient">${{esc(u.worldName)}}.</span>`;
   const desc=document.querySelector('.hero p');if(desc)desc.textContent=`${{u.worldType}} · ${{u.faction}} · ${{u.biome}}. Every refresh creates a different universe; previously generated universes are remembered locally so they are not repeated.`;
 }}
-search.addEventListener('input',e=>{{{state.query=e.target.value.trim().toLowerCase();apply()}}});
-document.addEventListener('keydown',e=>{{{if(e.key==='/'&&document.activeElement!==search){{{e.preventDefault();search.focus()}}}if(e.key==='Escape')closeModal()}}});
-function clearSearch(){{{search.value='';state.query='';setFilter('all')}}}
-function openItem(card){{{const i=JSON.parse(card.dataset.item);state.selected=i;document.getElementById('modalType').textContent=card.dataset.type.toUpperCase();document.getElementById('modalTitle').textContent=i.name;document.getElementById('modalDescription').textContent=i.description||'';document.getElementById('modalDetails').innerHTML=Object.entries(i).filter(([k,v])=>!['id','name','description','tags'].includes(k)&&v).map(([k,v])=>'<div class="detail"><small>'+k+'</small><strong>'+String(Array.isArray(v)?v.join(', '):v)+'</strong></div>').join('');document.getElementById('modalTags').innerHTML=(i.tags||[]).map(t=>'<span class="tag">#'+t+'</span>').join('');document.getElementById('modal').classList.add('open');document.body.style.overflow='hidden'}}}
-function closeModal(){{{document.getElementById('modal').classList.remove('open');document.body.style.overflow=''}}}
-async function shareModal(){{{if(state.selected)shareData(state.selected.name,state.selected.description||location.href)}}}
-async function shareItem(c){{{const i=JSON.parse(c.dataset.item);shareData(i.name,i.description||location.href)}}}
-async function shareData(title,text){{{try{{{if(navigator.share)await navigator.share({{{title,text,url:location.href}}});else{{{await navigator.clipboard.writeText(location.href);toast('Link copied')}}}}}catch(_){{{}}}}}
-function randomDiscovery(){{{const p=cards.filter(c=>!c.classList.contains('hidden')),pool=p.length?p:cards,t=pool[Math.floor(Math.random()*pool.length)];t.scrollIntoView({{{behavior:'smooth',block:'center'}}});openItem(t)}}}
-function newUniverse(){{{location.reload()}}}
-function screenshotCard(card){{{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+String(i.name||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}}},'image/png')}}}
-function toast(m){{{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}}
+search.addEventListener('input',e=>{{state.query=e.target.value.trim().toLowerCase();apply()}});
+document.addEventListener('keydown',e=>{{if(e.key==='/'&&document.activeElement!==search){{e.preventDefault();search.focus()}}if(e.key==='Escape')closeModal()}});
+function clearSearch(){{search.value='';state.query='';setFilter('all')}}
+function openItem(card){{const i=JSON.parse(card.dataset.item);state.selected=i;document.getElementById('modalType').textContent=card.dataset.type.toUpperCase();document.getElementById('modalTitle').textContent=i.name;document.getElementById('modalDescription').textContent=i.description||'';document.getElementById('modalDetails').innerHTML=Object.entries(i).filter(([k,v])=>!['id','name','description','tags'].includes(k)&&v).map(([k,v])=>'<div class="detail"><small>'+k+'</small><strong>'+String(Array.isArray(v)?v.join(', '):v)+'</strong></div>').join('');document.getElementById('modalTags').innerHTML=(i.tags||[]).map(t=>'<span class="tag">#'+t+'</span>').join('');document.getElementById('modal').classList.add('open');document.body.style.overflow='hidden'}}
+function closeModal(){{document.getElementById('modal').classList.remove('open');document.body.style.overflow=''}}
+async function shareModal(){{if(state.selected)shareData(state.selected.name,state.selected.description||location.href)}}
+async function shareItem(c){{const i=JSON.parse(c.dataset.item);shareData(i.name,i.description||location.href)}}
+async function shareData(title,text){{try{{if(navigator.share)await navigator.share({{title,text,url:location.href}});else{{await navigator.clipboard.writeText(location.href);toast('Link copied')}}}}catch(_){{}}}}
+function randomDiscovery(){{const p=cards.filter(c=>!c.classList.contains('hidden')),pool=p.length?p:cards,t=pool[Math.floor(Math.random()*pool.length)];t.scrollIntoView({{behavior:'smooth',block:'center'}});openItem(t)}}
+function newUniverse(){{location.reload()}}
+function screenshotCard(card){{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+String(i.name||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}},'image/png')}}
+function toast(m){{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
 let themeMode='dark';
 function toggleTheme(){{
   themeMode=themeMode==='dark'?'light':'dark';
