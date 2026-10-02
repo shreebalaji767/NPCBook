@@ -1,0 +1,33 @@
+name: Validate NPCBook
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Build site
+        run: python app.py
+      - name: Check generated JavaScript
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("site/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script(?: [^>]*)?>(.*?)</script>", html, re.S)
+          Path("/tmp/npcbook.js").write_text(scripts[-1], encoding="utf-8")
+          print("Generated script:", len(scripts[-1]), "bytes")
+          PY
+          node --check /tmp/npcbook.js
+      - name: Verify generated assets
+        run: |
+          test -f site/index.html
+          test -f site/manifest.webmanifest
+          test -f site/sw.js
+          grep -q "renderUniverse();apply();" site/index.html
