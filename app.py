@@ -103,7 +103,7 @@ const state={{filter:'all',query:'',selected:null}},search=document.getElementBy
 function apply(){{let n=0;for(const c of cards){{const ok=(state.filter==='all'||(state.filter==='saved'&&isSaved(JSON.parse(c.dataset.item)))||c.dataset.type===state.filter)&&(!state.query||c.dataset.search.toLowerCase().includes(state.query));c.classList.toggle('hidden',!ok);if(ok)n++}}document.getElementById('resultCount').textContent=n+' result'+(n===1?'':'s');document.getElementById('empty').classList.toggle('show',n===0)}}
 function setFilter(f){{state.filter=f;document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));apply()}}
 const WORLD_HISTORY_KEY='npcbook-universe-history-v1';
-const THEME_KEY='npcbook-theme-v1';
+const NPCBOOK_THEME_KEY='npcbook-theme-v1';
 const WORDS={{
   prefixes:['Astra','Eldra','Nyx','Veyra','Sol','Kael','Orin','Zeph','Luma','Thorne','Aether','Riven','Mora','Cinder','Vel','Arca','Nexa','Oryn','Vanta','Eira'],
   middles:['veil','fall','reach','mere','dawn','forge','hollow','spire','rift','vale','drift','crown','wilds','harbor','gate','bloom','frontier','echo','realm','sanctum'],
@@ -185,7 +185,7 @@ document.getElementById('importUniverse').addEventListener('change',function(e){
     try{{
       const u=JSON.parse(reader.result);
       if(!u.worldName||!Array.isArray(u.npcs)||!Array.isArray(u.quests))throw new Error('invalid');
-      writeStore(CURRENT_KEY,u);saveArchive(u);renderUniverse(u,true);apply();toast('Universe imported');
+      writeStore(CURRENT_KEY,u);renderUniverse(u,true);apply();toast('Universe imported');
     }}catch(_){{
       toast('Invalid NPCBook universe file');
     }}
@@ -197,7 +197,7 @@ document.getElementById('importUniverse').addEventListener('change',function(e){
 function screenshotCard(card){{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+String(i.name||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}},'image/png')}}
 function toast(m){{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
 let themeMode='dark';
-try{{themeMode=localStorage.getItem(THEME_KEY)==='light'?'light':'dark'}}catch(_){{themeMode='dark'}}
+try{{themeMode=localStorage.getItem(NPCBOOK_THEME_KEY)==='light'?'light':'dark'}}catch(_){{themeMode='dark'}}
 function applyTheme(){{
   const root=document.documentElement,btn=document.getElementById('themeBtn');
   if(themeMode==='light'){{
@@ -210,7 +210,7 @@ function applyTheme(){{
 }}
 function toggleTheme(){{
   themeMode=themeMode==='dark'?'light':'dark';
-  try{{localStorage.setItem(THEME_KEY,themeMode)}}catch(_){{
+  try{{localStorage.setItem(NPCBOOK_THEME_KEY,themeMode)}}catch(_){{
   }}
   applyTheme();
 }}
