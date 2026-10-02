@@ -25,9 +25,23 @@ jobs:
           print("Generated script:", len(scripts[-1]), "bytes")
           PY
           node --check /tmp/npcbook.js
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script(?: [^>]*)?>(.*?)</script>", html, re.S)
+          for i, script in enumerate(scripts):
+              Path(f"/tmp/npcbook-script-{i}.js").write_text(script, encoding="utf-8")
+          print("Checking", len(scripts), "inline scripts")
+          PY
+          for f in /tmp/npcbook-script-*.js; do node --check "$f"; done
       - name: Verify generated assets
         run: |
-          test -f site/index.html
+          test -f index.html
           test -f manifest.webmanifest
           test -f sw.js
           grep -q "renderUniverse(null,true);apply();" index.html
+          grep -q 'id="themeBtn"' index.html
+          grep -q 'id="resultsGrid"' index.html
+          grep -q 'id="search"' index.html
+          grep -q 'npcbook-v19' sw.js
