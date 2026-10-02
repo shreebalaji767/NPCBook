@@ -19,7 +19,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import re
-          html = Path("site/index.html").read_text(encoding="utf-8")
+          html = Path("index.html").read_text(encoding="utf-8")
           scripts = re.findall(r"<script(?: [^>]*)?>(.*?)</script>", html, re.S)
           Path("/tmp/npcbook.js").write_text(scripts[-1], encoding="utf-8")
           print("Generated script:", len(scripts[-1]), "bytes")
@@ -28,6 +28,6 @@ jobs:
       - name: Verify generated assets
         run: |
           test -f site/index.html
-          test -f site/manifest.webmanifest
-          test -f site/sw.js
-          grep -q "renderUniverse();apply();" site/index.html
+          test -f manifest.webmanifest
+          test -f sw.js
+          grep -q "renderUniverse(null,true);apply();" index.html
