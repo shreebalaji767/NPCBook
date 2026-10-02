@@ -102,6 +102,54 @@ def build_html():
 const state={{filter:'all',query:'',selected:null}},search=document.getElementById('search'),cards=[...document.querySelectorAll('.card')];
 function apply(){{let n=0;for(const c of cards){{const ok=(state.filter==='all'||c.dataset.type===state.filter)&&(!state.query||c.dataset.search.toLowerCase().includes(state.query));c.classList.toggle('hidden',!ok);if(ok)n++}}document.getElementById('resultCount').textContent=n+' result'+(n===1?'':'s');document.getElementById('empty').classList.toggle('show',n===0)}}
 function setFilter(f){{state.filter=f;document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));apply()}}
+const WORLD_HISTORY_KEY='npcbook-universe-history-v1';
+const WORDS={
+  prefixes:['Astra','Eldra','Nyx','Veyra','Sol','Kael','Orin','Zeph','Luma','Thorne','Aether','Riven','Mora','Cinder','Vel','Arca','Nexa','Oryn','Vanta','Eira'],
+  middles:['veil','fall','reach','mere','dawn','forge','hollow','spire','rift','vale','drift','crown','wilds','harbor','gate','bloom','frontier','echo','realm','sanctum'],
+  suffixes:['Prime','Ascendant','Eternal','Beyond','Unbound','Zero','IX','Omega','Horizon','Unknown','Awakening','Afterlight']
+};
+const NPC_NAMES=['Kael','Lyra','Drax','Mira','Oren','Selene','Veyra','Ronan','Nyra','Talon','Iris','Zarek','Elara','Voss','Kira','Orin','Sable','Juno','Ari','Nox','Maren','Cyra','Vale','Riven'];
+const NPC_SURNAMES=['Veyron','Solenne','Ironfall','Nightshade','Voss','Vale','Starborn','Ashcroft','Moonmere','Rook','Everis','Thorne','Dusk','Storme','Quill','Draven','Frost','Ember','Raine','Hollow'];
+const ROLES=['Rift Cartographer','Void Mechanist','Star Seer','Memory Hunter','Storm Warden','Clockwork Diplomat','Dream Forger','Gatekeeper','Moon Archivist','Probability Knight','Echo Ranger','Grave Alchemist','Sky Corsair','Reality Broker','Runic Detective','Solar Monk'];
+const BIOMES=['floating citadels','glass deserts','singing forests','gravity oceans','crystal tundra','endless twilight','living mountains','clockwork valleys','neon ruins','mirror archipelagos','storm plains','underground suns'];
+const QUEST_GOALS=['recover a vanished crown','find the city that moves every dawn','seal a hungry dimensional rift','escort a memory that can walk','solve the bell that rings in empty space','steal a map from tomorrow','protect the last blue star','wake the sleeping machine beneath the sea','locate the missing hour','return a forbidden name'];
+const LORE_HOOKS=['A door appeared where no wall exists.','Every shadow in the capital is facing the wrong direction.','A forgotten moon has started sending messages.','The royal library now contains books written next week.','Someone has been buying identical keys in every timeline.','The northern sky briefly turned into an ocean.','A village woke up with memories belonging to strangers.','An ancient statue keeps changing its expression.','The city clocks all disagree by exactly one impossible minute.','A harmless pigeon has been delivering sealed royal orders.'];
+const FACTIONS=['The Glass Parliament','The Ember Choir','The Null Cartographers','The Midnight Guild','The Seven Lanterns','The Copper Covenant','The Quiet Legion','The Astral Market','The Hollow Court','The Last Navigators'];
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function sample(a,n){return [...a].sort(()=>Math.random()-.5).slice(0,n)}
+function safeHistory(){try{const x=JSON.parse(localStorage.getItem(WORLD_HISTORY_KEY)||'[]');return Array.isArray(x)?x:[]}catch(_){return[]}}
+function rememberUniverse(signature){try{const h=safeHistory();h.push(signature);localStorage.setItem(WORLD_HISTORY_KEY,JSON.stringify(h));return h.length}catch(_){return 0}}
+function makeUniverse(){
+  const history=safeHistory(); let u,signature,tries=0;
+  do{
+    const worldName=`${pick(WORDS.prefixes)} ${pick(WORDS.middles)} ${pick(WORDS.suffixes)}`;
+    const worldType=pick(['Cosmic Fantasy','Dark Sci-Fi','Mythic Space Opera','Surreal Fantasy','Post-Magic Future','Dimensional Adventure']);
+    const faction=pick(FACTIONS), biome=pick(BIOMES);
+    const npcNames=sample(NPC_NAMES,8), surnames=sample(NPC_SURNAMES,8), roles=sample(ROLES,8);
+    const npcs=npcNames.map((n,i)=>({id:`npc-${i}`,name:`${n} ${surnames[i]}`,category:'NPC',rarity:pick(['Common','Rare','Epic','Legendary','Mythic']),role:roles[i],world:worldName,description:`${roles[i]} of ${worldName}, currently operating from the ${biome} for the ${faction}.`,tags:[worldType.toLowerCase(),roles[i].toLowerCase().split(' ')[0],faction.split(' ')[1]?.toLowerCase()||'lore']}));
+    const worlds=[{id:'world-0',name:worldName,type:worldType,status:'New Universe',description:`${worldName} is a newly discovered universe of ${biome}, ruled by rumor, unstable physics and ${faction}.`,tags:[worldType.toLowerCase(),'new universe',biome.split(' ')[0],faction.split(' ')[1]?.toLowerCase()||'lore']}];
+    const quests=sample(QUEST_GOALS,4).map((goal,i)=>({id:`quest-${i}`,name:['The First Crossing','The Impossible Hour','The Unwritten Map','The Last Signal'][i],difficulty:pick(['Hard','Extreme','Legendary','Mythic']),status:'New',world:worldName,description:`In ${worldName}, ${goal} before the ${faction} reaches the ${biome}.`,tags:['quest',worldType.toLowerCase().split(' ')[0],'expedition']}));
+    const posts=sample(LORE_HOOKS,6).map((hook,i)=>({id:`lore-${i}`,name:['World Signal','Strange Report','Archive Fragment','Traveler Note','Forbidden Rumor','Universe Bulletin'][i],type:pick(['Lore','Rumor','Faction','Discovery']),world:worldName,description:hook+` Witnesses place the event somewhere in ${worldName}.`,tags:['lore',worldType.toLowerCase().split(' ')[0],faction.split(' ')[1]?.toLowerCase()||'mystery']}));
+    signature=JSON.stringify({worldName,worldType,faction,biome,npcs:npcs.map(x=>x.name),quests:quests.map(x=>x.name+x.description),posts:posts.map(x=>x.description)});
+    u={worldName,worldType,faction,biome,npcs,worlds,quests,posts}; tries++;
+  }while(history.includes(signature)&&tries<100);
+  rememberUniverse(signature); return u;
+}
+function makeCard(item,type,icon,label){
+  const card=document.createElement('article');card.className='card';card.dataset.type=type;card.dataset.search=Object.values(item).join(' ').toLowerCase();card.dataset.item=JSON.stringify(item);
+  const meta=['category','rarity','role','type','difficulty','status','world'].filter(k=>item[k]).map(k=>`<span>${esc(item[k])}</span>`).join('');
+  const tags=(item.tags||[]).slice(0,6).map(t=>`<span class="tag">#${esc(t)}</span>`).join('');
+  card.innerHTML=`<div class="card-top"><span class="eyebrow">${icon} ${esc(label)}</span><button class="icon-btn" aria-label="Share" onclick="shareItem(this.closest('.card'))">↗</button></div><h3>${esc(item.name)}</h3><p>${esc(item.description||'')}</p><div class="meta">${meta}</div><div class="tags">${tags}</div><div class="card-actions"><button class="btn small x-view" onclick="openItem(this.closest('.card'))">View</button><button class="btn small ghost" onclick="screenshotCard(this.closest('.card'))">Screenshot</button></div>`;
+  return card;
+}
+function renderUniverse(){
+  const u=makeUniverse(),grid=document.getElementById('resultsGrid');grid.innerHTML='';cards.length=0;
+  const data=[['npcs','👤','NPCs',u.npcs],['worlds','🌍','Worlds',u.worlds],['quests','⚔️','Quests',u.quests],['posts','📜','Lore',u.posts]];
+  for(const [type,icon,label,list] of data)for(const item of list){const c=makeCard(item,type,icon,label);grid.appendChild(c);cards.push(c)}
+  const hero=document.querySelector('.hero .eyebrow');if(hero)hero.textContent=`NPCBOOK · ${u.worldName} · NEW UNIVERSE`;
+  const title=document.querySelector('.hero h1');if(title)title.innerHTML=`The fictional<br><span class="gradient">${esc(u.worldName)}.</span>`;
+  const desc=document.querySelector('.hero p');if(desc)desc.textContent=`${u.worldType} · ${u.faction} · ${u.biome}. Every refresh creates a different universe; previously generated universes are remembered locally so they are not repeated.`;
+}
 search.addEventListener('input',e=>{{state.query=e.target.value.trim().toLowerCase();apply()}});
 document.addEventListener('keydown',e=>{{if(e.key==='/'&&document.activeElement!==search){{e.preventDefault();search.focus()}}if(e.key==='Escape')closeModal()}});
 function clearSearch(){{search.value='';state.query='';setFilter('all')}}
@@ -111,6 +159,7 @@ async function shareModal(){{if(state.selected)shareData(state.selected.name,sta
 async function shareItem(c){{const i=JSON.parse(c.dataset.item);shareData(i.name,i.description||location.href)}}
 async function shareData(title,text){{try{{if(navigator.share)await navigator.share({{title,text,url:location.href}});else{{await navigator.clipboard.writeText(location.href);toast('Link copied')}}}}catch(_){{}}}}
 function randomDiscovery(){{const p=cards.filter(c=>!c.classList.contains('hidden')),pool=p.length?p:cards,t=pool[Math.floor(Math.random()*pool.length)];t.scrollIntoView({{behavior:'smooth',block:'center'}});openItem(t)}}
+function newUniverse(){{location.reload()}}
 function screenshotCard(card){{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+String(i.name||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}},'image/png')}}
 function toast(m){{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
 let themeMode='dark';
@@ -127,6 +176,7 @@ function toggleTheme(){{
 }}
 let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{{e.preventDefault();deferredInstall=e;document.getElementById('installBtn').classList.add('show')}});document.getElementById('installBtn').addEventListener('click',async()=>{{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;document.getElementById('installBtn').classList.remove('show')}});
 window.addEventListener('online',()=>toast('Back online'));window.addEventListener('offline',()=>toast('Offline mode: cached content available'));window.addEventListener('appinstalled',()=>toast('NPCBook installed successfully'));
+renderUniverse();apply();
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').then(reg=>{{if(reg.waiting)toast('A newer NPCBook version is ready');reg.addEventListener('updatefound',()=>{{const w=reg.installing;if(w)w.addEventListener('statechange',()=>{{if(w.state==='installed'&&navigator.serviceWorker.controller)toast('NPCBook updated — refresh for the latest version')}})}})}}).catch(()=>{{}}));apply();</script></body></html>'''
 
 def build_manifest():
