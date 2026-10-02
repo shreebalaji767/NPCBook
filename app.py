@@ -162,7 +162,7 @@ async function shareItem(c){{const i=JSON.parse(c.dataset.item);shareData(i.name
 async function shareData(title,text){{try{{if(navigator.share)await navigator.share({{title,text,url:location.href}});else{{await navigator.clipboard.writeText(location.href);toast('Link copied')}}}}catch(_){{}}}}
 function randomDiscovery(){{const p=cards.filter(c=>!c.classList.contains('hidden')),pool=p.length?p:cards,t=pool[Math.floor(Math.random()*pool.length)];t.scrollIntoView({{behavior:'smooth',block:'center'}});openItem(t)}}
 function newUniverse(){{location.reload()}}
-const ARCHIVE_KEY='npcbook-universe-archive-v1',SAVED_KEY='npcbook-saved-items-v1',CURRENT_KEY='npcbook-current-universe-v1';
+const ARCHIVE_KEY='npcbook-universe-archive-v1',SAVED_KEY='npcbook-saved-items-v1',CURRENT_KEY='npcbook-current-universe-v1',THEME_KEY='npcbook-theme-v1';
 function readStore(key,fallback){{try{{const v=JSON.parse(localStorage.getItem(key)||'null');return v===null?fallback:v}}catch(_){{return fallback}}}}
 function writeStore(key,value){{try{{localStorage.setItem(key,JSON.stringify(value));return true}}catch(_){{toast('Local storage is full');return false}}}}
 function saveArchive(u){{const archive=readStore(ARCHIVE_KEY,[]);archive.unshift({{id:Date.now().toString(36),name:u.worldName,type:u.worldType,faction:u.faction,universe:u}});writeStore(ARCHIVE_KEY,archive.slice(0,12))}}
@@ -196,7 +196,8 @@ document.getElementById('importUniverse').addEventListener('change',function(e){
 
 function screenshotCard(card){{const i=JSON.parse(card.dataset.item),c=document.createElement('canvas'),w=1200,h=700,d=2;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.fillStyle='#080b14';x.fillRect(0,0,w,h);x.fillStyle='#8d88ff';x.font='800 18px Arial';x.fillText('NPCBOOK · {BRAND}',70,75);x.fillStyle='#fff';x.font='800 48px Arial';x.fillText(i.name,70,145);x.fillStyle='#aeb7ca';x.font='24px Arial';x.fillText((i.description||'').slice(0,90),70,205);x.fillStyle='#69758c';x.font='16px Arial';x.fillText((i.tags||[]).map(t=>'#'+t).join('   '),70,610);c.toBlob(b=>{{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='npcbook-'+String(i.name||'item').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}},'image/png')}}
 function toast(m){{const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}}
-let themeMode=localStorage.getItem(THEME_KEY)==='light'?'light':'dark';
+let themeMode='dark';
+try{{themeMode=localStorage.getItem(THEME_KEY)==='light'?'light':'dark'}}catch(_){{themeMode='dark'}}
 function applyTheme(){{
   const root=document.documentElement,btn=document.getElementById('themeBtn');
   if(themeMode==='light'){{
@@ -208,19 +209,22 @@ function applyTheme(){{
   }}
 }}
 function toggleTheme(){{
-  themeMode=themeMode==='dark'?'light':'dark';localStorage.setItem(THEME_KEY,themeMode);applyTheme();
-  const root=document.documentElement,btn=document.getElementById('themeBtn');
-  if(themeMode==='light'){{
-    root.style.setProperty('--bg','#f5f7fb');root.style.setProperty('--text','#111827');root.style.setProperty('--muted','#5f6b80');root.style.setProperty('--line','#dbe1ec');
-    btn.textContent='☾';btn.setAttribute('aria-label','Switch to dark theme');btn.title='Switch to dark theme';
-  }}else{{
-    root.style.setProperty('--bg','#070a12');root.style.setProperty('--text','#f5f7ff');root.style.setProperty('--muted','#8e9ab1');root.style.setProperty('--line','#202b40');
-    btn.textContent='☼';btn.setAttribute('aria-label','Switch to light theme');btn.title='Switch to light theme';
+  themeMode=themeMode==='dark'?'light':'dark';
+  try{{localStorage.setItem(THEME_KEY,themeMode)}}catch(_){{
   }}
+  applyTheme();
 }}
-document.querySelector('.filters').insertAdjacentHTML('beforeend','<button class="filter" data-filter="saved" onclick="setFilter(\'saved\')">⭐ Saved</button>');
+document.querySelector('.filters').insertAdjacentHTML('beforeend','<button class="filter x-saved-filter" data-filter="saved">⭐ Saved</button>');
+document.querySelector('.filters').addEventListener('click',e=>{{const b=e.target.closest('.x-saved-filter');if(b)setFilter('saved')}});
 function cycleFilter(){{const fs=['all','npcs','worlds','quests','posts','saved'],i=fs.indexOf(state.filter);setFilter(fs[(i+1)%fs.length])}}
-document.addEventListener('keydown',e=>{{if(e.key.toLowerCase()==='n'&&!e.ctrlKey&&!e.metaKey){{e.preventDefault();newUniverse()}}if(e.key.toLowerCase()==='s'&&!e.ctrlKey&&!e.metaKey&&document.activeElement!==search){{e.preventDefault();setFilter('saved')}}if(e.key.toLowerCase()==='f'&&!e.ctrlKey&&!e.metaKey&&document.activeElement!==search){{e.preventDefault();search.focus()}}if(e.key.toLowerCase()==='c'&&!e.ctrlKey&&!e.metaKey&&document.activeElement!==search){{e.preventDefault();cycleFilter()}}}});
+document.addEventListener('keydown',e=>{{
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key.toLowerCase();
+  if(k==='n'&&document.activeElement!==search){{e.preventDefault();newUniverse()}}
+  else if(k==='s'&&document.activeElement!==search){{e.preventDefault();setFilter('saved')}}
+  else if(k==='f'&&document.activeElement!==search){{e.preventDefault();search.focus()}}
+  else if(k==='c'&&document.activeElement!==search){{e.preventDefault();cycleFilter()}}
+}});
 applyTheme();
 let deferredInstall=null;window.addEventListener('beforeinstallprompt',e=>{{e.preventDefault();deferredInstall=e;document.getElementById('installBtn').classList.add('show')}});document.getElementById('installBtn').addEventListener('click',async()=>{{if(!deferredInstall)return;deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;document.getElementById('installBtn').classList.remove('show')}});
 window.addEventListener('online',()=>toast('Back online'));window.addEventListener('offline',()=>toast('Offline mode: cached content available'));window.addEventListener('appinstalled',()=>toast('NPCBook installed successfully'));
@@ -231,7 +235,7 @@ def build_manifest():
     return json.dumps({"name":SITE["name"],"short_name":"NPCBook","id":"/","description":SITE["description"],"start_url":"/","scope":"/","display":"standalone","display_override":["window-controls-overlay","standalone","minimal-ui"],"orientation":"any","background_color":"#070a12","theme_color":"#090d18","categories":["entertainment","books","games"],"lang":"en","shortcuts":[{"name":"Explore NPCs","short_name":"NPCs","url":"/#explore"},{"name":"Random discovery","short_name":"Random","url":"/#explore"}],"icons":[{"src":"/favicon.svg?v=10","sizes":"any","type":"image/svg+xml","purpose":"any maskable"},{"src":"/favicon.ico?v=10","sizes":"32x32","type":"image/x-icon","purpose":"any"}]},indent=2)
 
 def build_sw():
-    return """const CACHE='npcbook-v17';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/favicon.ico','/logo.svg','/robots.txt','/sitemap.xml','/404.html'];
+    return """const CACHE='npcbook-v18';const CORE=['/','/index.html','/manifest.webmanifest','/favicon.svg','/favicon.ico','/logo.svg','/robots.txt','/sitemap.xml','/404.html'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;let u;try{u=new URL(e.request.url)}catch(_){return}if(u.protocol!=='http:'&&u.protocol!=='https:')return;if(u.origin!==self.location.origin)return;e.respondWith(fetch(e.request).then(r=>{if(r.ok&&e.request.cache!=='no-store'){return caches.open(CACHE).then(c=>c.put(e.request,r.clone()).then(()=>r).catch(()=>r))}return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/404.html'))))});
